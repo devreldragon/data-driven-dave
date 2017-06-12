@@ -55,23 +55,52 @@ def buildLevelOne():
 
 def main():
     LevelOne = buildLevelOne()
-    
-    pygame.display.init()
-    game_display = pygame.display.set_mode((1600, 900), pygame.FULLSCREEN)
-    red = (255, 0, 0)
-    redbrick = pygame.image.load('redbrick.png')
+
+    pygame.init()
+    game_display = pygame.display.set_mode((320, 192))
+    game_display.fill((0, 0, 0))
+
+    playerSprite = pygame.Surface([15, 15])
+    playerSprite.fill((255, 255, 255))
+    playerPositionX = 120
+    playerPositionY = 50
+    playerAccelerationX = 0
+    playerAccelerationY = 0
+
     clock = pygame.time.Clock()
     pygame.display.update()
     ended = False
     
     while not ended:
         for event in pygame.event.get():
+
             if event.type == pygame.QUIT:
                 ended = True
-        
-        game_display.blit(redbrick, (0,0))
-    
-        pygame.display.update()
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_UP:
+                    playerAccelerationY = playerAccelerationY - 1
+                elif event.key == pygame.K_DOWN:
+                    playerAccelerationY = playerAccelerationY + 1
+                elif event.key == pygame.K_LEFT:
+                    playerAccelerationX = playerAccelerationX - 1
+                elif event.key == pygame.K_RIGHT:
+                    playerAccelerationX = playerAccelerationX + 1
+            elif event.type == pygame.KEYUP:
+                if event.key == pygame.K_UP:
+                    playerAccelerationY = playerAccelerationY + 1
+                elif event.key == pygame.K_DOWN:
+                    playerAccelerationY = playerAccelerationY - 1
+                elif event.key == pygame.K_LEFT:
+                    playerAccelerationX = playerAccelerationX + 1
+                elif event.key == pygame.K_RIGHT:
+                    playerAccelerationX = playerAccelerationX - 1
+
+        playerPositionX = playerPositionX + playerAccelerationX
+        playerPositionY = playerPositionY + playerAccelerationY
+        game_display.fill((0,0,0))
+        game_display.blit(playerSprite, (playerPositionX, playerPositionY))
+
+        pygame.display.flip()
         clock.tick(60)
         
     pygame.quit()
