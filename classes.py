@@ -1,6 +1,5 @@
 
 import sys
-
 '''
 Constants
 '''
@@ -99,6 +98,8 @@ class Map(object):
     def getWidth(self):
         return self.width
 
+    def getNodeMatrix(self):
+        return self.node_matrix
 
 class MapNode(object):
     ''' 
@@ -515,13 +516,6 @@ class Player(Dynamic):
             self.gfx_id = TILESET.index("PLAYER_SPAWNER")
             self.state = "normal"
             self.state_list = ["endmap", "normal", "fly", "climb", "die"]
-        #alternative constructor (id, gfx_id, state, state_list)
-        elif len(args) == 4:
-            id = args[0]
-            gfx_id = args[1]
-            state = args[2]
-            state_list = args[3]
-            ''' TODO: IMPLEMENT THIS '''
         else: ErrorInvalidConstructor()
 
     '''
