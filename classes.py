@@ -20,7 +20,10 @@ TILETERMINAL = (' ', 'B', 'B', 'B', 'B', 'B', 'H', 'H', 'H', 'b', 'd', 'o', 'r',
 
 def ErrorInvalidValue():
     raise ValueError("Please enter a valid value.")
-    
+   
+def ErrorInvalidConstructor():
+    raise ValueError("The entered constructor is not valid.")
+
     
 class Map(object):
     '''
@@ -44,6 +47,22 @@ class Map(object):
         self.width += 1
         for map_line in self.node_matrix:
             map_line.append(MapNode())
+
+    def buildMapBorder(self, tile):
+        bottom = self.height - 1
+        right = self.width - 1
+        
+        for x in range(right + 1):
+            self.setNodeTile(x, 1, tile)
+            self.setNodeTile(x, bottom, tile)
+        
+        for y in range(2, bottom):
+            self.setNodeTile(0, y, tile)
+            self.setNodeTile(right, y, tile)
+
+    def buildWall(self, x, tile):
+        for y in range(1, self.height):
+            self.setNodeTile(x, y, tile)
             
     def setNodeTile(self, x, y, tile):
         if (x < self.width) and (y < self.height):
@@ -94,18 +113,25 @@ class MapNode(object):
     Constructors
     '''
     
-    def __init__(self):
-        self.pos_x = 0
-        self.pos_y = 0
-        self.tile = Tile()
-    
-    def Construct(self, pos_x, pos_y, tile):
-        if not(isinstance(pos_x, int)) or not(isinstance(pos_y, int)): #or not(Tile.isTileValid(tile)):
-            ErrorInvalidValue()
-        else:
-            self.pos_x = pos_x
-            self.pos_y = pos_y
-            self.tile = tile
+    def __init__(self, *args):
+        #default constructor
+        if len(args) == 0:
+            self.pos_x = 0
+            self.pos_y = 0
+            self.tile = Tile()
+        #alternative constructor (pos_x, pos_y, tile)
+        elif len(args) == 3:
+            pos_x = args[0]
+            pos_y = args[1]
+            tile = args[2]
+
+            if not(isinstance(pos_x, int)) or not(isinstance(pos_y, int)): #or not(Tile.isTileValid(tile)):
+                ErrorInvalidValue()
+            else:
+                self.pos_x = pos_x
+                self.pos_y = pos_y
+                self.tile = tile
+        else: ErrorInvalidConstructor()
     
     '''
     Other methods
@@ -153,17 +179,23 @@ class Tile(object):
     Constructors
     '''
     
-    def __init__(self):
-        self.id = TILESET.index("EMPTY")
-        self.gfx_id = TILESET.index("EMPTY")
-        
-    def Construct(self, id, gfx_id):
-        if not(isinstance(id, int)) or not(isinstance(gfx_id, int)):
-            ErrorInvalidValue()
-        else:
-            self.id = id
-            self.gfx_id = gfx_id
-    
+    def __init__(self, *args):
+        #default constructor
+        if len(args) == 0:
+            self.id = TILESET.index("EMPTY")
+            self.gfx_id = TILESET.index("EMPTY")  
+        #alternative constructor (self, id, gfx_id)          
+        elif len(args) == 2:
+            id = args[0]
+            gfx_id = args[1]
+
+            if not(isinstance(id, int)) or not(isinstance(gfx_id, int)):
+                ErrorInvalidValue()
+            else:
+                self.id = id
+                self.gfx_id = gfx_id   
+        else: ErrorInvalidConstructor()         
+
     '''
     Other methods
     '''
@@ -205,10 +237,23 @@ class Solid(Tile):
     Constructors
     '''
     
-    def __init__(self):
-        self.id = TILESET.index("BLOCK_RED")
-        self.gfx_id = TILESET.index("BLOCK_RED")
-    
+    def __init__(self, *args):
+        #default constructor
+        if len(args) == 0:
+            self.id = TILESET.index("BLOCK_RED")
+            self.gfx_id = TILESET.index("BLOCK_RED")
+        #alternative constructor (self, id, gfx_id)          
+        elif len(args) == 2:
+            id = args[0]
+            gfx_id = args[1]
+
+            if not(isinstance(id, int)) or not(isinstance(gfx_id, int)):
+                ErrorInvalidValue()
+            else:
+                self.id = id
+                self.gfx_id = gfx_id   
+        else: ErrorInvalidConstructor()   
+        
         
 class Item(Tile):
     '''
@@ -221,19 +266,25 @@ class Item(Tile):
     Constructors
     '''
     
-    def __init__(self):
-        self.id = TILESET.index("ITEM_BLUE_DIAMOND")
-        self.gfx_id = TILESET.index("ITEM_BLUE_DIAMOND")
-        self.score = 100
-    
-    @classmethod
-    def Construct(self, id, gfx_id, score):
-        if not(isinstance(id, int)) or not(isinstance(gfx_id, int)) or not(isinstance(score, int) or score < 0):
-            ErrorInvalidValue()
-        else:
-            self.id = id
-            self.gfx_id = gfx_id 
-            self.score = score
+    def __init__(self, *args):
+        #default constructor
+        if len(args) == 0:
+            self.id = TILESET.index("ITEM_BLUE_DIAMOND")
+            self.gfx_id = TILESET.index("ITEM_BLUE_DIAMOND")
+            self.score = 100
+        #alternative constructor (id, gfx_id, score)
+        elif len(args) == 3:
+            id = args[0]
+            gfx_id = args[1]
+            score = args[2]
+
+            if not(isinstance(id, int)) or not(isinstance(gfx_id, int)) or not(isinstance(score, int) or score < 0):
+                ErrorInvalidValue()
+            else:
+                self.id = id
+                self.gfx_id = gfx_id 
+                self.score = score
+        else: ErrorInvalidConstructor()
     
     '''
     Other methods
@@ -259,27 +310,34 @@ class Equipment(Item):
         type: string represents if the equipment is a trophy, jetpack or gun
     '''    
     
-    def __init__(self):
-        self.id = TILESET.index("EQUIP_TROPHY")
-        self.gfx_id = TILESET.index("EQUIP_TROPHY")
-        self.score = 1000
-        self.type = "trophy"
-    
-    @classmethod
-    def Construct(self, id, gfx_id, score, type):
-        if not(isinstance(id, int)) or not(isinstance(gfx_id, int)) or not(isinstance(score, int)) or not(self.validType(type)) or score < 0:
-            ErrorInvalidValue()
-        else:
-            self.id = id
-            self.gfx_id = gfx_id 
-            self.score = score
-            self.type = type
-    
+    def __init__(self, *args):
+        #default constructor
+        if len(args) == 0:
+            self.id = TILESET.index("EQUIP_TROPHY")
+            self.gfx_id = TILESET.index("EQUIP_TROPHY")
+            self.score = 1000
+            self.type = "trophy"
+        #alternative constructor (id, gfx_id, score, type)
+        elif len(args) == 4:
+            id = args[0]
+            gfx_id = args[1]
+            score = args[2]
+            type = args[3]
+
+            if not(isinstance(id, int)) or not(isinstance(gfx_id, int)) or not(isinstance(score, int)) or not(self.validType(type)) or score < 0:
+                ErrorInvalidValue()
+            else:
+                self.id = id
+                self.gfx_id = gfx_id 
+                self.score = score
+                self.type = type
+        else: ErrorInvalidConstructor()
+        
     '''
     Other methods
     '''
     
-    def validType(type):
+    def validType(self, type):
         if type in ["trophy", "jetpack", "gun"]:
             return 1
         else: return 0
@@ -309,21 +367,29 @@ class InteractiveScenery(Tile):
     Constructors
     '''
     
-    def __init__(self):
-        self.id = TILESET.index("GOAL_DOOR")
-        self.gfx_id = TILESET.index("GOAL_DOOR")
-        self.target_state = "endmap"
-        self.auto = 1
-    
-    @classmethod
-    def Construct(self, id, gfx_id, target_state, auto, possible_states):
-        if not(isinstance(id, int)) or not(isinstance(gfx_id, int)) or not(self.isStateValid(target_state, possible_states)) or (auto not in [0, 1]):
-            ErrorInvalidValue()
-        else:
-            self.id = id
-            self.gfx_id = gfx_id
-            self.target_state = target_state
-            self.auto = auto
+    def __init__(self, *args):
+        #default constructor
+        if len(args) == 0:
+            self.id = TILESET.index("GOAL_DOOR")
+            self.gfx_id = TILESET.index("GOAL_DOOR")
+            self.target_state = "endmap"
+            self.auto = 1
+        #alternative constructor (id, gfx_id, target_state, auto, possible_states)
+        elif len(args) == 5:
+            id = args[0]
+            gfx_id = args[1]
+            target_state = args[2]
+            auto = args[3]
+            possible_states = args[4]
+
+            if not(isinstance(id, int)) or not(isinstance(gfx_id, int)) or not(self.isStateValid(target_state, possible_states)) or (auto not in [0, 1]):
+                ErrorInvalidValue()
+            else:
+                self.id = id
+                self.gfx_id = gfx_id
+                self.target_state = target_state
+                self.auto = auto
+        else: ErrorInvalidConstructor()
             
     '''
     Other methods
@@ -367,15 +433,21 @@ class Dynamic(Tile):
     Constructors
     '''
     
-    def __init__(self):
-        self.id = -1
-        self.gfx_id = -1
-        self.state = -1
-        self.state_list = []
-        
-    def Construct(self, id, gfx_id, state, state_list):
-        pass
-    
+    def __init__(self, *args):
+        #default constructor
+        if len(args) == 0:
+            self.id = -1
+            self.gfx_id = -1
+            self.state = -1
+            self.state_list = []
+        #alternative constructor (id, gfx_id, state, state_list)
+        elif len(args) == 4:
+            id = args[0]
+            gfx_id = args[1]
+            state = args[2]
+            state_list = args[3]
+        else: ErrorInvalidConstructor()
+
     '''
     Other methods
     '''
@@ -436,16 +508,22 @@ class Player(Dynamic):
     Constructors
     '''
     
-    def __init__(self):
-        self.id = TILESET.index("PLAYER_SPAWNER")
-        self.gfx_id = TILESET.index("PLAYER_SPAWNER")
-        self.state = "normal"
-        self.state_list = ["endmap", "normal", "fly", "climb", "die"]
-        
-    def Construct(self, id, gfx_id, state, state_list):
-        '''TODO: IMPLEMENT THIS (I'M TOO LAZY)'''
-        pass
-    
+    def __init__(self, *args):
+        #default constructor
+        if len(args) == 0:
+            self.id = TILESET.index("PLAYER_SPAWNER")
+            self.gfx_id = TILESET.index("PLAYER_SPAWNER")
+            self.state = "normal"
+            self.state_list = ["endmap", "normal", "fly", "climb", "die"]
+        #alternative constructor (id, gfx_id, state, state_list)
+        elif len(args) == 4:
+            id = args[0]
+            gfx_id = args[1]
+            state = args[2]
+            state_list = args[3]
+            ''' TODO: IMPLEMENT THIS '''
+        else: ErrorInvalidConstructor()
+
     '''
     Other methods
     '''
@@ -467,19 +545,22 @@ class Enemy(Dynamic):
     Constructors
     '''
     
-    def __init__(self):
-        self.id = TILESET.index("ENEMY_SPIDER")
-        self.gfx_id = TILESET.index("ENEMY_SPIDER")
-        self.state = "normal"
-        self.state_list = ["normal", "die"]
-        self.shot_frequency = 2
-        self.shot_chance = 0.3
-        self.speed = 1
-        self.movement_type = 1
-        
-    def Construct(self, id, gfx_id, state, state_list):
-        '''TODO: IMPLEMENT THIS (I'M TOO LAZY NOW)'''
-        pass
+    def __init__(self, *args):
+        #default constructor
+        if len(args) == 0:
+            self.id = TILESET.index("ENEMY_SPIDER")
+            self.gfx_id = TILESET.index("ENEMY_SPIDER")
+            self.state = "normal"
+            self.state_list = ["normal", "die"]
+            self.shot_frequency = 2
+            self.shot_chance = 0.3
+            self.speed = 1
+            self.movement_type = 1
+        #alternative constructor (id, gfx_id, state, state_list, shot_freq, shot_chance, speed, mov_type)
+        elif len(args) == 8:
+            id, gfx_id, state, state_list, shot_freq, shot_chance, speed, mov_type = args
+            '''TODO: IMPLEMENT THIS (I'M TOO LAZY NOW)'''
+        else: ErrorInvalidConstructor()
     
     '''
     Other methods
