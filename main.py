@@ -48,13 +48,14 @@ def buildLevelOne():
     LevelOne.setNodeTile(17, 2, Item(red_d, red_d, 150))
     LevelOne.setNodeTile(17, 5, Item())
     LevelOne.setNodeTile(17, 6, Solid())
-    LevelOne.setNodeTile(2, 9, Player())
+    #LevelOne.setNodeTile(2, 9, Player())
     
     LevelOne.setNodeTile(0,1,Solid())
     return LevelOne
 
 def main():
     LevelOne = buildLevelOne()
+    NewPlayer = Player()
 
     pygame.init()
     game_display = pygame.display.set_mode((320, 192))
@@ -64,39 +65,28 @@ def main():
     playerSprite.fill((255, 255, 255))
     playerPositionX = 120
     playerPositionY = 50
-    playerAccelerationX = 0
-    playerAccelerationY = 0
+    #playerAccelerationX = 0
+    #playerAccelerationY = 0
 
     clock = pygame.time.Clock()
     pygame.display.update()
     ended = False
     
+    keys = [pygame.K_UP, pygame.K_LEFT, pygame.K_RIGHT, pygame.K_LCTRL, pygame.K_RCTRL, pygame.K_LALT, pygame.K_RALT]
+    
     while not ended:
+        NewPlayer.gravity()
+    
         for event in pygame.event.get():
-
             if event.type == pygame.QUIT:
                 ended = True
             elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_UP:
-                    playerAccelerationY = playerAccelerationY - 1
-                elif event.key == pygame.K_DOWN:
-                    playerAccelerationY = playerAccelerationY + 1
-                elif event.key == pygame.K_LEFT:
-                    playerAccelerationX = playerAccelerationX - 1
-                elif event.key == pygame.K_RIGHT:
-                    playerAccelerationX = playerAccelerationX + 1
+                NewPlayer.setStatus(keys.index(event.key), 0)
             elif event.type == pygame.KEYUP:
-                if event.key == pygame.K_UP:
-                    playerAccelerationY = playerAccelerationY + 1
-                elif event.key == pygame.K_DOWN:
-                    playerAccelerationY = playerAccelerationY - 1
-                elif event.key == pygame.K_LEFT:
-                    playerAccelerationX = playerAccelerationX + 1
-                elif event.key == pygame.K_RIGHT:
-                    playerAccelerationX = playerAccelerationX - 1
+                NewPlayer.setStatus(keys.index(event.key), 1)
 
-        playerPositionX = playerPositionX + playerAccelerationX
-        playerPositionY = playerPositionY + playerAccelerationY
+        playerPositionX = playerPositionX + NewPlayer.getAccelerationX()
+        playerPositionY = playerPositionY + NewPlayer.getAccelerationY()
         game_display.fill((0,0,0))
         game_display.blit(playerSprite, (playerPositionX, playerPositionY))
 

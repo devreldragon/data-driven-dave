@@ -101,6 +101,7 @@ class Map(object):
     def getNodeMatrix(self):
         return self.node_matrix
 
+        
 class MapNode(object):
     ''' 
     MapNode represents a node that belongs to a map of the game.
@@ -502,7 +503,9 @@ class Dynamic(Tile):
 class Player(Dynamic):
     '''
     Player represents the player object (not the controller) in the game
-    It has no new arguments
+    It has the following arguments:
+        acceleration_y: acceleration in the y axis
+        acceleration_x: acceleration in the x axis
     '''
     
     '''
@@ -516,12 +519,67 @@ class Player(Dynamic):
             self.gfx_id = TILESET.index("PLAYER_SPAWNER")
             self.state = "normal"
             self.state_list = ["endmap", "normal", "fly", "climb", "die"]
+            self.acceleration_x = 0
+            self.acceleration_y = 0
         else: ErrorInvalidConstructor()
 
     '''
     Other methods
     '''
+       
+    #[K_UP, K_LEFT, K_RIGHT, K_LCTRL, K_RCTRL, K_LALT, K_RALT]
+    def setStatus(self, key, mode):
+        MAX_SPEED = 5
+    
+        #mode = 0 : KEYDOWN
+        #mode = 1 : KEYUP
+    
+        ''' TODO: REFACTOR THIS '''
+    
+        if mode == 0:
+            if key == 0 and self.acceleration_y == 0:
+                ''' TODO: REFACTOR THIS '''
+                if self.state == "normal":
+                    self.acceleration_y = -MAX_SPEED
+                elif (self.state == "climb" or self.state == "fly") and self.acceleration_y < MAX_SPEED:
+                    self.acceleration_y = -MAX_SPEED
+                elif (self.state == "climb" or self.state == "fly"):
+                    self.acceleration_y = -MAX_SPEED
+            elif key == 1:
+                self.acceleration_x = -1 * MAX_SPEED
+            elif key == 2:
+                self.acceleration_x = MAX_SPEED
+            elif (key == 3 or key == 4) and self.state == "fly":
+                self.state = "normal"
+            elif (key == 3 or key == 4) and self.state == "normal":
+                self.state = "fly"
+            elif (key == 5 or key == 6):
+                '''TODO: IMPLEMENT SHOOTING (SPAWN ENEMY OBJECT) '''
+                pass
+        elif mode == 1:
+            if key == 0 and self.acceleration_y < 0:
+                ''' TODO: REFACTOR THIS '''
+                if (self.state == "climb" or self.state == "fly"):
+                    self.acceleration_y = 0
+                elif (self.state == "climb" or self.state == "fly"):
+                    self.acceleration_y = 0
+            elif key == 1:
+                self.acceleration_x = 0
+            elif key == 2:
+                self.acceleration_x = 0
+     
+    ''' TODO: MAYBE RENAME THIS '''
+    def gravity(self):
+        MAX_SPEED = 5
+        if self.state == "normal" and self.acceleration_y < 0:
+            self.acceleration_y += 0.05 * MAX_SPEED
+        ''' TODO: FIX GRAVITY IF THERE IS NO BLOCKS UNDERNEATH '''
+
+    def getAccelerationX(self):
+        return self.acceleration_x
         
+    def getAccelerationY(self):
+        return self.acceleration_y
         
 class Enemy(Dynamic):
     '''
