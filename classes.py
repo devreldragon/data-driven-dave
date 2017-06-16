@@ -77,7 +77,13 @@ class Map(object):
             
     def getNode(self, x, y):
         return self.node_matrix[y][x]
-            
+       
+    def getPlayerPosition(self):
+        for y, line in enumerate(self.node_matrix):
+            for x, col in enumerate(line):
+                if self.node_matrix[y][x].getTile().getId() == TILESET.index("PLAYER_SPAWNER"):
+                    return (x, y)
+       
     '''
     Getters and Setters
     '''
@@ -520,7 +526,7 @@ class Player(Dynamic):
             self.state = "normal"
             self.state_list = ["endmap", "normal", "fly", "climb", "die"]
             self.acceleration_x = 0
-            self.acceleration_y = 0
+            self.acceleration_y = 5
         else: ErrorInvalidConstructor()
 
     '''
@@ -571,16 +577,25 @@ class Player(Dynamic):
     ''' TODO: MAYBE RENAME THIS '''
     def gravity(self):
         MAX_SPEED = 5
-        if self.state == "normal" and self.acceleration_y < 0:
+        
+        if self.acceleration_y < MAX_SPEED:
             self.acceleration_y += 0.05 * MAX_SPEED
-        ''' TODO: FIX GRAVITY IF THERE IS NO BLOCKS UNDERNEATH '''
 
+    def setAccelerationX(self, acc):
+        '''TODO: TEST INSTANCE'''
+        self.acceleration_x = acc
+
+    def setAccelerationY(self, acc):
+        '''TODO: TEST INSTANCE'''
+        self.acceleration_y = acc
+        
     def getAccelerationX(self):
         return self.acceleration_x
         
     def getAccelerationY(self):
         return self.acceleration_y
-        
+    
+    
 class Enemy(Dynamic):
     '''
     Enemy represents a moving enemy in the game

@@ -1,4 +1,5 @@
 from classes import *
+from math import floor
 import pygame
 
 def buildLevelOne():
@@ -53,20 +54,56 @@ def buildLevelOne():
     LevelOne.setNodeTile(0,1,Solid())
     return LevelOne
 
+def MapToDisplay(map, display, surface_list):
+    for y, row in enumerate(map.getNodeMatrix()):
+        for x, col in enumerate(row):
+            tile_id = map.getNode(x,y).getTile().getId()
+            display.blit(surface_list[tile_id], (16*x, 16*y))    
+            
+def load_tile_table(filename, width, height):
+    image = pygame.image.load(filename).convert()
+    image_width, image_height = image.get_size()
+    tile_table = []
+    for tile_x in range(0, int (image_width/width) ):
+        line = []
+        tile_table.append(line)
+        for tile_y in range(0, int(image_height/height) ):
+            rect = (tile_x*width, tile_y*height, width, height)
+            line.append(image.subsurface(rect))
+    return tile_table
+
+def playerCollision(player_pos, map):
+    xpos_top = floor(player_pos[0]/16)
+    ypos_top = floor(player_pos[1]/16)
+    xpos_bottom = floor((player_pos[0]+15) / 16)
+    ypos_bottom = floor((player_pos[1]+15) / 16)
+    
+    map_matrix = map.getNodeMatrix()
+    if (map_matrix[ypos_top][xpos_top].getTile().getId() == 1) or (map_matrix[ypos_bottom][xpos_bottom].getTile().getId() == 1):
+        return "BLOCK_COLLISION"
+    return "NO_COLLISION"
+    
 def main():
     LevelOne = buildLevelOne()
     NewPlayer = Player()
+    LevelOne.setNodeTile(2, 9, NewPlayer)
 
     pygame.init()
     game_display = pygame.display.set_mode((320, 192))
     game_display.fill((0, 0, 0))
-
+    
+    listSurfaces = []
+    table = load_tile_table("ground.png", 16, 16)
+    
+    for x, row in enumerate(table):
+        for y, tile in enumerate(row):
+            listSurfaces.append(tile)
+    
     playerSprite = pygame.Surface([15, 15])
     playerSprite.fill((255, 255, 255))
-    playerPositionX = 120
-    playerPositionY = 50
-    #playerAccelerationX = 0
-    #playerAccelerationY = 0
+    playerPosition = LevelOne.getPlayerPosition()
+    playerPositionX = 16 * playerPosition[0]
+    playerPositionY = 16 * playerPosition[1]
 
     clock = pygame.time.Clock()
     pygame.display.update()
@@ -75,8 +112,7 @@ def main():
     keys = [pygame.K_UP, pygame.K_LEFT, pygame.K_RIGHT, pygame.K_LCTRL, pygame.K_RCTRL, pygame.K_LALT, pygame.K_RALT]
     
     while not ended:
-        NewPlayer.gravity()
-    
+        
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 ended = True
@@ -84,13 +120,25 @@ def main():
                 NewPlayer.setStatus(keys.index(event.key), 0)
             elif event.type == pygame.KEYUP:
                 NewPlayer.setStatus(keys.index(event.key), 1)
-
+                
         playerPositionX = playerPositionX + NewPlayer.getAccelerationX()
+        if playerCollision((playerPositionX, playerPositionY), LevelOne) == "BLOCK_COLLISION":
+            playerPositionX = playerPositionX - NewPlayer.getAccelerationX()
+        
         playerPositionY = playerPositionY + NewPlayer.getAccelerationY()
-        game_display.fill((0,0,0))
-        game_display.blit(playerSprite, (playerPositionX, playerPositionY))
-
+        if playerCollision((playerPositionX, playerPositionY), LevelOne) == "BLOCK_COLLISION":
+            playerPositionY = playerPositionY - NewPlayer.getAccelerationY()
+        
+        if NewPlayer.getState() == "normal":
+            if playerCollision((playerPositionX, playerPositionY+1), LevelOne) == "NO_COLLISION":
+                NewPlayer.gravity()
+            else: NewPlayer.setAccelerationY(0)
+        
+        MapToDisplay(LevelOne, game_display, listSurfaces)
+        game_display.blit(playerSprite, (playerPositionX, playerPositionY))        
+        
         pygame.display.flip()
+        
         clock.tick(60)
         
     pygame.quit()
