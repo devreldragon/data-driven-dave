@@ -4,6 +4,8 @@ import pygame.locals
 from random import randint
 from classes import *
 
+SCALEFACTOR = 2
+
 def buildLevelOne():
     LevelOne = Map()
     
@@ -14,7 +16,7 @@ def buildLevelOne():
     
     orb = TILESET.index("ITEM_ORB")
     red_d = TILESET.index("ITEM_RED_DIAMOND")
-    trophy = TILESET.index("EQUIP_TROPHY")
+    trophy = TILESET.index("EQUIP_TROPHY1")
 
     LevelOne.setNodeTile(1, 2, Item(orb, orb, 50))
     LevelOne.setNodeTile(1, 5, Item())
@@ -61,7 +63,7 @@ def MapToDisplay(map, display, surface_list):
     for y, row in enumerate(map.getNodeMatrix()):
         for x, col in enumerate(row):
             tile_id = map.getNode(x,y).getTile().getId()
-            display.blit(surface_list[tile_id], (16*x, 16*y))
+            display.blit(surface_list[tile_id], (16*SCALEFACTOR*x, 16*SCALEFACTOR*y))
     
 def load_tile_table(filename, width, height):
     image = pygame.image.load(filename).convert()
@@ -72,7 +74,7 @@ def load_tile_table(filename, width, height):
         tile_table.append(line)
         for tile_y in range(0, int(image_height/height) ):
             rect = (tile_x*width, tile_y*height, width, height)
-            line.append(image.subsurface(rect))
+            line.append( pygame.transform.scale(image.subsurface(rect),(16*SCALEFACTOR,16*SCALEFACTOR) ))
     return tile_table
 
 if __name__=='__main__':
@@ -80,7 +82,7 @@ if __name__=='__main__':
 
     pygame.init()
     listSurfaces = []
-    screen = pygame.display.set_mode((320, 192))
+    screen = pygame.display.set_mode((640, 420))
     screen.fill((0, 0, 0))
     table = load_tile_table("ground.png", 16, 16)
     

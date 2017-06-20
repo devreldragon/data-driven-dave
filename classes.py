@@ -5,13 +5,16 @@ Constants
 '''
 
 TILESET = ("EMPTY", 
-            "BLOCK_RED", "BLOCK_BLUE", "BLOCK_DIRT", "BLOCK_BRIDGE", "BLOCK_FLAT",
-            "HAZ_WATER", "HAZ_FIRE", "HAZ_ALGAE",
-            "ITEM_BLUE_DIAMOND", "ITEM_RED_DIAMOND", "ITEM_ORB", "ITEM_RING", "ITEM_CROWN", "ITEM_SCEPTER",
-            "EQUIP_TROPHY", "EQUIP_JETPACK", "EQUIP_GUN", "GOAL_DOOR",
-            "SCENERY_LEAVES", "SCENERY_TREE_LOG", "SCENERY_STARS", "SCENERY_FAKE_BRIDGE",
-            "ENEMY_SPIDER", "ENEMY_PURPLE", "ENEMY_RED", "ENEMY_BATON", "ENEMY_CLOUD", "ENEMY_UFO", "ENEMY_GREEN", "ENEMY_DISC",
-            "PLAYER_SPAWNER")
+            "HAZ_FIRE3", "BLOCK_PIPE_V", "BLOCK_DIRT4", "BLOCK_GRASS", "BLOCK_WATER5",
+            "BLOCK_RED", "HAZ_FIRE4", "BLOCK_REDBRICK", "HAZ_TENTACLE1","SCENERY_TREE_LOG",
+            "SCENERY_STARS", "GOAL_DOOR", "EQUIP_TROPHY1", "BLOCK_DIRT", "HAZ_TENTACLE2",
+            "SCENERY_LEAVES1", "SCENERY_MOON", "BLOCK_STEEL_BEAM", "EQUIP_TROPHY2", "BLOCK_BLUETHING",
+            "HAZ_TENTACLE3", "SCENERY_LEAVES2", "SCENERY_TREE1", "EQUIP_JETPACK", "EQUIP_TROPHY3",
+            "EQUIP_GUN", "HAZ_TENTACLE4", "BLOCK_WATER1", "SCENERY_TREE2", "BLOCK_BLUEBRICK", 
+            
+            "ITEM_BLUE_DIAMOND","ITEM_ORB", "ITEM_RED_DIAMOND","PLAYER_SPAWNER"
+
+            )
             
 TILETERMINAL = (' ', 'B', 'B', 'B', 'B', 'B', 'H', 'H', 'H', 'b', 'd', 'o', 'r', 'c', 's', 'T', 'J', 'G', 'D', ';', '|', '*', 'B', 'E', 'E', 'E', 'E', 'E', 'E', 'E', 'E', 'P')
 
@@ -248,8 +251,8 @@ class Solid(Tile):
     def __init__(self, *args):
         #default constructor
         if len(args) == 0:
-            self.id = TILESET.index("BLOCK_RED")
-            self.gfx_id = TILESET.index("BLOCK_RED")
+            self.id = TILESET.index("BLOCK_DIRT")
+            self.gfx_id = TILESET.index("BLOCK_DIRT")
         #alternative constructor (self, id, gfx_id)          
         elif len(args) == 2:
             id = args[0]
@@ -321,8 +324,8 @@ class Equipment(Item):
     def __init__(self, *args):
         #default constructor
         if len(args) == 0:
-            self.id = TILESET.index("EQUIP_TROPHY")
-            self.gfx_id = TILESET.index("EQUIP_TROPHY")
+            self.id = TILESET.index("EQUIP_TROPHY1")
+            self.gfx_id = TILESET.index("EQUIP_TROPHY1")
             self.score = 1000
             self.type = "trophy"
         #alternative constructor (id, gfx_id, score, type)
