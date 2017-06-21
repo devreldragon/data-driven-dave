@@ -1,23 +1,17 @@
 
 import sys
 
+from math import floor
+
 '''
 Constants
 '''
 
-TILESET = ("EMPTY", 
-            "HAZ_FIRE3", "BLOCK_PIPE_V", "BLOCK_DIRT4", "BLOCK_GRASS", "BLOCK_WATER5",
-            "BLOCK_RED", "HAZ_FIRE4", "BLOCK_REDBRICK", "HAZ_TENTACLE1","SCENERY_TREE_LOG",
-            "SCENERY_STARS", "GOAL_DOOR", "EQUIP_TROPHY1", "BLOCK_DIRT", "HAZ_TENTACLE2",
-            "SCENERY_LEAVES1", "SCENERY_MOON", "BLOCK_STEEL_BEAM", "EQUIP_TROPHY2", "BLOCK_BLUETHING",
-            "HAZ_TENTACLE3", "SCENERY_LEAVES2", "SCENERY_TREE1", "EQUIP_JETPACK", "EQUIP_TROPHY3",
-            "EQUIP_GUN", "HAZ_TENTACLE4", "BLOCK_WATER1", "SCENERY_TREE2", "BLOCK_BLUEBRICK", 
-            "ITEM_BLUE_DIAMOND", "ITEM_ORB", "ITEM_RED_DIAMOND", "PLAYER_SPAWNER"
-            )
-            
-TILETERMINAL = [i[0] for i in TILESET]
-TILETERMINAL[0] = ' '
+##TODO: Review id() field in classes
 
+'''
+Errors
+'''
 
 def ErrorInvalidValue():
     raise ValueError("Please enter a valid value.")
@@ -25,6 +19,9 @@ def ErrorInvalidValue():
 def ErrorInvalidConstructor():
     raise ValueError("The entered constructor is not valid.")
 
+'''
+Classes
+'''    
     
 class Map(object):
     '''
@@ -68,14 +65,15 @@ class Map(object):
     def setNodeTile(self, x, y, tile):
         if (x < self.width) and (y < self.height):
             self.node_matrix[y][x].setTile(tile)
-            #print (self.node_matrix[y][x].pos_x)
         else: ErrorInvalidValue()
         
+        '''
     def printMap(self):
         for map_line in self.node_matrix:
             for node in map_line:
                 print(TILETERMINAL[node.tile.id], end='', flush=True)
             print()
+            '''
             
     def getNode(self, x, y):
         return self.node_matrix[y][x]
@@ -83,9 +81,37 @@ class Map(object):
     def getPlayerPosition(self):
         for y, line in enumerate(self.node_matrix):
             for x, col in enumerate(line):
-                if self.node_matrix[y][x].getTile().getId() == TILESET.index("PLAYER_SPAWNER"):
+                if self.node_matrix[y][x].getTile().getId() == "player":
                     return (x, y)
-       
+                    
+    def getPlayer(self):
+        playerPos = self.getPlayerPosition()
+        y = playerPos[1]
+        x = playerPos[0]
+        return self.node_matrix[y][x].getTile()
+        
+    def checkPlayerCollision(self, player_pos):
+        x_left = floor(player_pos[0]/16)
+        y_top = floor(player_pos[1]/16)
+        x_right = floor((player_pos[0]+15) / 16)
+        y_bottom = floor((player_pos[1]+15) / 16)
+        
+        ''' TODO: CHANGE THIS '''
+        VALUE = "solid"
+        
+        collision_topleft = (self.node_matrix[y_top][x_left].getTile().getId() == VALUE)
+        collision_topright = (self.node_matrix[y_top][x_right].getTile().getId() == VALUE)
+        collision_bottomleft = (self.node_matrix[y_bottom][x_left].getTile().getId() == VALUE)
+        collision_bottomright = (self.node_matrix[y_bottom][x_right].getTile().getId() == VALUE)
+
+        if collision_topleft or collision_topright or collision_bottomleft or collision_bottomright:
+            return "BLOCK_COLLISION"
+            
+        ''' TODO: TREAT OTHER COLLISIONS '''
+            
+        return "NO_COLLISION" 
+     
+ 
     '''
     Getters and Setters
     '''
@@ -192,14 +218,14 @@ class Tile(object):
     def __init__(self, *args):
         #default constructor
         if len(args) == 0:
-            self.id = TILESET.index("EMPTY")
-            self.gfx_id = TILESET.index("EMPTY")  
+            self.id = "scenery"
+            self.gfx_id = 0
         #alternative constructor (self, id, gfx_id)          
         elif len(args) == 2:
             id = args[0]
             gfx_id = args[1]
 
-            if not(isinstance(id, int)) or not(isinstance(gfx_id, int)):
+            if not(isinstance(id, str)) or not(isinstance(gfx_id, int)):
                 ErrorInvalidValue()
             else:
                 self.id = id
@@ -250,14 +276,14 @@ class Solid(Tile):
     def __init__(self, *args):
         #default constructor
         if len(args) == 0:
-            self.id = TILESET.index("BLOCK_DIRT")
-            self.gfx_id = TILESET.index("BLOCK_DIRT")
+            self.id = "solid"
+            self.gfx_id = 2
         #alternative constructor (self, id, gfx_id)          
         elif len(args) == 2:
             id = args[0]
             gfx_id = args[1]
 
-            if not(isinstance(id, int)) or not(isinstance(gfx_id, int)):
+            if not(isinstance(id, str)) or not(isinstance(gfx_id, int)):
                 ErrorInvalidValue()
             else:
                 self.id = id
@@ -279,8 +305,8 @@ class Item(Tile):
     def __init__(self, *args):
         #default constructor
         if len(args) == 0:
-            self.id = TILESET.index("ITEM_BLUE_DIAMOND")
-            self.gfx_id = TILESET.index("ITEM_BLUE_DIAMOND")
+            self.id = "items"
+            self.gfx_id = 1
             self.score = 100
         #alternative constructor (id, gfx_id, score)
         elif len(args) == 3:
@@ -288,7 +314,7 @@ class Item(Tile):
             gfx_id = args[1]
             score = args[2]
 
-            if not(isinstance(id, int)) or not(isinstance(gfx_id, int)) or not(isinstance(score, int) or score < 0):
+            if not(isinstance(id, str)) or not(isinstance(gfx_id, int)) or not(isinstance(score, int) or score < 0):
                 ErrorInvalidValue()
             else:
                 self.id = id
@@ -323,8 +349,8 @@ class Equipment(Item):
     def __init__(self, *args):
         #default constructor
         if len(args) == 0:
-            self.id = TILESET.index("EQUIP_TROPHY1")
-            self.gfx_id = TILESET.index("EQUIP_TROPHY1")
+            self.id = "trophy"
+            self.gfx_id = 0
             self.score = 1000
             self.type = "trophy"
         #alternative constructor (id, gfx_id, score, type)
@@ -334,7 +360,7 @@ class Equipment(Item):
             score = args[2]
             type = args[3]
 
-            if not(isinstance(id, int)) or not(isinstance(gfx_id, int)) or not(isinstance(score, int)) or not(self.validType(type)) or score < 0:
+            if not(isinstance(id, str)) or not(isinstance(gfx_id, int)) or not(isinstance(score, int)) or not(self.validType(type)) or score < 0:
                 ErrorInvalidValue()
             else:
                 self.id = id
@@ -380,8 +406,8 @@ class InteractiveScenery(Tile):
     def __init__(self, *args):
         #default constructor
         if len(args) == 0:
-            self.id = TILESET.index("GOAL_DOOR")
-            self.gfx_id = TILESET.index("GOAL_DOOR")
+            self.id = "door"
+            self.gfx_id = 0
             self.target_state = "endmap"
             self.auto = 1
         #alternative constructor (id, gfx_id, target_state, auto, possible_states)
@@ -392,7 +418,7 @@ class InteractiveScenery(Tile):
             auto = args[3]
             possible_states = args[4]
 
-            if not(isinstance(id, int)) or not(isinstance(gfx_id, int)) or not(self.isStateValid(target_state, possible_states)) or (auto not in [0, 1]):
+            if not(isinstance(id, str)) or not(isinstance(gfx_id, int)) or not(self.isStateValid(target_state, possible_states)) or (auto not in [0, 1]):
                 ErrorInvalidValue()
             else:
                 self.id = id
@@ -446,12 +472,13 @@ class Dynamic(Tile):
     def __init__(self, *args):
         #default constructor
         if len(args) == 0:
-            self.id = -1
+            self.id = "undefined"
             self.gfx_id = -1
             self.state = -1
             self.state_list = []
         #alternative constructor (id, gfx_id, state, state_list)
         elif len(args) == 4:
+            '''TODO: CHECK INSTANCES '''
             id = args[0]
             gfx_id = args[1]
             state = args[2]
@@ -516,6 +543,8 @@ class Player(Dynamic):
         acceleration_x: acceleration in the x axis
     '''
     
+    MAX_SPEED = 5
+    
     '''
     Constructors
     '''
@@ -523,13 +552,14 @@ class Player(Dynamic):
     def __init__(self, *args):
         #default constructor
         if len(args) == 0:
-            self.id = TILESET.index("PLAYER_SPAWNER")
-            self.gfx_id = TILESET.index("PLAYER_SPAWNER")
+            self.id = "player"
+            self.gfx_id = 0
             self.state = "blink"
             self.state_list = ["endmap", "walk", "fall", "jump", "fly", "climb", "die", "blink"]
             self.acceleration_x = 0
+            self.x_update_timer = 5
             self.acceleration_y = 0
-            self.keydown = 0  #explained below
+            self.y_update_timer = 5
         else: ErrorInvalidConstructor()
 
     '''
@@ -547,20 +577,15 @@ class Player(Dynamic):
         k_rightarrow = (key == 2)
         k_ctrl = (key == 3) or (key == 4)
         k_alt = (key == 5) or (key == 6)
-        
-        MAX_SPEED = 5
-        
+                
         if keyup:
-            self.keydown = 0 #explained below
             if k_leftarrow or k_rightarrow:
                 self.acceleration_x = 0
             ''' TODO: OTHER KEYS '''
-        elif keydown and self.keydown == 0:
-            self.keydown = 1 ##so we have this problem: if you press right, and then immediately release it and press left, the player won't move left unless we remove this vars.
-            ## problem is: if we remove this, it will move just a little bit, because the program processes keydown before keyup. Trying to figure this out yet...
+        elif keydown:
             if k_leftarrow:
                 if (self.state in ["walk", "fall", "jump", "fly", "climb", "blink"]):
-                    self.acceleration_x = -MAX_SPEED
+                    self.acceleration_x = -1 * self.MAX_SPEED
                 if (self.state == "climb"):
                     self.state = "fall"
                 elif (self.state == "blink"):
@@ -568,7 +593,7 @@ class Player(Dynamic):
                 ''' TODO: ANIMATION (DEPENDS ON STATE) '''
             if k_rightarrow:
                 if (self.state in ["walk", "fall", "jump", "fly", "climb", "blink"]):
-                    self.acceleration_x = MAX_SPEED
+                    self.acceleration_x = self.MAX_SPEED
                 if (self.state == "climb"):
                     self.state = "fall"
                 elif (self.state == "blink"):
@@ -580,13 +605,25 @@ class Player(Dynamic):
             ''' TODO: OTHER KEYS '''
         
      
-    ''' TODO: MAYBE RENAME THIS '''
+    ''' TODO: CHECK IF THIS STILL HAS ANY USE '''
     def gravity(self):
         MAX_SPEED = 5
         
         if self.acceleration_y < MAX_SPEED:
             self.acceleration_y += 0.05 * MAX_SPEED
 
+    def resetPosTimer(self, timer):
+        if timer == 'x':
+            self.x_update_timer = self.MAX_SPEED
+        elif timer == 'y': 
+            self.y_update_timer = self.MAX_SPEED
+            
+    def decPosTimer(self, timer):
+        if timer == 'x':
+            self.x_update_timer -= abs(self.acceleration_x)
+        elif timer == 'y': 
+            self.y_update_timer -= abs(self.acceleration_y)
+            
     def setAccelerationX(self, acc):
         '''TODO: TEST INSTANCE'''
         self.acceleration_x = acc
@@ -600,6 +637,12 @@ class Player(Dynamic):
         
     def getAccelerationY(self):
         return self.acceleration_y
+        
+    def getXUpdateTimer(self):
+        return self.x_update_timer
+        
+    def getYUpdateTimer(self):
+        return self.y_update_timer
     
     
 class Enemy(Dynamic):
@@ -621,8 +664,8 @@ class Enemy(Dynamic):
     def __init__(self, *args):
         #default constructor
         if len(args) == 0:
-            self.id = TILESET.index("ENEMY_SPIDER")
-            self.gfx_id = TILESET.index("ENEMY_SPIDER")
+            self.id = "spider"
+            self.gfx_id = 0
             self.state = "normal"
             self.state_list = ["normal", "die"]
             self.shot_frequency = 2
