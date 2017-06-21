@@ -1,5 +1,6 @@
 
 import sys
+
 '''
 Constants
 '''
@@ -11,13 +12,11 @@ TILESET = ("EMPTY",
             "SCENERY_LEAVES1", "SCENERY_MOON", "BLOCK_STEEL_BEAM", "EQUIP_TROPHY2", "BLOCK_BLUETHING",
             "HAZ_TENTACLE3", "SCENERY_LEAVES2", "SCENERY_TREE1", "EQUIP_JETPACK", "EQUIP_TROPHY3",
             "EQUIP_GUN", "HAZ_TENTACLE4", "BLOCK_WATER1", "SCENERY_TREE2", "BLOCK_BLUEBRICK", 
-            
-            "ITEM_BLUE_DIAMOND","ITEM_ORB", "ITEM_RED_DIAMOND","PLAYER_SPAWNER"
-
+            "ITEM_BLUE_DIAMOND", "ITEM_ORB", "ITEM_RED_DIAMOND", "PLAYER_SPAWNER"
             )
             
-TILETERMINAL = (' ', 'B', 'B', 'B', 'B', 'B', 'H', 'H', 'H', 'b', 'd', 'o', 'r', 'c', 's', 'T', 'J', 'G', 'D', ';', '|', '*', 'B', 'E', 'E', 'E', 'E', 'E', 'E', 'E', 'E', 'P')
-
+TILETERMINAL = [i[0] for i in TILESET]
+TILETERMINAL[0] = ' '
 
 
 def ErrorInvalidValue():
@@ -535,8 +534,10 @@ class Player(Dynamic):
     '''
     Other methods
     '''
-       
-    #[K_UP, K_LEFT, K_RIGHT, K_LCTRL, K_RCTRL, K_LALT, K_RALT]
+      
+    ## Keys, in order: K_UP, K_LEFT, K_RIGHT, K_LCTRL, K_RCTRL, K_LALT, K_RALT
+    
+    ## okay, this DEFINITELY needs refactorization and rework.
     def setStatus(self, key, mode):
         MAX_SPEED = 5
     

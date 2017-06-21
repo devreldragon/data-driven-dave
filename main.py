@@ -12,7 +12,7 @@ def buildLevelOne():
     
     orb = TILESET.index("ITEM_ORB")
     red_d = TILESET.index("ITEM_RED_DIAMOND")
-    trophy = TILESET.index("EQUIP_TROPHY")
+    trophy = TILESET.index("EQUIP_TROPHY1")
 
     LevelOne.setNodeTile(1, 2, Item(orb, orb, 50))
     LevelOne.setNodeTile(1, 5, Item())
@@ -54,6 +54,8 @@ def buildLevelOne():
     LevelOne.setNodeTile(0,1,Solid())
     return LevelOne
 
+''' TODO: REORGANIZE/REORDER FUNCTIONS '''
+    
 def MapToDisplay(map, display, surface_list):
     for y, row in enumerate(map.getNodeMatrix()):
         for x, col in enumerate(row):
@@ -73,26 +75,40 @@ def load_tile_table(filename, width, height):
     return tile_table
 
 def playerCollision(player_pos, map):
-    xpos_top = floor(player_pos[0]/16)
-    ypos_top = floor(player_pos[1]/16)
-    xpos_bottom = floor((player_pos[0]+15) / 16)
-    ypos_bottom = floor((player_pos[1]+15) / 16)
+    x_left = floor(player_pos[0]/16)
+    y_top = floor(player_pos[1]/16)
+    x_right = floor((player_pos[0]+15) / 16)
+    y_bottom = floor((player_pos[1]+15) / 16)
     
     map_matrix = map.getNodeMatrix()
-    if (map_matrix[ypos_top][xpos_top].getTile().getId() == 1) or (map_matrix[ypos_bottom][xpos_bottom].getTile().getId() == 1):
+    
+    ''' TODO: CHANGE THIS '''
+    VALUE = TILESET.index("BLOCK_DIRT")
+    
+    collision_topleft = (map_matrix[y_top][x_left].getTile().getId() == VALUE)
+    collision_topright = (map_matrix[y_top][x_right].getTile().getId() == VALUE)
+    collision_bottomleft = (map_matrix[y_bottom][x_left].getTile().getId() == VALUE)
+    collision_bottomright = (map_matrix[y_bottom][x_right].getTile().getId() == VALUE)
+
+    if collision_topleft or collision_topright or collision_bottomleft or collision_bottomright:
         return "BLOCK_COLLISION"
+        
+    ''' TODO: TREAT OTHER COLLISIONS '''
+        
     return "NO_COLLISION"
     
 def main():
     LevelOne = buildLevelOne()
+    print(LevelOne.printMap())
     NewPlayer = Player()
-    LevelOne.setNodeTile(2, 9, NewPlayer)
+    LevelOne.setNodeTile(2, 9, NewPlayer) #set player inside the map
 
+    ##pygame inits: START
     pygame.init()
     game_display = pygame.display.set_mode((320, 192))
     game_display.fill((0, 0, 0))
     
-    listSurfaces = []
+    listSurfaces = []   #build tiles and surfaces
     table = load_tile_table("ground.png", 16, 16)
     
     for x, row in enumerate(table):
@@ -108,11 +124,13 @@ def main():
     clock = pygame.time.Clock()
     pygame.display.update()
     ended = False
+    ##pygame inits: END
     
     keys = [pygame.K_UP, pygame.K_LEFT, pygame.K_RIGHT, pygame.K_LCTRL, pygame.K_RCTRL, pygame.K_LALT, pygame.K_RALT]
     
     while not ended:
         
+        ##get pressed keys
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 ended = True
@@ -121,10 +139,22 @@ def main():
             elif event.type == pygame.KEYUP:
                 NewPlayer.setStatus(keys.index(event.key), 1)
                 
+        ''' TODO:
+            We must review this. We are getting problems when the player jumps, because if the
+            acceleration is equal to 5, it might occur that a gap with less than 5px is formed
+            between the player and the ground.
+            I think we might focus firstly on how the player will behave inside its class. It
+            might help us while fixing the stuff here, in the outer.
+            By the way, we might need to use the clock ticks to work with the new movement.
+            '''
+                
         playerPositionX = playerPositionX + NewPlayer.getAccelerationX()
         if playerCollision((playerPositionX, playerPositionY), LevelOne) == "BLOCK_COLLISION":
             playerPositionX = playerPositionX - NewPlayer.getAccelerationX()
         
+        ##i've commented the Y axis movement functions because we need to rework this entirely.
+        
+        '''
         playerPositionY = playerPositionY + NewPlayer.getAccelerationY()
         if playerCollision((playerPositionX, playerPositionY), LevelOne) == "BLOCK_COLLISION":
             playerPositionY = playerPositionY - NewPlayer.getAccelerationY()
@@ -133,6 +163,7 @@ def main():
             if playerCollision((playerPositionX, playerPositionY+1), LevelOne) == "NO_COLLISION":
                 NewPlayer.gravity()
             else: NewPlayer.setAccelerationY(0)
+            '''
         
         MapToDisplay(LevelOne, game_display, listSurfaces)
         game_display.blit(playerSprite, (playerPositionX, playerPositionY))        
