@@ -525,58 +525,60 @@ class Player(Dynamic):
         if len(args) == 0:
             self.id = TILESET.index("PLAYER_SPAWNER")
             self.gfx_id = TILESET.index("PLAYER_SPAWNER")
-            self.state = "normal"
-            self.state_list = ["endmap", "normal", "fly", "climb", "die"]
+            self.state = "blink"
+            self.state_list = ["endmap", "walk", "fall", "jump", "fly", "climb", "die", "blink"]
             self.acceleration_x = 0
-            self.acceleration_y = 5
+            self.acceleration_y = 0
+            self.keydown = 0  #explained below
         else: ErrorInvalidConstructor()
 
     '''
     Other methods
     '''
       
-    ## Keys, in order: K_UP, K_LEFT, K_RIGHT, K_LCTRL, K_RCTRL, K_LALT, K_RALT
-    
-    ## okay, this DEFINITELY needs refactorization and rework.
-    def setStatus(self, key, mode):
+    ## Keys, in order: K_UP, K_LEFT, K_RIGHT, K_LCTRL, K_RCTRL, K_LALT, K_RALT    
+
+    def input(self, key, action):
+        keydown = (action == 0)
+        keyup = (action == 1)
+        
+        k_uparrow = (key == 0)
+        k_leftarrow = (key == 1)
+        k_rightarrow = (key == 2)
+        k_ctrl = (key == 3) or (key == 4)
+        k_alt = (key == 5) or (key == 6)
+        
         MAX_SPEED = 5
-    
-        #mode = 0 : KEYDOWN
-        #mode = 1 : KEYUP
-    
-        ''' TODO: REFACTOR THIS '''
-    
-        if mode == 0:
-            if key == 0 and self.acceleration_y == 0:
-                ''' TODO: REFACTOR THIS '''
-                if self.state == "normal":
-                    self.acceleration_y = -MAX_SPEED
-                elif (self.state == "climb" or self.state == "fly") and self.acceleration_y < MAX_SPEED:
-                    self.acceleration_y = -MAX_SPEED
-                elif (self.state == "climb" or self.state == "fly"):
-                    self.acceleration_y = -MAX_SPEED
-            elif key == 1:
-                self.acceleration_x = -1 * MAX_SPEED
-            elif key == 2:
-                self.acceleration_x = MAX_SPEED
-            elif (key == 3 or key == 4) and self.state == "fly":
-                self.state = "normal"
-            elif (key == 3 or key == 4) and self.state == "normal":
-                self.state = "fly"
-            elif (key == 5 or key == 6):
-                '''TODO: IMPLEMENT SHOOTING (SPAWN ENEMY OBJECT) '''
+        
+        if keyup:
+            self.keydown = 0 #explained below
+            if k_leftarrow or k_rightarrow:
+                self.acceleration_x = 0
+            ''' TODO: OTHER KEYS '''
+        elif keydown and self.keydown == 0:
+            self.keydown = 1 ##so we have this problem: if you press right, and then immediately release it and press left, the player won't move left unless we remove this vars.
+            ## problem is: if we remove this, it will move just a little bit, because the program processes keydown before keyup. Trying to figure this out yet...
+            if k_leftarrow:
+                if (self.state in ["walk", "fall", "jump", "fly", "climb", "blink"]):
+                    self.acceleration_x = -MAX_SPEED
+                if (self.state == "climb"):
+                    self.state = "fall"
+                elif (self.state == "blink"):
+                    self.state = "walk"
+                ''' TODO: ANIMATION (DEPENDS ON STATE) '''
+            if k_rightarrow:
+                if (self.state in ["walk", "fall", "jump", "fly", "climb", "blink"]):
+                    self.acceleration_x = MAX_SPEED
+                if (self.state == "climb"):
+                    self.state = "fall"
+                elif (self.state == "blink"):
+                    self.state = "walk"  
+                ''' TODO: ANIMATION (DEPENDS ON STATE) '''
+            if k_uparrow:
+                ''' TODO: THIS (duh) '''
                 pass
-        elif mode == 1:
-            if key == 0 and self.acceleration_y < 0:
-                ''' TODO: REFACTOR THIS '''
-                if (self.state == "climb" or self.state == "fly"):
-                    self.acceleration_y = 0
-                elif (self.state == "climb" or self.state == "fly"):
-                    self.acceleration_y = 0
-            elif key == 1:
-                self.acceleration_x = 0
-            elif key == 2:
-                self.acceleration_x = 0
+            ''' TODO: OTHER KEYS '''
+        
      
     ''' TODO: MAYBE RENAME THIS '''
     def gravity(self):

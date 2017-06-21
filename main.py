@@ -74,7 +74,7 @@ def load_tile_table(filename, width, height):
             line.append(image.subsurface(rect))
     return tile_table
 
-def playerCollision(player_pos, map):
+def checkPlayerCollision(player_pos, map):
     x_left = floor(player_pos[0]/16)
     y_top = floor(player_pos[1]/16)
     x_right = floor((player_pos[0]+15) / 16)
@@ -96,6 +96,11 @@ def playerCollision(player_pos, map):
     ''' TODO: TREAT OTHER COLLISIONS '''
         
     return "NO_COLLISION"
+
+#this function returns 1 if given number is positive, -1 if it's negative
+def checkNumberSign(number):
+    if number < 0: return -1
+    else: return 1
     
 def main():
     LevelOne = buildLevelOne()
@@ -127,17 +132,19 @@ def main():
     ##pygame inits: END
     
     keys = [pygame.K_UP, pygame.K_LEFT, pygame.K_RIGHT, pygame.K_LCTRL, pygame.K_RCTRL, pygame.K_LALT, pygame.K_RALT]
+    PlayerMovementTic_X = 5 #will explain later
     
     while not ended:
-        
+    
         ##get pressed keys
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 ended = True
-            elif event.type == pygame.KEYDOWN:
-                NewPlayer.setStatus(keys.index(event.key), 0)
             elif event.type == pygame.KEYUP:
-                NewPlayer.setStatus(keys.index(event.key), 1)
+                NewPlayer.input(keys.index(event.key), 1)
+            elif event.type == pygame.KEYDOWN:
+                NewPlayer.input(keys.index(event.key), 0)
+            
                 
         ''' TODO:
             We must review this. We are getting problems when the player jumps, because if the
@@ -147,20 +154,24 @@ def main():
             might help us while fixing the stuff here, in the outer.
             By the way, we might need to use the clock ticks to work with the new movement.
             '''
-                
-        playerPositionX = playerPositionX + NewPlayer.getAccelerationX()
-        if playerCollision((playerPositionX, playerPositionY), LevelOne) == "BLOCK_COLLISION":
-            playerPositionX = playerPositionX - NewPlayer.getAccelerationX()
+            
+        ##PROGRESS: walking is almost fixed. I'm using a different type of acceleration treatment, using the tics.
+        
+        if PlayerMovementTic_X <= 0:
+            playerPositionX = playerPositionX + checkNumberSign(NewPlayer.getAccelerationX())
+            if checkPlayerCollision((playerPositionX, playerPositionY), LevelOne) == "BLOCK_COLLISION":
+                playerPositionX = playerPositionX - checkNumberSign(NewPlayer.getAccelerationX())
+            PlayerMovementTic_X = 5
         
         ##i've commented the Y axis movement functions because we need to rework this entirely.
         
         '''
         playerPositionY = playerPositionY + NewPlayer.getAccelerationY()
-        if playerCollision((playerPositionX, playerPositionY), LevelOne) == "BLOCK_COLLISION":
+        if checkPlayerCollision((playerPositionX, playerPositionY), LevelOne) == "BLOCK_COLLISION":
             playerPositionY = playerPositionY - NewPlayer.getAccelerationY()
         
         if NewPlayer.getState() == "normal":
-            if playerCollision((playerPositionX, playerPositionY+1), LevelOne) == "NO_COLLISION":
+            if checkPlayerCollision((playerPositionX, playerPositionY+1), LevelOne) == "NO_COLLISION":
                 NewPlayer.gravity()
             else: NewPlayer.setAccelerationY(0)
             '''
@@ -170,7 +181,9 @@ def main():
         
         pygame.display.flip()
         
-        clock.tick(60)
+        clock.tick(200)
+        
+        PlayerMovementTic_X -= abs(NewPlayer.getAccelerationX())
         
     pygame.quit()
     quit()
