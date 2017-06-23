@@ -605,7 +605,7 @@ class Player(Dynamic):
                 if (self.state == "climb"):
                     self.state = "fall"
                 elif (self.state == "blink"):
-                    self.state = "walk"  
+                    self.state = "walk"                  
             if k_uparrow and self.state in ["walk", "blink", "fly", "climb"]:
                 self.acceleration_y = -1 * self.MAX_SPEED
                 if self.state in ["walk", "blink"]:
@@ -644,6 +644,7 @@ class Player(Dynamic):
     def incAccelerationY(self, acc):
         '''TODO: TEST INSTANCE'''
         self.acceleration_y += acc
+        self.acceleration_y = round(self.acceleration_y, 2) #fix that fucking floating point problem
         
     def getAccelerationX(self):
         return self.acceleration_x
@@ -656,6 +657,9 @@ class Player(Dynamic):
         
     def getYUpdateTimer(self):
         return self.y_update_timer
+        
+    def getMaxSpeed(self):
+        return self.MAX_SPEED
     
     
 class Enemy(Dynamic):

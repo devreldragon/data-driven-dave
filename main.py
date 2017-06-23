@@ -96,7 +96,7 @@ def MapToDisplay(map, display, gfx_map):
                 display.blit(getBlockInImage(gfx_map[tile.getId()], tile.getGfxId()), (16*x, 16*y))    
         
 #this function returns 1 if given number is positive, -1 if it's negative
-def checkNumberSign(number):
+def incIntModule(number):
     if number < 0: return -1
     else: return 1
  
@@ -114,8 +114,8 @@ def main():
     
     GamePlayer = LevelOne.getPlayer()
     playerPosition = LevelOne.getPlayerPosition()
-    playerPositionX = 16 * playerPosition[0]
-    playerPositionY = 16 * playerPosition[1]
+    player_position_x = 16 * playerPosition[0]
+    player_position_y = 16 * playerPosition[1]
 
     clock = pygame.time.Clock()
     pygame.display.update()
@@ -124,7 +124,11 @@ def main():
     
     keys = [pygame.K_UP, pygame.K_LEFT, pygame.K_RIGHT, pygame.K_DOWN, pygame.K_LCTRL, pygame.K_RCTRL, pygame.K_LALT, pygame.K_RALT]
     
-    jumpfalling = 0
+    fall_increasing = False
+    
+    JUMP_ACCELERATION_FACTOR = 0.05
+    
+    ''' TODO: ALL THE STRINGS REPRESENTING FIXED TYPES SHOULD BE TRANSFORMED INTO ENUMERATIONS '''
     
     while not ended:
     
@@ -133,54 +137,61 @@ def main():
             if event.type == pygame.QUIT:
                 ended = True
             elif event.type == pygame.KEYUP:
+                ''' TODO: THE PUSHING VARIABLE IS USED FOR THE PLAYER TO KEEP WALKING WHEN WE LAND, IF THE LEFT/RIGHT ARROW IS PRESSED. SHOULD WE REFACTOR THIS? '''
+                pushing = 0
                 GamePlayer.input(keys.index(event.key), 1)
             elif event.type == pygame.KEYDOWN:
-                output = GamePlayer.input(keys.index(event.key), 0)
+                pressed_key = keys.index(event.key)
+                if (pressed_key in [1,2]):
+                    pushing = 1
+                output = GamePlayer.input(pressed_key, 0)
                 if output == 1:
                     '''TODO: GUNFIRE'''
                     pass            
-               
+
         if GamePlayer.getXUpdateTimer() <= 0:
-            playerPositionX = playerPositionX + checkNumberSign(GamePlayer.getAccelerationX())
-            if LevelOne.checkPlayerCollision((playerPositionX, playerPositionY)) == "BLOCK_COLLISION":
-                playerPositionX = playerPositionX - checkNumberSign(GamePlayer.getAccelerationX())
+            old_player_position_x = player_position_x
+            player_position_x = player_position_x + incIntModule(GamePlayer.getAccelerationX())
+            if LevelOne.checkPlayerCollision((player_position_x, player_position_y)) == "BLOCK_COLLISION":
+                player_position_x = old_player_position_x
             GamePlayer.resetPosTimer('x')
             
             #no block underneath (walking)
-            if LevelOne.checkPlayerCollision((playerPositionX, playerPositionY+1)) != "BLOCK_COLLISION" and GamePlayer.getState() == "walk":
+            if LevelOne.checkPlayerCollision((player_position_x, player_position_y + 1)) != "BLOCK_COLLISION" and GamePlayer.getState() == "walk":
                 GamePlayer.setState("fall")
-                ''' TODO: RENAME/REFACTOR THIS 5 (other places too) '''
-                GamePlayer.setAccelerationY(5)
+                GamePlayer.setAccelerationY(GamePlayer.MAX_SPEED)
 
-        player_state = GamePlayer.getState()    
+        player_state = GamePlayer.getState()
         
         if GamePlayer.getYUpdateTimer() <= 0:
-            playerPositionY = playerPositionY + checkNumberSign(GamePlayer.getAccelerationY())
-            if LevelOne.checkPlayerCollision((playerPositionX, playerPositionY)) == "BLOCK_COLLISION" and player_state != "die":
-                ''' TODO: THERE'S AN ERROR IN HERE. I'M OUT OF TIME RIGHT NOW. GONNA FIX IT LATER. LEAVE IT FOR ME '''
+            old_player_position_y = player_position_y
+            player_position_y = player_position_y + incIntModule(GamePlayer.getAccelerationY())
+            
+            if LevelOne.checkPlayerCollision((player_position_x, player_position_y)) == "BLOCK_COLLISION" and player_state != "die":
                 if player_state == "fall":
                     GamePlayer.setState("walk")
+                    if not pushing:
+                        GamePlayer.setAccelerationX(0)
                     GamePlayer.setAccelerationY(0)
                 elif player_state == "jump":
                     GamePlayer.setState("fall")
-                    ''' TODO: RENAME/REFACTOR THIS 5 '''
-                    GamePlayer.setAccelerationY(5) 
-                elif player_state == "climb" and GamePlayer.getAccelerationY() > 0:
+                    GamePlayer.setAccelerationY(GamePlayer.MAX_SPEED) 
+                elif player_state == "climb":
                     GamePlayer.setState("walk")
                     GamePlayer.setAccelerationY(0)
-                playerPositionY = playerPositionY - checkNumberSign(GamePlayer.getAccelerationY())
+                player_position_y = old_player_position_y         
             GamePlayer.resetPosTimer('y')
 
-        if GamePlayer.getState() == "jump" or jumpfalling:
-            GamePlayer.incAccelerationY(0.05)
+        if GamePlayer.getState() == "jump" or fall_increasing:
+            GamePlayer.incAccelerationY(JUMP_ACCELERATION_FACTOR)
             if GamePlayer.getAccelerationY() == 0:
                 GamePlayer.setState("fall")
-                jumpfalling = 1
-            elif GamePlayer.getAccelerationY() == 5:
-                jumpfalling = 0
+                fall_increasing = True
+            elif GamePlayer.getAccelerationY() == GamePlayer.MAX_SPEED:
+                fall_increasing = False
         
         MapToDisplay(LevelOne, game_display, tileset)
-        game_display.blit(getBlockInImage(tileset["player"], GamePlayer.getGfxId()), (playerPositionX, playerPositionY))
+        game_display.blit(getBlockInImage(tileset["player"], GamePlayer.getGfxId()), (player_position_x, player_position_y))
                 
         pygame.display.flip()
         
