@@ -518,7 +518,8 @@ class Dynamic(Tile):
     def setState(self, state):
         if self.isStateValid(state):
             self.state = state
-            self.gfx_id = 100 + state_list.index(state)
+            ''' TODO: GFX TREATMENT '''
+            #self.gfx_id = 100 + self.state_list.index(state)
         else: ErrorInvalidValue()
         
     def setStateList(self, state_list):
@@ -555,62 +556,70 @@ class Player(Dynamic):
             self.id = "player"
             self.gfx_id = 0
             self.state = "blink"
+            '''TODO : STATE MUST BE AN ENUMERATION '''
             self.state_list = ["endmap", "walk", "fall", "jump", "fly", "climb", "die", "blink"]
             self.acceleration_x = 0
             self.x_update_timer = 5
             self.acceleration_y = 0
             self.y_update_timer = 5
+            self.inventory = {"jetpack": 0, "gun": 0, "trophy": 0}
         else: ErrorInvalidConstructor()
 
     '''
     Other methods
     '''
       
-    ## Keys, in order: K_UP, K_LEFT, K_RIGHT, K_LCTRL, K_RCTRL, K_LALT, K_RALT    
+    ## Keys, in order: K_UP, K_LEFT, K_RIGHT, K_DOWN, K_LCTRL, K_RCTRL, K_LALT, K_RALT    
 
     def input(self, key, action):
+        if self.state in ["endmap", "die"]:
+            return 0
+        
         keydown = (action == 0)
         keyup = (action == 1)
         
         k_uparrow = (key == 0)
         k_leftarrow = (key == 1)
         k_rightarrow = (key == 2)
-        k_ctrl = (key == 3) or (key == 4)
-        k_alt = (key == 5) or (key == 6)
+        k_downarrow = (key== 3)
+        k_ctrl = (key == 4) or (key == 5)
+        k_alt = (key == 6) or (key == 7)
+                
+        ''' TODO: ANIMATION (might need more ifs) '''
+        ''' TODO: REFACTOR? '''
                 
         if keyup:
-            if k_leftarrow or k_rightarrow:
+            if (k_leftarrow or k_rightarrow) and self.state != "fall":
                 self.acceleration_x = 0
-            ''' TODO: OTHER KEYS '''
+            if (k_uparrow or k_downarrow) and self.state in ["climb", "fly"]:
+                self.acceleration_y = 0
         elif keydown:
             if k_leftarrow:
-                if (self.state in ["walk", "fall", "jump", "fly", "climb", "blink"]):
-                    self.acceleration_x = -1 * self.MAX_SPEED
+                self.acceleration_x = -1 * self.MAX_SPEED
                 if (self.state == "climb"):
                     self.state = "fall"
                 elif (self.state == "blink"):
                     self.state = "walk"
-                ''' TODO: ANIMATION (DEPENDS ON STATE) '''
             if k_rightarrow:
-                if (self.state in ["walk", "fall", "jump", "fly", "climb", "blink"]):
-                    self.acceleration_x = self.MAX_SPEED
+                self.acceleration_x = self.MAX_SPEED
                 if (self.state == "climb"):
                     self.state = "fall"
                 elif (self.state == "blink"):
                     self.state = "walk"  
-                ''' TODO: ANIMATION (DEPENDS ON STATE) '''
-            if k_uparrow:
-                ''' TODO: THIS (duh) '''
-                pass
-            ''' TODO: OTHER KEYS '''
-        
-     
-    ''' TODO: CHECK IF THIS STILL HAS ANY USE '''
-    def gravity(self):
-        MAX_SPEED = 5
-        
-        if self.acceleration_y < MAX_SPEED:
-            self.acceleration_y += 0.05 * MAX_SPEED
+            if k_uparrow and self.state in ["walk", "blink", "fly", "climb"]:
+                self.acceleration_y = -1 * self.MAX_SPEED
+                if self.state in ["walk", "blink"]:
+                    self.state = "jump"
+            if k_downarrow and self.state in ["fly", "climb"]:
+                self.acceleration_y = self.MAX_SPEED
+            if k_ctrl and self.inventory["jetpack"]:
+                if self.state == "fly":
+                    self.state = "fall"
+                else:
+                    self.state = "fly"
+            if k_alt and self.inventory["gun"]:
+                return 1    #treat gunfire externally (because we need the map)
+        return 0
 
     def resetPosTimer(self, timer):
         if timer == 'x':
@@ -631,6 +640,10 @@ class Player(Dynamic):
     def setAccelerationY(self, acc):
         '''TODO: TEST INSTANCE'''
         self.acceleration_y = acc
+        
+    def incAccelerationY(self, acc):
+        '''TODO: TEST INSTANCE'''
+        self.acceleration_y += acc
         
     def getAccelerationX(self):
         return self.acceleration_x

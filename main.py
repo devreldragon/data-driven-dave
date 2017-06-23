@@ -122,7 +122,9 @@ def main():
     ended = False
     ##pygame inits: END
     
-    keys = [pygame.K_UP, pygame.K_LEFT, pygame.K_RIGHT, pygame.K_LCTRL, pygame.K_RCTRL, pygame.K_LALT, pygame.K_RALT]
+    keys = [pygame.K_UP, pygame.K_LEFT, pygame.K_RIGHT, pygame.K_DOWN, pygame.K_LCTRL, pygame.K_RCTRL, pygame.K_LALT, pygame.K_RALT]
+    
+    jumpfalling = 0
     
     while not ended:
     
@@ -133,36 +135,49 @@ def main():
             elif event.type == pygame.KEYUP:
                 GamePlayer.input(keys.index(event.key), 1)
             elif event.type == pygame.KEYDOWN:
-                GamePlayer.input(keys.index(event.key), 0)
-            
-                
-        ''' TODO:
-            We must review this. We are getting problems when the player jumps, because if the
-            acceleration is equal to 5, it might occur that a gap with less than 5px is formed
-            between the player and the ground.
-            I think we might focus firstly on how the player will behave inside its class. It
-            might help us while fixing the stuff here, in the outer.
-            By the way, we might need to use the clock ticks to work with the new movement.
-            '''
+                output = GamePlayer.input(keys.index(event.key), 0)
+                if output == 1:
+                    '''TODO: GUNFIRE'''
+                    pass            
                
         if GamePlayer.getXUpdateTimer() <= 0:
             playerPositionX = playerPositionX + checkNumberSign(GamePlayer.getAccelerationX())
             if LevelOne.checkPlayerCollision((playerPositionX, playerPositionY)) == "BLOCK_COLLISION":
                 playerPositionX = playerPositionX - checkNumberSign(GamePlayer.getAccelerationX())
             GamePlayer.resetPosTimer('x')
-               
-        ##i've commented the Y axis movement functions because we need to rework this entirely.
+            
+            #no block underneath (walking)
+            if LevelOne.checkPlayerCollision((playerPositionX, playerPositionY+1)) != "BLOCK_COLLISION" and GamePlayer.getState() == "walk":
+                GamePlayer.setState("fall")
+                ''' TODO: RENAME/REFACTOR THIS 5 (other places too) '''
+                GamePlayer.setAccelerationY(5)
+
+        player_state = GamePlayer.getState()    
         
-        '''
-        playerPositionY = playerPositionY + NewPlayer.getAccelerationY()
-        if LevelOne.checkPlayerCollision((playerPositionX, playerPositionY)) == "BLOCK_COLLISION":
-            playerPositionY = playerPositionY - NewPlayer.getAccelerationY()
-        
-        if NewPlayer.getState() == "normal":
-            if LevelOne.checkPlayerCollision((playerPositionX, playerPositionY+1)) == "NO_COLLISION":
-                NewPlayer.gravity()
-            else: NewPlayer.setAccelerationY(0)
-            '''
+        if GamePlayer.getYUpdateTimer() <= 0:
+            playerPositionY = playerPositionY + checkNumberSign(GamePlayer.getAccelerationY())
+            if LevelOne.checkPlayerCollision((playerPositionX, playerPositionY)) == "BLOCK_COLLISION" and player_state != "die":
+                ''' TODO: THERE'S AN ERROR IN HERE. I'M OUT OF TIME RIGHT NOW. GONNA FIX IT LATER. LEAVE IT FOR ME '''
+                if player_state == "fall":
+                    GamePlayer.setState("walk")
+                    GamePlayer.setAccelerationY(0)
+                elif player_state == "jump":
+                    GamePlayer.setState("fall")
+                    ''' TODO: RENAME/REFACTOR THIS 5 '''
+                    GamePlayer.setAccelerationY(5) 
+                elif player_state == "climb" and GamePlayer.getAccelerationY() > 0:
+                    GamePlayer.setState("walk")
+                    GamePlayer.setAccelerationY(0)
+                playerPositionY = playerPositionY - checkNumberSign(GamePlayer.getAccelerationY())
+            GamePlayer.resetPosTimer('y')
+
+        if GamePlayer.getState() == "jump" or jumpfalling:
+            GamePlayer.incAccelerationY(0.05)
+            if GamePlayer.getAccelerationY() == 0:
+                GamePlayer.setState("fall")
+                jumpfalling = 1
+            elif GamePlayer.getAccelerationY() == 5:
+                jumpfalling = 0
         
         MapToDisplay(LevelOne, game_display, tileset)
         game_display.blit(getBlockInImage(tileset["player"], GamePlayer.getGfxId()), (playerPositionX, playerPositionY))
@@ -172,6 +187,7 @@ def main():
         clock.tick(200)
         
         GamePlayer.decPosTimer('x')
+        GamePlayer.decPosTimer('y')
         
     pygame.quit()
     quit()
