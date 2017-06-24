@@ -98,12 +98,6 @@ def MapToDisplay(map, display, gfx_map):
             if tile.getId() != "player":              #won't print player
                 display.blit(getBlockInImage(gfx_map[tile.getId()], tile.getGfxId()), (16*x, 16*y))
 
-#this function returns 1 if given number is positive, -1 if it's negative
-def incIntModule(number):
-    if number < 0: return -1
-    else: return 1
-
-
 
 def main():
     LevelOne = buildLevelOne()
@@ -119,7 +113,7 @@ def main():
     playerPosition = LevelOne.getPlayerPosition()
     player_position_x = 16 * playerPosition[0]
     player_position_y = 16 * playerPosition[1]
-    LevelOne.setNodeTile(playerPosition[0], playerPosition[1], Tile())            ## Cleans the Player's original position, so the map can print it correctly
+    LevelOne.setNodeTile(playerPosition[0], playerPosition[1], Tile())            ## Cleans the Player's original position, so the map can print it correct
 
     clock = pygame.time.Clock()
     pygame.display.update()
@@ -129,8 +123,6 @@ def main():
     keys = [pygame.K_UP, pygame.K_LEFT, pygame.K_RIGHT, pygame.K_DOWN, pygame.K_LCTRL, pygame.K_RCTRL, pygame.K_LALT, pygame.K_RALT]
 
     pushing_x = 0
-    
-    ''' TODO: ALL THE STRINGS REPRESENTING FIXED TYPES SHOULD BE TRANSFORMED INTO ENUMERATIONS '''
 
     while not ended:
 

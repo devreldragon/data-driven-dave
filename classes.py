@@ -43,7 +43,7 @@ class Map(object):
     Constants
     '''
     
-    COLLISION = Enum('COLLISION', 'NONE SOLID HAZARD ENEMY')
+    COLLISION = Enum('COLLISION', 'NONE SOLID ENEMY ITEM EQUIP INTSCEN')
     
     '''
     Methods
@@ -99,6 +99,23 @@ class Map(object):
         x = playerPos[0]
         return self.node_matrix[y][x].getTile()
 
+    def getCollisionType(self, x, y):
+        solid = isinstance(self.node_matrix[y][x].getTile(), Solid)
+        item = isinstance(self.node_matrix[y][x].getTile(), Item)
+        intscen = isinstance(self.node_matrix[y][x].getTile(), InteractiveScenery)
+        enemy = isinstance(self.node_matrix[y][x].getTile(), Enemy)
+        
+        if solid:
+            return self.COLLISION.SOLID
+        elif item:
+            return self.COLLISION.ITEM
+        elif intscen:
+            return self.COLLISION.INTSCENERY
+        elif enemy:
+            return self.COLLISION.ENEMY
+        else:
+            return False
+        
     def checkPlayerCollision(self, player_pos):
         TOLERANCE_VALUE = 1 #the dave can walk a little bit "into" the blocks
     
@@ -107,21 +124,25 @@ class Map(object):
         x_right = floor((player_pos[0] + 15 - TOLERANCE_VALUE) / 16)
         y_bottom = floor((player_pos[1] + 15) / 16)
 
-        ''' TODO: CHANGE THIS '''
-        VALUES = ["solid", "tunnel"]
+        collision_topleft = self.getCollisionType(x_left, y_top)
+        collision_topright = self.getCollisionType(x_right, y_top)
+        collision_bottomleft = self.getCollisionType(x_left, y_bottom)
+        collision_bottomright = self.getCollisionType(x_right, y_bottom)
 
-        collision_topleft = (self.node_matrix[y_top][x_left].getTile().getId() in VALUES)
-        collision_topright = (self.node_matrix[y_top][x_right].getTile().getId() in VALUES)
-        collision_bottomleft = (self.node_matrix[y_bottom][x_left].getTile().getId() in VALUES)
-        collision_bottomright = (self.node_matrix[y_bottom][x_right].getTile().getId() in VALUES)
-
-        if collision_topleft or collision_topright or collision_bottomleft or collision_bottomright:
-            return self.COLLISION.SOLID
-
-        ''' TODO: TREAT OTHER COLLISIONS '''
-
-        return self.COLLISION.NONE
-
+        ## GAMBIARRA: collision priority: solid, hazard (interactive scenery), enemy, item
+        priority = [self.COLLISION.SOLID, self.COLLISION.ITEM, self.COLLISION.ENEMY, self.COLLISION.ITEM]
+        
+        for col in priority:
+            if collision_topleft == col:
+                return (collision_topleft, (x_left, y_top))
+            elif collision_topright == col:
+                return (collision_topright, (x_right, y_top))
+            elif collision_bottomleft == col:
+                return (collision_bottomleft, (x_left, y_bottom))
+            elif collision_bottomright == col:
+                return (collision_bottomright, (x_right, y_bottom))
+        
+        return (self.COLLISION.NONE, (-1, -1))
 
     '''
     Getters and Setters
@@ -274,6 +295,34 @@ class Tile(object):
         return self.gfx_id
 
 
+class Scenery(Tile):
+    '''
+    Scenery represents a scenery tile in the game
+    It has no new arguments
+    '''
+
+    '''
+    Constructors
+    '''
+
+    def __init__(self, *args):
+        #default constructor
+        if len(args) == 0:
+            self.id = "scenery"
+            self.gfx_id = 0
+        #alternative constructor (self, id, gfx_id)
+        elif len(args) == 2:
+            id = args[0]
+            gfx_id = args[1]
+
+            if not(isinstance(id, str)) or not(isinstance(gfx_id, int)):
+                ErrorInvalidValue()
+            else:
+                self.id = id
+                self.gfx_id = gfx_id
+        else: ErrorInvalidConstructor()
+ 
+ 
 class Solid(Tile):
     '''
     Solid is an abstract class which represents a solid tile (block) in the game
@@ -565,6 +614,7 @@ class Player(Dynamic):
             self.velocity_x = 0.5               # The velocity in the x axis (only value)
             self.direction_x = direction.IDLE   # Shows the current direction of movement (-1 = left, 1 = right, 0 = none)
             self.inventory = {"jetpack": 0, "gun": 0, "trophy": 0}
+            self.score = 0
        
             ##animation stuff
             self.animation_index = 0               # Number used to index the animation list of the corresponding state
@@ -634,48 +684,93 @@ class Player(Dynamic):
                 return 1    #treat gunfire externally (because we need the map)
         return 0
 
+    ## TREAT JUMPING
+    def treatJumping(self):
+        if self.cur_state == self.state.JUMP:
+            self.addVelocityY(self.GRAVITY)             # Jumping is basically a velocity spike with a gravity based decay. This is basically calculating the decay at each frame.                   
+            if self.velocity_y == self.MAX_SPEED_Y:
+                self.setCurrentState(self.state.FALL)
+                self.velocity_x = 1 #when falling, velocity increases to the max
+     
+    ## TREAT SOLID COLLISION IN Y AXIS
+    def treatSolidCollisionY(self, current_y, target_y, pushing_x):    
+        # landed
+        if self.cur_state in [self.state.JUMP, self.state.FALL] and target_y > current_y:
+            self.setCurrentState(self.state.WALK)
+            self.velocity_x = 0.5
+            self.velocity_y = 0
+            if not pushing_x:
+                self.direction_x = direction.IDLE
+        # was jumping and hit ceiling
+        elif self.cur_state == self.state.JUMP:
+            self.setCurrentState(self.state.FALL)
+            self.velocity_x = 1
+            self.velocity_y = self.MAX_SPEED_Y
+
+    ## COLLECT AN ITEM OR EQUIPMENT AND SAVE SCORE
+    def collectItem(self, position, level):
+        x = position[0]
+        y = position[1]
+        
+        item = level.getNode(x, y).getTile()
+        if isinstance(item, Equipment):
+            self.inventory[item.getType()] = 1            
+        self.score += item.getScore()
+        level.setNodeTile(x, y, Scenery())
+        print(self.score)
+    
+    def treatISCollisionY(self, current_y, target_y):
+        pass
+    
+    def treatEnemyCollisionY(self, current_y, target_y):
+        pass
+            
     ## UPDATES THE PLAYER POSITION BASED ON THE STATE HE'S IN
     def updatePosition(self, player_x, player_y, level, pushing_x):        
 
+        ## Collect an item if there is one
+        collision = level.checkPlayerCollision((player_x, player_y))
+        if collision[0] == level.COLLISION.ITEM:
+            self.collectItem(collision[1], level)
+    
         ## Checks if the player walked into a pit
         if self.cur_state == self.state.WALK:
-            if level.checkPlayerCollision((player_x, player_y + 1)) != level.COLLISION.SOLID:       
+            if level.checkPlayerCollision((player_x, player_y + 1))[0] != level.COLLISION.SOLID:       
                 self.setCurrentState(self.state.FALL)
                 self.velocity_x = 1 #when falling, velocity increases to the max
                 self.velocity_y = self.MAX_SPEED_Y  
 
         ## Move X: START
         player_newx = player_x + self.velocity_x * self.direction_x.value                   # Tries to walk to the direction the player's going
-        if level.checkPlayerCollision((player_newx, player_y)) == level.COLLISION.SOLID:    # If a collision occurs,
+        collision = level.checkPlayerCollision((player_newx, player_y))
+        collision_type = collision[0]
+                
+        if collision_type == level.COLLISION.SOLID:                                         # If a collision occurs,
             player_newx = player_x                                                          # Undo the movement
+        elif collision_type == level.COLLISION.INTSCEN:
+            pass
+        elif collision_type == level.COLLISION.ENEMY:
+            pass
         ## Move X: END
             
         ## Move Y: START
         player_newy = player_y + self.velocity_y
    
         # Check for collisions
-        if level.checkPlayerCollision((player_newx, player_newy)) == level.COLLISION.SOLID and self.cur_state != self.state.DIE:  
-            # landed
-            if self.cur_state in [self.state.JUMP, self.state.FALL] and player_newy > player_y:
-                self.setCurrentState(self.state.WALK)
-                self.velocity_x = 0.5
-                self.velocity_y = 0
-                if not pushing_x:
-                    self.direction_x = direction.IDLE
-            # was jumping and hit ceiling
-            elif self.cur_state == self.state.JUMP:
-                self.setCurrentState(self.state.FALL)
-                self.velocity_x = 1
-                self.velocity_y = self.MAX_SPEED_Y
-                
-            player_newy = player_y
+        collision = level.checkPlayerCollision((player_newx, player_newy))
+        collision_type = collision[0]
+        
+        if self.cur_state != self.state.DIE:
+            if collision_type == level.COLLISION.SOLID:
+                self.treatSolidCollisionY(player_y, player_newy, pushing_x)
+                player_newy = player_y
+            elif collision_type == level.COLLISION.INTSCEN:
+                self.treatISCollisionY(player_y, player_newy)
+            elif collision_type == level.COLLISION.ENEMY:
+                self.treatEnemyCollisionY(player_y, player_newy)
         
         # If jumping, gravity is acting upon the player
-        if self.cur_state == self.state.JUMP:
-            self.addVelocityY(self.GRAVITY)             # Jumping is basically a velocity spike with a gravity based decay. This is basically calculating the decay at each frame.                   
-            if self.velocity_y == self.MAX_SPEED_Y:
-                self.setCurrentState(self.state.FALL)
-                self.velocity_x = 1 #when falling, velocity increases to the max
+        self.treatJumping()
         ## Move Y: END
         
         ## Animation: START
