@@ -59,7 +59,10 @@ def buildLevelOne():
 def getBlockInImage(image, index):
     '''TODO: NOT ALL IMAGES ARE 16X16'''
     SIZE = 16
-    rect = (index*SIZE, 0, SIZE, SIZE)
+    NUML = 8 # 8 sprites per line
+    indexw = index % NUML # modulus operator
+    indexh = index // NUML
+    rect = (indexw*SIZE, indexh*SIZE, SIZE, SIZE)
     block_image = image.subsurface(rect)
     return block_image
 
@@ -116,6 +119,7 @@ def main():
     playerPosition = LevelOne.getPlayerPosition()
     player_position_x = 16 * playerPosition[0]
     player_position_y = 16 * playerPosition[1]
+    LevelOne.setNodeTile(playerPosition[0], playerPosition[1], Tile())            ## Cleans the Player's original position, so the map can print it correctly
 
     clock = pygame.time.Clock()
     pygame.display.update()
@@ -149,10 +153,9 @@ def main():
                     '''TODO: GUNFIRE'''
                     pass
 
-        (player_position_x, player_position_y) = GamePlayer.updatePosition(player_position_x, player_position_y, LevelOne)    # Atualiza a posição do player
+        (player_position_x, player_position_y) = GamePlayer.updatePosition(player_position_x, player_position_y, LevelOne)
         MapToDisplay(LevelOne, game_display, tileset)
         game_display.blit(getBlockInImage(tileset["player"], GamePlayer.getGfxId()), (player_position_x, player_position_y))
-
         pygame.display.flip()
 
         clock.tick(200)
