@@ -123,6 +123,7 @@ def main():
     keys = [pygame.K_UP, pygame.K_LEFT, pygame.K_RIGHT, pygame.K_DOWN, pygame.K_LCTRL, pygame.K_RCTRL, pygame.K_LALT, pygame.K_RALT]
 
     pushing_x = 0
+    pushing_jump = 0
 
     while not ended:
 
@@ -135,17 +136,26 @@ def main():
                 released_key = keys.index(event.key)
                 if released_key in [1,2]:
                     pushing_x = 0
+                elif released_key == 0:
+                    pushing_jump = 0
                 GamePlayer.input(released_key, 1)
             elif event.type == pygame.KEYDOWN:
                 pressed_key = keys.index(event.key)
                 if pressed_key in [1,2]:
                     pushing_x = 1
+                elif pressed_key == 0:
+                    pushing_jump = 1
                 output = GamePlayer.input(pressed_key, 0)
                 if output == 1:
                     '''TODO: GUNFIRE'''
                     pass
 
-        (player_position_x, player_position_y) = GamePlayer.updatePosition(player_position_x, player_position_y, LevelOne, pushing_x)
+        (player_position_x, player_position_y) = GamePlayer.updatePosition(player_position_x, player_position_y, LevelOne, pushing_x, pushing_jump)
+        
+        if GamePlayer.getCurrentState() == GamePlayer.state.ENDMAP:
+            '''TODO: interpic and next level'''
+            ended = True
+        
         MapToDisplay(LevelOne, game_display, tileset)
         game_display.blit(getBlockInImage(tileset["player"], GamePlayer.getGfxId()), (player_position_x, player_position_y))
         pygame.display.flip()
