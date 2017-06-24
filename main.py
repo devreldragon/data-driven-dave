@@ -5,12 +5,12 @@ import pygame
 
 def buildLevelOne():
     LevelOne = Map()
-    
+
     LevelOne.buildMapBorder(Solid())
-    
+
     LevelOne.buildWall(18, Solid())
     LevelOne.buildWall(19, Solid())
-    
+
     orb = "items"
     red_d = "items"
     trophy = "trophy"
@@ -54,15 +54,15 @@ def buildLevelOne():
     return LevelOne
 
 ''' TODO: REORGANIZE/REORDER FUNCTIONS '''
-   
-#crop an image, looking for the right gfx within the set   
+
+#crop an image, looking for the right gfx within the set
 def getBlockInImage(image, index):
     '''TODO: NOT ALL IMAGES ARE 16X16'''
     SIZE = 16
     rect = (index*SIZE, 0, SIZE, SIZE)
     block_image = image.subsurface(rect)
     return block_image
-  
+
 #truncate filename removing its size description
 def fileNameTruncate(name):
     newname = ""
@@ -71,37 +71,37 @@ def fileNameTruncate(name):
             newname += ch
         else:
             return newname
- 
-#returns dictionary 
+
+#returns dictionary
 def load_game_tiles():
     tilefiles = [file for file in listdir("tiles/game/") if isfile(join("tiles/game/", file))] #load all the image files within the directory
-    
+
     tile_table = {} #init dictionary
-    
+
     for savedfile in tilefiles:
         image = pygame.image.load("tiles/game/" + savedfile).convert()
         ''' TODO: CHECK IF THESE PARAMETERS HAVE ANY USE '''
         image_width, image_height = image.get_size()
-        
+
         tile_table[fileNameTruncate(savedfile)] = image
-    
+
     return tile_table
 
-#display map in pygame    
+#display map in pygame
 def MapToDisplay(map, display, gfx_map):
     for y, row in enumerate(map.getNodeMatrix()):
         for x, col in enumerate(row):
             tile = map.getNode(x,y).getTile()
             if tile.getId() != "player":              #won't print player
-                display.blit(getBlockInImage(gfx_map[tile.getId()], tile.getGfxId()), (16*x, 16*y))    
-        
+                display.blit(getBlockInImage(gfx_map[tile.getId()], tile.getGfxId()), (16*x, 16*y))
+
 #this function returns 1 if given number is positive, -1 if it's negative
 def incIntModule(number):
     if number < 0: return -1
     else: return 1
- 
 
- 
+
+
 def main():
     LevelOne = buildLevelOne()
 
@@ -109,9 +109,9 @@ def main():
     pygame.init()
     game_display = pygame.display.set_mode((320, 192))
     game_display.fill((0, 0, 0))
-    
+
     tileset = load_game_tiles()
-    
+
     GamePlayer = LevelOne.getPlayer()
     playerPosition = LevelOne.getPlayerPosition()
     player_position_x = 16 * playerPosition[0]
@@ -121,17 +121,17 @@ def main():
     pygame.display.update()
     ended = False
     ##pygame inits: END
-    
+
     keys = [pygame.K_UP, pygame.K_LEFT, pygame.K_RIGHT, pygame.K_DOWN, pygame.K_LCTRL, pygame.K_RCTRL, pygame.K_LALT, pygame.K_RALT]
-    
-    fall_increasing = False
-    
-    JUMP_ACCELERATION_FACTOR = 0.05
-    
+
+    #fall_increasing = False
+
+    #JUMP_ACCELERATION_FACTOR = 0.05
+
     ''' TODO: ALL THE STRINGS REPRESENTING FIXED TYPES SHOULD BE TRANSFORMED INTO ENUMERATIONS '''
-    
+
     while not ended:
-    
+
         ##get pressed keys
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -147,59 +147,16 @@ def main():
                 output = GamePlayer.input(pressed_key, 0)
                 if output == 1:
                     '''TODO: GUNFIRE'''
-                    pass            
+                    pass
 
-        if GamePlayer.getXUpdateTimer() <= 0:
-            old_player_position_x = player_position_x
-            player_position_x = player_position_x + incIntModule(GamePlayer.getAccelerationX())
-            if LevelOne.checkPlayerCollision((player_position_x, player_position_y)) == "BLOCK_COLLISION":
-                player_position_x = old_player_position_x
-            GamePlayer.resetPosTimer('x')
-            
-            #no block underneath (walking)
-            if LevelOne.checkPlayerCollision((player_position_x, player_position_y + 1)) != "BLOCK_COLLISION" and GamePlayer.getState() == "walk":
-                GamePlayer.setState("fall")
-                GamePlayer.setAccelerationY(GamePlayer.MAX_SPEED)
-
-        player_state = GamePlayer.getState()
-        
-        if GamePlayer.getYUpdateTimer() <= 0:
-            old_player_position_y = player_position_y
-            player_position_y = player_position_y + incIntModule(GamePlayer.getAccelerationY())
-            
-            if LevelOne.checkPlayerCollision((player_position_x, player_position_y)) == "BLOCK_COLLISION" and player_state != "die":
-                if player_state == "fall":
-                    GamePlayer.setState("walk")
-                    if not pushing:
-                        GamePlayer.setAccelerationX(0)
-                    GamePlayer.setAccelerationY(0)
-                elif player_state == "jump":
-                    GamePlayer.setState("fall")
-                    GamePlayer.setAccelerationY(GamePlayer.MAX_SPEED) 
-                elif player_state == "climb":
-                    GamePlayer.setState("walk")
-                    GamePlayer.setAccelerationY(0)
-                player_position_y = old_player_position_y         
-            GamePlayer.resetPosTimer('y')
-
-        if GamePlayer.getState() == "jump" or fall_increasing:
-            GamePlayer.incAccelerationY(JUMP_ACCELERATION_FACTOR)
-            if GamePlayer.getAccelerationY() == 0:
-                GamePlayer.setState("fall")
-                fall_increasing = True
-            elif GamePlayer.getAccelerationY() == GamePlayer.MAX_SPEED:
-                fall_increasing = False
-        
+        (player_position_x, player_position_y) = GamePlayer.updatePosition(player_position_x, player_position_y, LevelOne)    # Atualiza a posição do player
         MapToDisplay(LevelOne, game_display, tileset)
         game_display.blit(getBlockInImage(tileset["player"], GamePlayer.getGfxId()), (player_position_x, player_position_y))
-                
+
         pygame.display.flip()
-        
+
         clock.tick(200)
-        
-        GamePlayer.decPosTimer('x')
-        GamePlayer.decPosTimer('y')
-        
+
     pygame.quit()
     quit()
 
