@@ -82,7 +82,7 @@ def load_game_tiles():
     tile_table = {} #init dictionary
 
     for savedfile in tilefiles:
-        image = pygame.image.load("tiles/game/" + savedfile).convert()
+        image = pygame.image.load("tiles/game/" + savedfile).convert_alpha()
         ''' TODO: CHECK IF THESE PARAMETERS HAVE ANY USE '''
         image_width, image_height = image.get_size()
 
@@ -128,10 +128,8 @@ def main():
 
     keys = [pygame.K_UP, pygame.K_LEFT, pygame.K_RIGHT, pygame.K_DOWN, pygame.K_LCTRL, pygame.K_RCTRL, pygame.K_LALT, pygame.K_RALT]
 
-    #fall_increasing = False
-
-    #JUMP_ACCELERATION_FACTOR = 0.05
-
+    pushing_x = 0
+    
     ''' TODO: ALL THE STRINGS REPRESENTING FIXED TYPES SHOULD BE TRANSFORMED INTO ENUMERATIONS '''
 
     while not ended:
@@ -142,18 +140,20 @@ def main():
                 ended = True
             elif event.type == pygame.KEYUP:
                 ''' TODO: THE PUSHING VARIABLE IS USED FOR THE PLAYER TO KEEP WALKING WHEN WE LAND, IF THE LEFT/RIGHT ARROW IS PRESSED. SHOULD WE REFACTOR THIS? '''
-                pushing = 0
-                GamePlayer.input(keys.index(event.key), 1)
+                released_key = keys.index(event.key)
+                if released_key in [1,2]:
+                    pushing_x = 0
+                GamePlayer.input(released_key, 1)
             elif event.type == pygame.KEYDOWN:
                 pressed_key = keys.index(event.key)
-                if (pressed_key in [1,2]):
-                    pushing = 1
+                if pressed_key in [1,2]:
+                    pushing_x = 1
                 output = GamePlayer.input(pressed_key, 0)
                 if output == 1:
                     '''TODO: GUNFIRE'''
                     pass
 
-        (player_position_x, player_position_y) = GamePlayer.updatePosition(player_position_x, player_position_y, LevelOne)
+        (player_position_x, player_position_y) = GamePlayer.updatePosition(player_position_x, player_position_y, LevelOne, pushing_x)
         MapToDisplay(LevelOne, game_display, tileset)
         game_display.blit(getBlockInImage(tileset["player"], GamePlayer.getGfxId()), (player_position_x, player_position_y))
         pygame.display.flip()

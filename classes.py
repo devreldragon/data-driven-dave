@@ -1,11 +1,18 @@
 
 import sys
-
 from math import floor
+from enum import Enum #WE SO FUCKING NEED THIS AAAAAA
 
 '''
-Constants
+Constants and enumerations
 '''
+
+class direction(Enum):
+    LEFT = -1
+    IDLE = 0
+    RIGHT = 1
+    UP = 2
+    DOWN = 3
 
 ##TODO: Review id() field in classes
 
@@ -32,6 +39,16 @@ class Map(object):
         node_matrix: a matrix of MapNodes representing the map
     '''
 
+    '''
+    Constants
+    '''
+    
+    COLLISION = Enum('COLLISION', 'NONE SOLID HAZARD ENEMY')
+    
+    '''
+    Methods
+    '''
+    
     def __init__(self):
         self.height = 11
         self.width = 150
@@ -67,14 +84,6 @@ class Map(object):
             self.node_matrix[y][x].setTile(tile)
         else: ErrorInvalidValue()
 
-        '''
-    def printMap(self):
-        for map_line in self.node_matrix:
-            for node in map_line:
-                print(TILETERMINAL[node.tile.id], end='', flush=True)
-            print()
-            '''
-
     def getNode(self, x, y):
         return self.node_matrix[y][x]
 
@@ -91,10 +100,12 @@ class Map(object):
         return self.node_matrix[y][x].getTile()
 
     def checkPlayerCollision(self, player_pos):
-        x_left = floor(player_pos[0]/16)
-        y_top = floor(player_pos[1]/16)
-        x_right = floor((player_pos[0]+15) / 16)
-        y_bottom = floor((player_pos[1]+15) / 16)
+        TOLERANCE_VALUE = 1 #the dave can walk a little bit "into" the blocks
+    
+        x_left = floor((player_pos[0] + TOLERANCE_VALUE)/16)
+        y_top = floor((player_pos[1])/16)
+        x_right = floor((player_pos[0] + 15 - TOLERANCE_VALUE) / 16)
+        y_bottom = floor((player_pos[1] + 15) / 16)
 
         ''' TODO: CHANGE THIS '''
         VALUES = ["solid", "tunnel"]
@@ -105,11 +116,11 @@ class Map(object):
         collision_bottomright = (self.node_matrix[y_bottom][x_right].getTile().getId() in VALUES)
 
         if collision_topleft or collision_topright or collision_bottomleft or collision_bottomright:
-            return "BLOCK_COLLISION"
+            return self.COLLISION.SOLID
 
         ''' TODO: TREAT OTHER COLLISIONS '''
 
-        return "NO_COLLISION"
+        return self.COLLISION.NONE
 
 
     '''
@@ -474,66 +485,52 @@ class Dynamic(Tile):
         if len(args) == 0:
             self.id = "undefined"
             self.gfx_id = -1
-            self.state = -1
-            self.state_list = []
-        #alternative constructor (id, gfx_id, state, state_list)
+            self.state = Enum('state', 'UNDEFINED')
+            self.cur_state = self.state.UNDEFINED
+        #alternative constructor (id, gfx_id, states, cur_state)
         elif len(args) == 4:
             '''TODO: CHECK INSTANCES '''
-            id = args[0]
-            gfx_id = args[1]
-            state = args[2]
-            state_list = args[3]
+            self.id = args[0]
+            self.gfx_id = args[1]
+            self.state = args[2]
+            self.cur_state = args[3]
         else: ErrorInvalidConstructor()
 
     '''
     Other methods
     '''
 
-    def moveLeft(self):
-        self.pos_x += 1
-
-    def moveRight(self):
-        self.pos_x -= 1
-
-    def moveUp(self):
-        self.pos_y -= 1
-
-    def moveDown(self):
-        self.pos_y += 1
-
+    '''
     def isStateValid(self, state):
         if state in self.state_list:
             return 1
         else: return 0
-
-    def appendState(self, state):
-        if isinstance(state, str):
-            self.state_list.append(state)
-        else: ErrorInvalidValue()
-
+    '''
+        
     '''
     Getters and setters
     '''
 
-    def setState(self, state):
-        if self.isStateValid(state):
-            self.state = state
-            ''' TODO: GFX TREATMENT '''
-            #self.gfx_id = 100 + self.state_list.index(state)
-        else: ErrorInvalidValue()
+    def setCurrentState(self, state):
+        ''' TODO: CHECK INSTANCE '''
+        self.cur_state = state
 
+    '''
     def setStateList(self, state_list):
         for state in state_list:
             if not(isinstance(state, str)):
                 ErrorInvalidValue()
                 return;
         self.state_list = state_list
+        '''
 
-    def getState(self):
-        return self.state
+    def getCurrentState(self):
+        return self.cur_state
 
+    '''
     def getStateList(self):
         return self.state_list
+        '''
 
 
 class Player(Dynamic):
@@ -544,11 +541,15 @@ class Player(Dynamic):
         acceleration_x: acceleration in the x axis
     '''
 
+    '''
+    Constants
+    '''
+    
     MAX_SPEED_X = 1
     MAX_SPEED_Y = 1
-    INCREMENT = 0.05
+    GRAVITY = 0.01
     ANIMATION_COUNTER_MAX = 20
-
+    
     '''
     Constructors
     '''
@@ -558,27 +559,30 @@ class Player(Dynamic):
         if len(args) == 0:
             self.id = "player"
             self.gfx_id = 0
-            self.state = "blink"
-            '''TODO : STATE MUST BE AN ENUMERATION '''
-            self.state_list = ["endmap", "walk", "fall", "jump", "fly", "climb", "die", "blink"]
-            self.animation_index_list = {"walk" : [1.2, 2.4, 3.7, 2.4], "blink" : [0], "fall" : [13], "jump" : [13]}     # Dict of lists that specifies the index (displacement) of each animation frame based on the player tile. Indexed by the name of the state. (indexes are not integer because the tiles are not exactly the same size, apparently?)
-            self.animation_index = 0             # Number used to index the animation list of the corresponding state
-            self.animation_counter = 0             # Counter that ticks until the next frame of animation should be displayed
-            self.acceleration_x = 0                # Shows the current direction of movement (-1 = left, 1 = right, 0 = none)
-            self.velocity_x = 0.5                  # The velocity in the x axis (now constant) is the increment in the position at each frame
-            self.acceleration_y = 0.01            # A poor man's gravity.
-            self.velocity_y = 0
+            self.state = Enum('state', 'ENDMAP WALK FALL JUMP FLY CLIMB BLINK DIE')
+            self.cur_state = self.state.BLINK
+            self.velocity_y = 0                 # The velocity and direction in the y axis (module + value)
+            self.velocity_x = 0.5               # The velocity in the x axis (only value)
+            self.direction_x = direction.IDLE   # Shows the current direction of movement (-1 = left, 1 = right, 0 = none)
             self.inventory = {"jetpack": 0, "gun": 0, "trophy": 0}
+       
+            ##animation stuff
+            self.animation_index = 0               # Number used to index the animation list of the corresponding state
+            self.animation_counter = 0             # Counter that ticks until the next frame of animation should be displayed
+            self.animation_index_list = {self.state.WALK : [1.2, 2.4, 3.7, 2.4], 
+                                            self.state.BLINK : [0], 
+                                            self.state.FALL : [13], 
+                                            self.state.JUMP : [13]}     # Dict of lists that specifies the index (displacement) of each animation frame based on the player tile. Indexed by the name of the self.state. (indexes are not integer because the tiles are not exactly the same size, apparently?)
+
         else: ErrorInvalidConstructor()
 
     '''
     Other methods
     '''
 
-    ## Keys, in order: K_UP, K_LEFT, K_RIGHT, K_DOWN, K_LCTRL, K_RCTRL, K_LALT, K_RALT
-
+    ## INPUT/KEYS TREATMENT
     def input(self, key, action):
-        if self.state in ["endmap", "die"]:
+        if self.cur_state in [self.state.ENDMAP, self.state.DIE]:
             return 0
 
         keydown = (action == 0)
@@ -595,185 +599,146 @@ class Player(Dynamic):
         ''' TODO: REFACTOR? '''
 
         if keyup:
-            if (k_leftarrow):
-                self.acceleration_x = 0
-
-            if (k_rightarrow):
-                self.acceleration_x = 0
-
+            if (k_leftarrow or k_rightarrow) and self.cur_state != self.state.FALL:
+                self.direction_x = direction.IDLE  #reset x velocity if player isn't falling and released key
+            if k_uparrow and self.cur_state in [self.state.FLY, self.state.CLIMB]:
+                self.velocity_y = 0 #reset y velocity is player can control it (fly/climb)
         elif keydown:
             if k_leftarrow:
-                self.acceleration_x = -1
-                if (self.state == "climb"):
-                    self.setState("fall")
-                elif (self.state == "blink"):
-                    self.setState("walk")
+                self.direction_x = direction.LEFT
+                if (self.cur_state == self.state.CLIMB):
+                    self.setCurrentState(self.state.FALL)
+                    self.velocity_x = 1 #when falling, velocity increases to the max
+                elif (self.cur_state == self.state.BLINK):
+                    self.setCurrentState(self.state.WALK)
             if k_rightarrow:
-                self.acceleration_x = 1
-                if (self.state == "climb"):
-                    self.setState("fall")
-                elif (self.state == "blink"):
-                    self.setState("walk")
-            if k_uparrow and self.state in ["walk", "blink", "fly", "climb"]:
-                self.changeVelocityY(- self.MAX_SPEED_Y)
-                if self.state in ["walk", "blink"]:
-                    self.setState("jump")
-            if k_downarrow:                 # For now, serves as a debug key
-                print("velocidade Y: ", self.velocity_y)
-                print("Aceleração Y: ", self.acceleration_y)
-                print("velocidade X: ", self.velocity_x)
-                print("Aceleração X: ", self.acceleration_x)
-                print("Estado: ", self.state)
-    #        if k_downarrow and self.state in ["fly", "climb"]:            // TIREI PORQUE ACHO QUE NÃO FAZ SENTIDO
-    #            self.acceleration_y = self.MAX_SPEED_Y
+                self.direction_x = direction.RIGHT
+                if (self.cur_state == self.state.CLIMB):
+                    self.setCurrentState(self.state.FALL)
+                    self.velocity_x = 1 #when falling, velocity increases to the max
+                elif (self.cur_state == self.state.BLINK):
+                    self.setCurrentState(self.state.WALK)
+            if k_uparrow and self.cur_state in [self.state.WALK, self.state.BLINK, self.state.FLY, self.state.CLIMB]:
+                self.velocity_y = - self.MAX_SPEED_Y    #go up
+                if self.cur_state in [self.state.WALK, self.state.BLINK]:
+                    self.setCurrentState(self.state.JUMP)
+            if k_downarrow and self.cur_state in [self.state.FLY, self.state.CLIMB]:
+                self.velocity_y = self.MAX_SPEED_Y
             if k_ctrl and self.inventory["jetpack"]:
-                if self.state == "fly":
-                    self.setState("fall")
+                if self.cur_state == self.state.FLY:
+                    self.setCurrentState(self.state.FALL)
+                    self.velocity_x = 1
                 else:
-                    self.setState("fly")
+                    self.setCurrentState(self.state.FLY)
             if k_alt and self.inventory["gun"]:
                 return 1    #treat gunfire externally (because we need the map)
         return 0
 
-    def updatePosition(self, player_x, player_y, level):        # Updates the player position based on the state he's in
+    ## UPDATES THE PLAYER POSITION BASED ON THE STATE HE'S IN
+    def updatePosition(self, player_x, player_y, level, pushing_x):        
 
-        if self.state == "walk":
-            if level.checkPlayerCollision((player_x, player_y + 1)) != "BLOCK_COLLISION":       # Checks if the player walked into a pit
-                self.setState("fall")
+        ## Checks if the player walked into a pit
+        if self.cur_state == self.state.WALK:
+            if level.checkPlayerCollision((player_x, player_y + 1)) != level.COLLISION.SOLID:       
+                self.setCurrentState(self.state.FALL)
+                self.velocity_x = 1 #when falling, velocity increases to the max
+                self.velocity_y = self.MAX_SPEED_Y  
 
-        player_newx = player_x + self.getVelocityX() * self.getAccelerationX()          # Tries to walk to the direction the player's going
-        player_newy = player_y
-
-        if (self.state == "jump" or self.state == "fall"):
-            self.changeVelocityY(self.acceleration_y)                   # Jumping is basically a velocity spike with a gravity based decay. This is basically calculating the decay at each frame.
-            player_newy = player_newy + self.getVelocityY()
-
-        if level.checkPlayerCollision((player_newx, player_newy)) == "BLOCK_COLLISION":             # If the desired position is an illegal movement:
-            if level.checkPlayerCollision((player_newx, player_y)) != "BLOCK_COLLISION":        # Checks if it's the y causing the problem (basically, the player hit his head or landed on his feet)
-                if player_newy > player_y:  ## BATEU EM BAIXO
-                    self.setState("walk")
-                    self.setVelocityY(0)
-                    player_newy = (player_newy//16) * 16
-                else:  ## BATEU A CABEÇA
-                    self.setVelocityY(0)
-                    player_newy = player_y
-
-            elif level.checkPlayerCollision((player_x, player_newy)) != "BLOCK_COLLISION":       # Checks if it's the x causing the problem (so the player can continue the jumping arch even if he hits a wall)
-                player_newx = player_x
-            else:                                                                  # Checks if both x and y are the problem (in this case, he just doesn't move)
-                player_newx = player_x
-                player_newy = player_y
-                self.setVelocityY(0)
-                self.setState("walk")
+        ## Move X: START
+        player_newx = player_x + self.velocity_x * self.direction_x.value                   # Tries to walk to the direction the player's going
+        if level.checkPlayerCollision((player_newx, player_y)) == level.COLLISION.SOLID:    # If a collision occurs,
+            player_newx = player_x                                                          # Undo the movement
+        ## Move X: END
+            
+        ## Move Y: START
+        player_newy = player_y + self.velocity_y
+   
+        # Check for collisions
+        if level.checkPlayerCollision((player_newx, player_newy)) == level.COLLISION.SOLID and self.cur_state != self.state.DIE:  
+            # landed
+            if self.cur_state in [self.state.JUMP, self.state.FALL] and player_newy > player_y:
+                self.setCurrentState(self.state.WALK)
+                self.velocity_x = 0.5
+                self.velocity_y = 0
+                if not pushing_x:
+                    self.direction_x = direction.IDLE
+            # was jumping and hit ceiling
+            elif self.cur_state == self.state.JUMP:
+                self.setCurrentState(self.state.FALL)
+                self.velocity_x = 1
+                self.velocity_y = self.MAX_SPEED_Y
+                
+            player_newy = player_y
+        
+        # If jumping, gravity is acting upon the player
+        if self.cur_state == self.state.JUMP:
+            self.addVelocityY(self.GRAVITY)             # Jumping is basically a velocity spike with a gravity based decay. This is basically calculating the decay at each frame.                   
+            if self.velocity_y == self.MAX_SPEED_Y:
+                self.setCurrentState(self.state.FALL)
+                self.velocity_x = 1 #when falling, velocity increases to the max
+        ## Move Y: END
+        
+        ## Animation: START
         if player_x != player_newx or player_y != player_newy:          # If the player moved, updates the animation
             self.updateAnimation()
-
+        ## Animation: END
+        
         return (player_newx, player_newy)
 
-
-
-
-#    def resetPosTimer(self, timer):
-        #if timer == 'x':
-            #self.x_update_timer = self.MAX_SPEED_X
-        #elif timer == 'y':
-            #self.y_update_timer = self.MAX_SPEED_X
-
-    #def decPosTimer(self, timer):
-        #if timer == 'x':
-            #self.x_update_timer -= abs(self.acceleration_x)
-        #elif timer == 'y':
-            #self.y_update_timer -= abs(self.acceleration_y)
-
+    ## UPDATE ANIMATION
     def updateAnimation(self):
-# Rotate the animation counter and set the new gfx index
+        # Rotate the animation counter and set the new gfx index
         if self.animation_counter < self.ANIMATION_COUNTER_MAX:       # Only updates if it's time to update (the counter reached its maximum)
             self.animation_counter = self.animation_counter + 1
         else:
             self.animation_counter = 0
-            if self.animation_index < len(self.animation_index_list[self.getState()]):              # Rotates the number that indexes the list of frames of that state.
+            if self.animation_index < len(self.animation_index_list[self.cur_state]):           # Rotates the number that indexes the list of frames of that self.state.
                 self.animation_index = self.animation_index + 1                                         # Basically means that the animation frames will alternate in the list's order.
-            if self.animation_index == len(self.animation_index_list[self.getState()]):
+            if self.animation_index == len(self.animation_index_list[self.cur_state]):
                     self.animation_index = 0
 
-        self.gfx_id = self.animation_index_list[self.getState()][self.animation_index]          # Did not use setter here because we are not sending integer indexes.
-
-    def setAccelerationX(self, acc):
-        '''TODO: TEST INSTANCE'''
-        self.acceleration_x = acc
-
-    def setAccelerationY(self, acc):
-        '''TODO: TEST INSTANCE'''
-        self.acceleration_y = acc
-
-    def setVelocityX(self, acc):
-        '''TODO: TEST INSTANCE'''
-        self.velocity_x = acc
-
-    def setVelocityY(self, acc):
-        '''TODO: TEST INSTANCE'''
-        self.velocity_y = acc
-
-    def setState(self, newstate):
-        if newstate in self.state_list:
-            self.state = newstate
-            self.animation_index = 0
-            self.animation_counter = 0
-        else:
-            ErrorInvalidValue()
-
-    def changeVelocityX(self, inc):
-        if inc == 0:
-            self.decayVelocityX()
-        else:
-            self.velocity_x = self.velocity_x + inc
-            if (self.velocity_x > self.MAX_SPEED_X):
-                self.velocity_x = self.MAX_SPEED_X
-            elif (self.velocity_x < - self.MAX_SPEED_X):
-                self.velocity_x = - self.MAX_SPEED_X
+        self.gfx_id = self.animation_index_list[self.cur_state][self.animation_index]          # Did not use setter here because we are not sending integer indexes.
 
 
-    def changeVelocityY(self, inc):
+    ## ADD A GIVEN INCREMENT TO THE VELOCITY ATTRIBUTE
+    def addVelocityY(self, inc):
         self.velocity_y = self.velocity_y + inc
+        #test limits
         if (self.velocity_y > self.MAX_SPEED_Y):
             self.velocity_y = self.MAX_SPEED_Y
         elif (self.velocity_y < - self.MAX_SPEED_Y):
             self.velocity_y = - self.MAX_SPEED_Y
 
-    def decayVelocityX(self): # SIMULA ATRITO
-        if self.velocity_x > 0:
-            self.velocity_x = self.velocity_x - 0.1
-            if self.velocity_x < 0:
-                self.velocity_x = 0
+    '''
+    Getters and setters
+    '''
 
-        elif self.velocity_x < 0:
-            self.velocity_x = self.velocity_x + 0.1
-            if self.velocity_x > 0:
-                self.velocity_x = 0
-
-    def incAccelerationY(self, acc):
+    def setVelocityX(self, vel):
         '''TODO: TEST INSTANCE'''
-        self.acceleration_y += acc
-        self.acceleration_y = round(self.acceleration_y, 2) #fix that fucking floating point problem
+        self.velocity_y = vel
 
-    def getAccelerationX(self):
-        return self.acceleration_x
+    def setVelocityY(self, vel):
+        '''TODO: TEST INSTANCE'''
+        self.velocity_y = vel
+        
+    def setCurrentState(self, newstate):
+        '''TODO: TEST INSTANCE?'''
+        self.cur_state = newstate
+        self.animation_index = 0
+        self.animation_counter = 0
 
-    def getAccelerationY(self):
-        return self.acceleration_y
-
-    #def getXUpdateTimer(self):
-        #return self.x_update_timer
-
-    #def getYUpdateTimer(self):
-        #return self.y_update_timer
-
-    def getVelocityX(self):
-        return self.velocity_x
+    def getDirectionX(self):
+        return self.direction_x
 
     def getVelocityY(self):
         return self.velocity_y
-
+    
+    def getVelocityX(self):
+        return self.velocity_x
+        
+    def getGravity(self):
+        return self.GRAVITY
+        
     def getMaxSpeedX(self):
         return self.MAX_SPEED_X
 
