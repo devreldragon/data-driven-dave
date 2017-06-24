@@ -545,7 +545,7 @@ class Player(Dynamic):
     '''
 
     MAX_SPEED_X = 1
-    MAX_SPEED_Y = 3
+    MAX_SPEED_Y = 1
     INCREMENT = 0.05
 
     '''
@@ -561,11 +561,9 @@ class Player(Dynamic):
             '''TODO : STATE MUST BE AN ENUMERATION '''
             self.state_list = ["endmap", "walk", "fall", "jump", "fly", "climb", "die", "blink"]
             self.acceleration_x = 0
-            self.velocity_x = 0
-    #        self.x_update_timer = 5
-            self.acceleration_y = 0.1
+            self.velocity_x = 0.5
+            self.acceleration_y = 0.01
             self.velocity_y = 0
-    #        self.y_update_timer = 5
             self.inventory = {"jetpack": 0, "gun": 0, "trophy": 0}
         else: ErrorInvalidConstructor()
 
@@ -599,19 +597,15 @@ class Player(Dynamic):
             if (k_rightarrow):
                 self.acceleration_x = 0
 
-
-#            if (k_uparrow or k_downarrow) and self.state in ["climb", "fly"]:
-#                self.acceleration_y = 0.05
-
         elif keydown:
             if k_leftarrow:
-                self.acceleration_x = self.acceleration_x - self.INCREMENT
+                self.acceleration_x = -1
                 if (self.state == "climb"):
                     self.state = "fall"
                 elif (self.state == "blink"):
                     self.state = "walk"
             if k_rightarrow:
-                self.acceleration_x = self.acceleration_x + self.INCREMENT
+                self.acceleration_x = 1
                 if (self.state == "climb"):
                     self.state = "fall"
                 elif (self.state == "blink"):
@@ -638,13 +632,12 @@ class Player(Dynamic):
         return 0
 
     def updatePosition(self, player_x, player_y, level):
-        self.changeVelocityX(self.acceleration_x)
 
         if self.state == "walk":
             if level.checkPlayerCollision((player_x, player_y + 1)) != "BLOCK_COLLISION":
                 self.state = "fall"
 
-        player_newx = player_x + self.getVelocityX()
+        player_newx = player_x + self.getVelocityX() * self.getAccelerationX()
         player_newy = player_y
 
         if (self.state == "jump" or self.state == "fall"):
