@@ -63,7 +63,7 @@ def getBlockInImage(image, index):
     indexw = index % NUML # modulus operator
     indexh = index // NUML
     rect = (indexw*SIZE, indexh*SIZE, SIZE, SIZE)
-    block_image = image.subsurface(rect)
+    block_image =  pygame.transform.scale(image.subsurface(rect),(SIZE*SCALEFACTOR,SIZE*SCALEFACTOR))
     return block_image
 
 #truncate filename removing its size description
@@ -96,7 +96,7 @@ def MapToDisplay(map, display, gfx_map):
         for x, col in enumerate(row):
             tile = map.getNode(x,y).getTile()
             if tile.getId() != "player":              #won't print player
-                display.blit(getBlockInImage(gfx_map[tile.getId()], tile.getGfxId()), (16*x, 16*y))
+                display.blit(getBlockInImage(gfx_map[tile.getId()], tile.getGfxId()), (16*SCALEFACTOR*x, 16*SCALEFACTOR*y))
 
 
 def main():
@@ -104,7 +104,7 @@ def main():
 
     ##pygame inits: START
     pygame.init()
-    game_display = pygame.display.set_mode((320, 192))
+    game_display = pygame.display.set_mode((320*SCALEFACTOR, 192*SCALEFACTOR))
     game_display.fill((0, 0, 0))
 
     tileset = load_game_tiles()
@@ -157,7 +157,7 @@ def main():
             ended = True
         
         MapToDisplay(LevelOne, game_display, tileset)
-        game_display.blit(getBlockInImage(tileset["player"], GamePlayer.getGfxId()), (player_position_x, player_position_y))
+        game_display.blit(getBlockInImage(tileset["player"], GamePlayer.getGfxId()), (player_position_x*SCALEFACTOR, player_position_y*SCALEFACTOR	))
         pygame.display.flip()
 
         clock.tick(200)

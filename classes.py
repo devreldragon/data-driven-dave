@@ -7,6 +7,8 @@ from enum import Enum #WE SO FUCKING NEED THIS AAAAAA
 Constants and enumerations
 '''
 
+SCALEFACTOR = 2
+
 class direction(Enum):
     LEFT = -1
     IDLE = 0
@@ -596,8 +598,8 @@ class Player(Dynamic):
     Constants
     '''
     
-    MAX_SPEED_X = 0.4
-    MAX_SPEED_Y = 0.4
+    MAX_SPEED_X = 0.4*2
+    MAX_SPEED_Y = 0.4*2
     X_SPEED_FACTOR = 0.75
     GRAVITY = 0.01
     ANIMATION_COUNTER_MAX = 20
