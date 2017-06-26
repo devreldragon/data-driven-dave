@@ -66,6 +66,15 @@ def getBlockInImage(image, index):
     block_image =  pygame.transform.scale(image.subsurface(rect),(SIZE*SCALEFACTOR,SIZE*SCALEFACTOR))
     return block_image
 
+def getBlockInImageDiffSize(image,index,sizex,sizey):
+    '''TODO: NOT ALL IMAGES ARE 16X16'''
+    NUML = 10 # 8 sprites per line
+    indexw = index % NUML # modulus operator
+    indexh = index // NUML
+    rect = (indexw*sizex, indexh*sizey, sizex, sizey)
+    block_image =  pygame.transform.scale(image.subsurface(rect),(sizex*SCALEFACTOR,sizey*SCALEFACTOR))
+    return block_image    
+    
 #truncate filename removing its size description
 def fileNameTruncate(name):
     newname = ""
@@ -90,6 +99,47 @@ def load_game_tiles():
 
     return tile_table
 
+def print_ui(ui_tileset,game_display,score,level_number,lives):
+    #score text
+    game_display.blit(getBlockInImageDiffSize(ui_tileset["scoretext"], 0, 54,11), (0,0))
+    leadingzeroes_score = str(score).zfill(5)
+    for index in range(5):
+        current_number = int(leadingzeroes_score[index] )
+        game_display.blit(getBlockInImageDiffSize(ui_tileset["numbers"], current_number, 8,11), (60*SCALEFACTOR+8*index*SCALEFACTOR,0))
+    
+    #level text
+    game_display.blit(getBlockInImageDiffSize(ui_tileset["leveltext"], 0, 45,11), (120*SCALEFACTOR,0))
+    leadingzeroes_level = str(level_number).zfill(2)
+    for index in range(2):
+        current_level = int(leadingzeroes_level[index] )
+        game_display.blit(getBlockInImageDiffSize(ui_tileset["numbers"], current_level, 8,11), (170*SCALEFACTOR+8*index*SCALEFACTOR,0))
+    
+    #daves text
+    game_display.blit(getBlockInImageDiffSize(ui_tileset["davestext"], 0, 50,11), (210*SCALEFACTOR,0))
+    for index in range(lives):
+        game_display.blit(getBlockInImageDiffSize(ui_tileset["daveicon"], 0, 14,12), (270*SCALEFACTOR+index*14*SCALEFACTOR,0))
+    
+
+
+
+#returns dictionary TODO UNIFY FUNCTIONS
+def load_ui_tiles():
+    tilefiles = [file for file in listdir("tiles/ui/") if isfile(join("tiles/ui/", file))] #load all the image files within the directory
+
+    tile_table = {} #init dictionary
+
+    for savedfile in tilefiles:
+        image = pygame.image.load("tiles/ui/" + savedfile).convert_alpha()
+        ''' TODO: CHECK IF THESE PARAMETERS HAVE ANY USE '''
+        image_width, image_height = image.get_size()
+
+        tile_table[fileNameTruncate(savedfile)] = image
+    print(tile_table)
+    return tile_table
+
+
+    
+    
 #display map in pygame
 def MapToDisplay(map, display, gfx_map):
     for y, row in enumerate(map.getNodeMatrix()):
@@ -108,6 +158,7 @@ def main():
     game_display.fill((0, 0, 0))
 
     tileset = load_game_tiles()
+    ui_tileset = load_ui_tiles()
 
     GamePlayer = LevelOne.getPlayer()
     playerPosition = LevelOne.getPlayerPosition()
@@ -125,6 +176,7 @@ def main():
     pushing_x = 0
     pushing_jump = 0
 
+    
     while not ended:
 
         ##get pressed keys
@@ -158,6 +210,7 @@ def main():
         
         MapToDisplay(LevelOne, game_display, tileset)
         game_display.blit(getBlockInImage(tileset["player"], GamePlayer.getGfxId()), (player_position_x*SCALEFACTOR, player_position_y*SCALEFACTOR	))
+        print_ui(ui_tileset,game_display,GamePlayer.score,1,3)
         pygame.display.flip()
 
         clock.tick(200)
