@@ -598,10 +598,12 @@ class Player(Dynamic):
     Constants
     '''
     
-    MAX_SPEED_X = 0.4*2
-    MAX_SPEED_Y = 0.4*2
-    X_SPEED_FACTOR = 0.75
-    GRAVITY = 0.01
+    SCALE_FACTOR = 2
+    MAX_SPEED_X = 0.4 * SCALE_FACTOR
+    MAX_SPEED_Y = 0.4 * SCALE_FACTOR
+    JUMP_SPEED = 0.8
+    X_SPEED_FACTOR = 0.75   #factor to be used when not falling (x speed only hits its maximum when falling)
+    GRAVITY = 0.01          #gravity acceleration
     ANIMATION_COUNTER_MAX = 20
     MAX_LIFES = 5
     
@@ -638,64 +640,69 @@ class Player(Dynamic):
     '''
 
     ## INPUT/KEYS TREATMENT
-    def input(self, key, action):
+    def movementInput(self, pressed_keys):
         if self.cur_state in [self.state.ENDMAP, self.state.DIE]:
             return 0
 
-        keydown = (action == 0)
-        keyup = (action == 1)
-
-        k_uparrow = (key == 0)
-        k_leftarrow = (key == 1)
-        k_rightarrow = (key == 2)
-        k_downarrow = (key== 3)
-        k_ctrl = (key == 4) or (key == 5)
-        k_alt = (key == 6) or (key == 7)
-
-        ''' TODO: ANIMATION (might need more ifs) '''
-        ''' TODO: REFACTOR? '''
-
-        if keyup:
-            if (k_leftarrow or k_rightarrow) and self.cur_state != self.state.FALL:
-                self.direction_x = direction.IDLE  #reset x velocity if player isn't falling and released key
-            if k_uparrow and self.cur_state in [self.state.FLY, self.state.CLIMB]:
-                self.velocity_y = 0 #reset y velocity is player can control it (fly/climb)
-        elif keydown:
-            if k_leftarrow:
-                self.direction_x = direction.LEFT
-                if (self.cur_state == self.state.CLIMB):
-                    self.setCurrentState(self.state.FALL)
-                    self.velocity_x = self.MAX_SPEED_X #when falling, velocity increases to the max
-                elif (self.cur_state == self.state.BLINK):
-                    self.setCurrentState(self.state.WALK)
-            if k_rightarrow:
-                self.direction_x = direction.RIGHT
-                if (self.cur_state == self.state.CLIMB):
-                    self.setCurrentState(self.state.FALL)
-                    self.velocity_x = self.MAX_SPEED_X #when falling, velocity increases to the max
-                elif (self.cur_state == self.state.BLINK):
-                    self.setCurrentState(self.state.WALK)
-            if k_uparrow:
-                if self.cur_state in [self.state.FLY, self.state.CLIMB]:
-                    self.velocity_y = - self.MAX_SPEED_Y
-                elif self.cur_state in [self.state.WALK, self.state.BLINK] and self.inventory["tree"] == 1:
-                    self.velocity_y = - self.MAX_SPEED_Y
-                    self.setCurrentState(self.state.CLIMB)
-                elif self.cur_state in [self.state.WALK, self.state.BLINK]:
-                    self.velocity_y = - 0.8
-                    self.setCurrentState(self.state.JUMP)                 
-            if k_downarrow and self.cur_state in [self.state.FLY, self.state.CLIMB]:
+        k_uparrow = (pressed_keys[0])
+        k_leftarrow = (pressed_keys[1])
+        k_rightarrow = (pressed_keys[2])
+        k_downarrow = (pressed_keys[3])
+        
+        if k_uparrow:
+            if self.cur_state in [self.state.BLINK, self.state.WALK] and self.inventory["tree"] == 1:
+                self.setCurrentState(self.state.CLIMB)
+                self.velocity_y = - self.MAX_SPEED_Y
+            elif self.cur_state in [self.state.BLINK, self.state.WALK]:
+                self.setCurrentState(self.state.JUMP)
+                self.velocity_y = - self.JUMP_SPEED
+            elif self.cur_state in [self.state.FLY, self.state.CLIMB]:
+                self.velocity_y = - self.MAX_SPEED_Y
+        if k_leftarrow:
+            self.direction_x = direction.LEFT
+            
+            if self.cur_state in [self.state.BLINK, self.state.WALK, self.state.JUMP, self.state.CLIMB, self.state.FLY]:
+                self.velocity_x = self.MAX_SPEED_X * self.X_SPEED_FACTOR
+            elif self.cur_state == self.state.FALL:
+                self.velocity_x = self.MAX_SPEED_X #when falling, velocity increases to the max  
+                
+            if self.cur_state == self.state.BLINK:
+                self.setCurrentState(self.state.WALK)
+            elif self.cur_state == self.state.CLIMB:
+                self.self.setCurrentState(self.state.FALL)
+        if k_rightarrow:
+            self.direction_x = direction.RIGHT
+            
+            if self.cur_state in [self.state.BLINK, self.state.WALK, self.state.JUMP, self.state.CLIMB, self.state.FLY]:
+                self.velocity_x = self.MAX_SPEED_X * self.X_SPEED_FACTOR
+            elif self.cur_state == self.state.FALL:
+                self.velocity_x = self.MAX_SPEED_X #when falling, velocity increases to the max
+                
+            if self.cur_state == self.state.BLINK:
+                self.setCurrentState(self.state.WALK)
+            elif self.cur_state == self.state.CLIMB:
+                self.self.setCurrentState(self.state.FALL)
+        if k_downarrow:
+            if self.cur_state in [self.state.CLIMB, self.state.FLY]:
                 self.velocity_y = self.MAX_SPEED_Y
-            if k_ctrl and self.inventory["jetpack"]:
-                if self.cur_state == self.state.FLY:
-                    self.setCurrentState(self.state.FALL)
-                    self.velocity_x = self.MAX_SPEED_X #when falling, velocity increases to the max
-                else:
-                    self.setCurrentState(self.state.FLY)
-            if k_alt and self.inventory["gun"]:
-                return 1    #treat gunfire externally (because we need the map)
-        return 0
 
+    def inventoryInput(self, key):
+        if self.cur_state in [self.state.ENDMAP, self.state.DIE]:
+            return -1
+        
+        k_ctrl = (key == 0) or (key == 1)
+        k_alt = (key == 2) or (key == 3)
+        
+        if k_ctrl and self.inventory["jetpack"]:
+            if self.cur_state == self.state.FLY:
+                self.setCurrentState(self.state.FALL)
+                self.velocity_x = self.MAX_SPEED_X #when falling, velocity increases to the max
+            else:
+                self.setCurrentState(self.state.FLY)
+        if k_alt and self.inventory["gun"]:
+            return 1    #treat gunfire externally (because we need the map)
+        return 0
+                
     ## LIFES
     def takeLife(self):
         if self.lifes > 0:
@@ -716,17 +723,13 @@ class Player(Dynamic):
                 self.velocity_x = self.MAX_SPEED_X #when falling, velocity increases to the max
      
     ## TREAT SOLID COLLISION IN Y AXIS
-    def treatSolidCollisionY(self, current_y, target_y, pushing_x, pushing_jump):    
+    def treatSolidCollisionY(self, current_y, target_y):    
         # landed
         if self.cur_state in [self.state.JUMP, self.state.FALL] and target_y > current_y:
             self.setCurrentState(self.state.WALK)
             self.velocity_x = self.MAX_SPEED_X * self.X_SPEED_FACTOR
             self.velocity_y = 0
-            if not pushing_x:
-                self.direction_x = direction.IDLE
-            if pushing_jump:
-                self.velocity_y = - 0.8
-                self.setCurrentState(self.state.JUMP)
+            self.direction_x = direction.IDLE
         # was jumping and hit ceiling
         elif self.cur_state == self.state.JUMP:
             self.setCurrentState(self.state.FALL)
@@ -768,7 +771,7 @@ class Player(Dynamic):
         pass
             
     ## UPDATES THE PLAYER POSITION BASED ON THE STATE HE'S IN
-    def updatePosition(self, player_x, player_y, level, pushing_x, pushing_jump):        
+    def updatePosition(self, player_x, player_y, level):        
 
         self.inventory["tree"] = 0    
         collision = level.checkCollision((player_x, player_y))
@@ -790,7 +793,7 @@ class Player(Dynamic):
         if self.cur_state == self.state.WALK:
             if not level.checkSolidCollision((player_x, player_y + 1)):       
                 self.setCurrentState(self.state.FALL)
-                self.velocity_x = self.MAX_SPEED_X #when falling, velocity increases to the max
+                self.velocity_x = self.MAX_SPEED_X
                 self.velocity_y = self.MAX_SPEED_Y  
 
         ## Move X: START
@@ -799,8 +802,9 @@ class Player(Dynamic):
                 
         if solid_collision:                                                                 # If a collision occurs,
             player_newx = player_x                                                          # undo the movement
-            if not pushing_x and self.cur_state == self.state.FALL:                         # If player's falling and released movement keys,
-                self.direction_x = direction.IDLE                                           # stop the uncontrolled fall         
+            if self.cur_state == self.state.FALL:                                           # If player's falling and released movement keys,
+                self.direction_x = direction.IDLE                                           # stop the uncontrolled fall 
+                self.velocity_x = 0
         ## Move X: END
             
         ## Move Y: START
@@ -811,7 +815,7 @@ class Player(Dynamic):
         
         if self.cur_state != self.state.DIE:
             if solid_collision:
-                self.treatSolidCollisionY(player_y, player_newy, pushing_x, pushing_jump)
+                self.treatSolidCollisionY(player_y, player_newy)
                 player_newy = player_y
         
         # If jumping, gravity is acting upon the player
@@ -839,7 +843,6 @@ class Player(Dynamic):
 
         self.gfx_id = self.animation_index_list[self.cur_state][self.animation_index]          # Did not use setter here because we are not sending integer indexes.
 
-
     ## ADD A GIVEN INCREMENT TO THE VELOCITY ATTRIBUTE
     def addVelocityY(self, inc):
         self.velocity_y = self.velocity_y + inc
@@ -853,7 +856,11 @@ class Player(Dynamic):
 
     def setVelocityX(self, vel):
         '''TODO: TEST INSTANCE'''
-        self.velocity_y = vel
+        self.velocity_x = vel
+        
+    def setDirectionX(self, direction):
+        '''TODO: TEST INSTANCE'''
+        self.direction_x = direction
 
     def setVelocityY(self, vel):
         '''TODO: TEST INSTANCE'''

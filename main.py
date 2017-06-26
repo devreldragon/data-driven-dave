@@ -171,48 +171,46 @@ def main():
     ended = False
     ##pygame inits: END
 
-    keys = [pygame.K_UP, pygame.K_LEFT, pygame.K_RIGHT, pygame.K_DOWN, pygame.K_LCTRL, pygame.K_RCTRL, pygame.K_LALT, pygame.K_RALT]
-
-    pushing_x = 0
-    pushing_jump = 0
-
+    movement_keys = [pygame.K_UP, pygame.K_LEFT, pygame.K_RIGHT, pygame.K_DOWN]
+    inv_keys = [pygame.K_LCTRL, pygame.K_RCTRL, pygame.K_LALT, pygame.K_RALT]
     
     while not ended:
 
-        ##get pressed keys
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 ended = True
             elif event.type == pygame.KEYUP:
-                ''' TODO: THE PUSHING VARIABLE IS USED FOR THE PLAYER TO KEEP WALKING WHEN WE LAND, IF THE LEFT/RIGHT ARROW IS PRESSED. SHOULD WE REFACTOR THIS? '''
-                released_key = keys.index(event.key)
-                if released_key in [1,2]:
-                    pushing_x = 0
-                elif released_key == 0:
-                    pushing_jump = 0
-                GamePlayer.input(released_key, 1)
-            elif event.type == pygame.KEYDOWN:
-                pressed_key = keys.index(event.key)
-                if pressed_key in [1,2]:
-                    pushing_x = 1
-                elif pressed_key == 0:
-                    pushing_jump = 1
-                output = GamePlayer.input(pressed_key, 0)
-                if output == 1:
-                    '''TODO: GUNFIRE'''
+                if event.key in [pygame.K_LEFT, pygame.K_RIGHT] and GamePlayer.getCurrentState() in [GamePlayer.state.WALK, GamePlayer.state.FLY, GamePlayer.state.JUMP]:
                     pass
-
-        (player_position_x, player_position_y) = GamePlayer.updatePosition(player_position_x, player_position_y, LevelOne, pushing_x, pushing_jump)
+                    GamePlayer.setVelocityX(0)
+                    GamePlayer.setDirectionX(direction.IDLE)
+                elif event.key in [pygame.K_UP, pygame.K_DOWN] and GamePlayer.getCurrentState() in [GamePlayer.state.FLY, GamePlayer.state.CLIMB]:
+                    GamePlayer.setVelocityY(0)
+            elif event.type == pygame.KEYDOWN:
+                if event.key in inv_keys:
+                    GamePlayer.inventoryInput(inv_keys.index(event.key))    
+    
+        pressed_keys = pygame.key.get_pressed()
+        key_map = [0,0,0,0]
+        for i, key in enumerate(movement_keys):
+            if pressed_keys[key]:
+                key_map[i] = 1
+        
+        GamePlayer.movementInput(key_map)
+        
+        (player_position_x, player_position_y) = GamePlayer.updatePosition(player_position_x, player_position_y, LevelOne)
         
         if GamePlayer.getCurrentState() == GamePlayer.state.ENDMAP:
             '''TODO: interpic and next level'''
             ended = True
         
         MapToDisplay(LevelOne, game_display, tileset)
-        game_display.blit(getBlockInImage(tileset["player"], GamePlayer.getGfxId()), (player_position_x*SCALEFACTOR, player_position_y*SCALEFACTOR	))
+        game_display.blit(getBlockInImage(tileset["player"], GamePlayer.getGfxId()), (player_position_x*SCALEFACTOR, player_position_y*SCALEFACTOR))
         print_ui(ui_tileset,game_display,GamePlayer.score,1,3)
         pygame.display.flip()
 
+        pygame.event.pump()
+        
         clock.tick(200)
 
     pygame.quit()
