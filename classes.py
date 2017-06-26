@@ -479,7 +479,7 @@ class InteractiveScenery(Tile):
             self.type = self.TYPE.GOAL
             self.auto = 1
         #alternative constructor (id, gfx_id, type, auto)
-        elif len(args) == 5:
+        elif len(args) == 4:
             id = args[0]
             gfx_id = args[1]
             type = args[2]
@@ -494,7 +494,7 @@ class InteractiveScenery(Tile):
             '''
             self.id = id
             self.gfx_id = gfx_id
-            self.target_state = target_state
+            self.type = type
             self.auto = auto
         else: ErrorInvalidConstructor()
 

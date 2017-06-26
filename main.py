@@ -3,6 +3,10 @@ from os import listdir
 from os.path import isfile, join
 import pygame
 
+'''
+Levels
+'''
+
 def buildLevelOne():
     LevelOne = Map()
 
@@ -53,6 +57,171 @@ def buildLevelOne():
     LevelOne.setNodeTile(2, 9, Player())
     return LevelOne
 
+def buildLevelTwo():
+    LevelTwo = Map()
+
+    LevelTwo.buildMapBorder(Solid())
+
+    ORB = Item("items", 0, 50)
+    BLUE_DIAMOND = Item("items", 1, 100)
+    RED_DIAMOND = Item("items", 2, 150)
+    TROPHY = Equipment("trophy", 0, 1000, "trophy") 
+    PINKPIPE = Solid("pinkpipe", 1)
+    FIRE = InteractiveScenery("fire", 0, InteractiveScenery.TYPE.HAZARD, 1)
+    WATER = InteractiveScenery("water", 0, InteractiveScenery.TYPE.HAZARD, 1)
+    TENTACLE = InteractiveScenery("tentacles", 0, InteractiveScenery.TYPE.HAZARD, 1)
+    DOOR = InteractiveScenery()
+    REDBRICK = Solid()
+    
+    LevelTwo.setNodeTile(1, 9, Player())
+    
+    LevelTwo.setNodeTile(1, 2, RED_DIAMOND)
+    LevelTwo.setNodeTile(1, 4, PINKPIPE)
+    LevelTwo.setNodeTile(2, 6, PINKPIPE)
+    LevelTwo.setNodeTile(3, 6, PINKPIPE)
+    LevelTwo.setNodeTile(3, 10, FIRE)
+    LevelTwo.setNodeTile(4, 4, PINKPIPE)
+    LevelTwo.setNodeTile(4, 8, PINKPIPE)
+    LevelTwo.setNodeTile(4, 10, FIRE)
+    LevelTwo.setNodeTile(5, 8, PINKPIPE)
+    LevelTwo.setNodeTile(5, 10, FIRE)
+    LevelTwo.setNodeTile(6, 8, PINKPIPE)
+    LevelTwo.setNodeTile(6, 10, FIRE)
+    LevelTwo.setNodeTile(7, 2, BLUE_DIAMOND)
+    LevelTwo.setNodeTile(7, 10, FIRE)
+    LevelTwo.setNodeTile(8, 5, PINKPIPE)
+    LevelTwo.setNodeTile(8, 8, RED_DIAMOND)
+    LevelTwo.setNodeTile(8, 10, FIRE)
+    LevelTwo.setNodeTile(9, 5, PINKPIPE)
+    LevelTwo.setNodeTile(9, 6, REDBRICK)
+    LevelTwo.setNodeTile(9, 7, REDBRICK)
+    LevelTwo.setNodeTile(9, 8, REDBRICK)
+    LevelTwo.setNodeTile(9, 9, REDBRICK)
+    LevelTwo.setNodeTile(10, 5, PINKPIPE)
+    LevelTwo.setNodeTile(10, 9, BLUE_DIAMOND)
+    LevelTwo.setNodeTile(10, 10, FIRE)
+    LevelTwo.setNodeTile(11, 7, PINKPIPE)
+    LevelTwo.setNodeTile(11, 10, FIRE)
+    LevelTwo.setNodeTile(12, 10, FIRE)
+    LevelTwo.setNodeTile(13, 4, PINKPIPE)
+    LevelTwo.setNodeTile(13, 6, TROPHY)
+    LevelTwo.setNodeTile(13, 9, PINKPIPE)
+    LevelTwo.setNodeTile(13, 10, FIRE)
+    LevelTwo.setNodeTile(14, 5, REDBRICK)
+    LevelTwo.setNodeTile(14, 6, REDBRICK)
+    LevelTwo.setNodeTile(14, 7, REDBRICK)
+    LevelTwo.setNodeTile(14, 8, REDBRICK)
+    LevelTwo.setNodeTile(14, 9, REDBRICK)
+    LevelTwo.setNodeTile(15, 10, WATER)
+    LevelTwo.setNodeTile(16, 6, PINKPIPE)
+    LevelTwo.setNodeTile(16, 8, BLUE_DIAMOND)
+    LevelTwo.setNodeTile(16, 10, WATER)
+    LevelTwo.setNodeTile(17, 6, PINKPIPE)
+    LevelTwo.setNodeTile(17, 8, BLUE_DIAMOND)
+    LevelTwo.setNodeTile(17, 10, WATER)
+    LevelTwo.setNodeTile(18, 6, PINKPIPE)
+    LevelTwo.setNodeTile(18, 8, BLUE_DIAMOND)
+    LevelTwo.setNodeTile(18, 10, WATER)
+    LevelTwo.setNodeTile(19, 6, PINKPIPE)
+    LevelTwo.setNodeTile(19, 8, BLUE_DIAMOND)
+    LevelTwo.setNodeTile(19, 10, WATER)
+    LevelTwo.setNodeTile(20, 2, ORB)
+    LevelTwo.setNodeTile(20, 6, PINKPIPE)
+    LevelTwo.setNodeTile(20, 8, BLUE_DIAMOND)
+    LevelTwo.setNodeTile(20, 10, WATER)
+    LevelTwo.setNodeTile(21, 10, WATER)
+    for i in range(5, 10):
+        LevelTwo.setNodeTile(22, i, REDBRICK)
+    LevelTwo.setNodeTile(23, 4, REDBRICK)
+    LevelTwo.setNodeTile(23, 5, REDBRICK) 
+    LevelTwo.setNodeTile(24, 3, REDBRICK)
+    LevelTwo.setNodeTile(24, 4, REDBRICK)
+    LevelTwo.setNodeTile(24, 7, REDBRICK)
+    LevelTwo.setNodeTile(24, 8, REDBRICK)
+    LevelTwo.setNodeTile(25, 3, REDBRICK)
+    LevelTwo.setNodeTile(25, 6, REDBRICK)
+    LevelTwo.setNodeTile(26, 3, REDBRICK)
+    LevelTwo.setNodeTile(26, 5, REDBRICK)
+    LevelTwo.setNodeTile(26, 6, REDBRICK)
+    LevelTwo.setNodeTile(26, 8, REDBRICK)
+    LevelTwo.setNodeTile(26, 9, REDBRICK)
+    LevelTwo.setNodeTile(27, 3, REDBRICK)
+    LevelTwo.setNodeTile(27, 5, REDBRICK)
+    LevelTwo.setNodeTile(27, 8, REDBRICK)
+    LevelTwo.setNodeTile(27, 9, ORB)
+    LevelTwo.setNodeTile(28, 3, REDBRICK)
+    LevelTwo.setNodeTile(28, 5, REDBRICK)
+    LevelTwo.setNodeTile(28, 6, ORB)
+    for i in range(5, 9):
+        LevelTwo.setNodeTile(29, i, REDBRICK)    
+    for i in range(2, 6):
+        LevelTwo.setNodeTile(30, i, REDBRICK)
+    for i in range(2, 6):
+        LevelTwo.setNodeTile(31, i, REDBRICK)
+    LevelTwo.setNodeTile(31, 8, REDBRICK)
+    LevelTwo.setNodeTile(31, 9, ORB)
+    LevelTwo.setNodeTile(32, 5, REDBRICK)
+    for i in range(7, 10):
+        LevelTwo.setNodeTile(32, i, REDBRICK)    
+    LevelTwo.setNodeTile(33, 3, REDBRICK)
+    LevelTwo.setNodeTile(33, 5, REDBRICK)
+    LevelTwo.setNodeTile(34, 3, REDBRICK)
+    LevelTwo.setNodeTile(34, 5, REDBRICK)
+    LevelTwo.setNodeTile(34, 6, REDBRICK)
+    LevelTwo.setNodeTile(34, 7, REDBRICK)
+    LevelTwo.setNodeTile(35, 3, REDBRICK)
+    LevelTwo.setNodeTile(35, 9, REDBRICK)
+    LevelTwo.setNodeTile(36, 3, REDBRICK)
+    LevelTwo.setNodeTile(36, 7, REDBRICK)
+    LevelTwo.setNodeTile(36, 9, ORB)
+    for i in range(3, 10):
+        LevelTwo.setNodeTile(37, i, REDBRICK)
+    for i in range(38, 48):
+        LevelTwo.setNodeTile(i, 3, REDBRICK)
+        LevelTwo.setNodeTile(i, 10, FIRE)
+    for i in range(48, 50):
+        LevelTwo.setNodeTile(i, 2, REDBRICK)
+        LevelTwo.setNodeTile(i, 3, REDBRICK)
+        LevelTwo.setNodeTile(i, 10, FIRE) 
+    LevelTwo.setNodeTile(47, 2, DOOR)
+    
+    #write the letters
+    ##C
+    LevelTwo.setNodeTile(38, 5, TENTACLE)
+    LevelTwo.setNodeTile(38, 6, TENTACLE)
+    LevelTwo.setNodeTile(38, 7, TENTACLE)
+    LevelTwo.setNodeTile(39, 4, TENTACLE)
+    LevelTwo.setNodeTile(39, 8, TENTACLE)
+    LevelTwo.setNodeTile(40, 4, TENTACLE)
+    LevelTwo.setNodeTile(40, 8, TENTACLE)
+    
+    ##I
+    LevelTwo.setNodeTile(42, 4, TENTACLE)
+    LevelTwo.setNodeTile(42, 8, TENTACLE)
+    LevelTwo.setNodeTile(43, 4, TENTACLE)
+    LevelTwo.setNodeTile(43, 5, TENTACLE)
+    LevelTwo.setNodeTile(43, 6, TENTACLE)
+    LevelTwo.setNodeTile(43, 7, TENTACLE)
+    LevelTwo.setNodeTile(43, 8, TENTACLE)
+    LevelTwo.setNodeTile(44, 4, TENTACLE)
+    LevelTwo.setNodeTile(44, 8, TENTACLE)
+    
+    ##C
+    LevelTwo.setNodeTile(46, 5, TENTACLE)
+    LevelTwo.setNodeTile(46, 6, TENTACLE)
+    LevelTwo.setNodeTile(46, 7, TENTACLE)
+    LevelTwo.setNodeTile(47, 4, TENTACLE)
+    LevelTwo.setNodeTile(47, 8, TENTACLE)
+    LevelTwo.setNodeTile(48, 4, TENTACLE)
+    LevelTwo.setNodeTile(48, 8, TENTACLE) 
+
+    return LevelTwo
+    
+    
+'''
+Engine
+'''
+    
 ''' TODO: REORGANIZE/REORDER FUNCTIONS '''
 
 #crop an image, looking for the right gfx within the set
@@ -120,9 +289,8 @@ def print_ui(ui_tileset,game_display,score,level_number,lives):
         game_display.blit(getBlockInImageDiffSize(ui_tileset["daveicon"], 0, 14,12), (270*SCALEFACTOR+index*14*SCALEFACTOR,0))
     
 
-
-
-#returns dictionary TODO UNIFY FUNCTIONS
+#returns dictionary 
+'''TODO: UNIFY FUNCTIONS'''
 def load_ui_tiles():
     tilefiles = [file for file in listdir("tiles/ui/") if isfile(join("tiles/ui/", file))] #load all the image files within the directory
 
@@ -139,7 +307,6 @@ def load_ui_tiles():
 
 
     
-    
 #display map in pygame
 def MapToDisplay(map, display, gfx_map):
     for y, row in enumerate(map.getNodeMatrix()):
@@ -150,7 +317,7 @@ def MapToDisplay(map, display, gfx_map):
 
 
 def main():
-    LevelOne = buildLevelOne()
+    Level = buildLevelTwo()
 
     ##pygame inits: START
     pygame.init()
@@ -160,11 +327,11 @@ def main():
     tileset = load_game_tiles()
     ui_tileset = load_ui_tiles()
 
-    GamePlayer = LevelOne.getPlayer()
-    playerPosition = LevelOne.getPlayerPosition()
+    GamePlayer = Level.getPlayer()
+    playerPosition = Level.getPlayerPosition()
     player_position_x = 16 * playerPosition[0]
     player_position_y = 16 * playerPosition[1]
-    LevelOne.setNodeTile(playerPosition[0], playerPosition[1], Tile())            ## Cleans the Player's original position, so the map can print it correct
+    Level.setNodeTile(playerPosition[0], playerPosition[1], Tile())            ## Cleans the Player's original position, so the map can print it correct
 
     clock = pygame.time.Clock()
     pygame.display.update()
@@ -198,13 +365,13 @@ def main():
         
         GamePlayer.movementInput(key_map)
         
-        (player_position_x, player_position_y) = GamePlayer.updatePosition(player_position_x, player_position_y, LevelOne)
+        (player_position_x, player_position_y) = GamePlayer.updatePosition(player_position_x, player_position_y, Level)
         
         if GamePlayer.getCurrentState() == GamePlayer.state.ENDMAP:
             '''TODO: interpic and next level'''
             ended = True
         
-        MapToDisplay(LevelOne, game_display, tileset)
+        MapToDisplay(Level, game_display, tileset)
         game_display.blit(getBlockInImage(tileset["player"], GamePlayer.getGfxId()), (player_position_x*SCALEFACTOR, player_position_y*SCALEFACTOR))
         print_ui(ui_tileset,game_display,GamePlayer.score,1,3)
         pygame.display.flip()
