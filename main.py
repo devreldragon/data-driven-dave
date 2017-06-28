@@ -4,26 +4,25 @@ from os.path import isfile, join
 import pygame
 
 '''
-Constants
-'''
-
-BOUNDARY = 25
-SCREEN_WIDTH_TILES = 20
-SCREEN_WIDTH = 320
-
-'''
-Levels
+Level construction
 '''
 
 def BuildLevel(level_number):
+    #open the level in the txt
     textmap = open("levels/" + str(level_number) + ".txt", 'r')
     
+    #get height (must reset offset)
     height = len(textmap.readlines())
     textmap.seek(0)
+    
+    #get width (must reset offset)
     width = int(len(textmap.readline()) / 3)
     textmap.seek(0)
+    
+    #init class
     Level = Map(height, width)
     
+    #for each node, set it accordingly
     for y, line in enumerate(textmap.readlines()):
         x = 0
         while (x < width):
@@ -34,8 +33,28 @@ def BuildLevel(level_number):
             
     return Level       
     
+def initLevel(level_number):
+    #build the level
+    Level = BuildLevel(level_number)
     
+    #init player and his positions
+    GamePlayer = Level.getPlayer()
+    playerPosition = Level.getPlayerPosition()
+    player_position_x = WIDTH_OF_MAP_NODE * playerPosition[0]
+    player_position_y = HEIGHT_OF_MAP_NODE * playerPosition[1]
+    
+    #clear the residue left by player spawner
+    ''' TODO: INVESTIGATE THIS '''
+    Level.clearPlayerPosition()
+
+    #the X position, in the map, where the screen starts
+    ''' TODO: PLAYER MIGHT START IN THE MIDDLE OF THE MAP (Bonus rooms) '''
+    screen_x_position = 0   
+    
+    return (Level, GamePlayer, player_position_x, player_position_y, screen_x_position)
+ 
 def tileFromText(text_tile):
+    #if the tile has an index, store it
     try:
         gfx_id = int(text_tile[1])
     except:
@@ -77,101 +96,55 @@ def tileFromText(text_tile):
     else:
         return Tile("scenery", 0)
     
-    
+
 '''
-Engine
+User interface (invetory, scores, etc)
 '''
-    
-''' TODO: REORGANIZE/REORDER FUNCTIONS '''
-
-#crop an image, looking for the right gfx within the set
-def getBlockInImage(image, index):
-    '''TODO: NOT ALL IMAGES ARE 16X16'''
-    SIZE = 16
-    NUML = 8 # 8 sprites per line
-    indexw = index % NUML # modulus operator
-    indexh = index // NUML
-    rect = (indexw*SIZE, indexh*SIZE, SIZE, SIZE)
-    block_image =  pygame.transform.scale(image.subsurface(rect),(SIZE*SCALEFACTOR,SIZE*SCALEFACTOR))
-    return block_image
-
-def getBlockInImageDiffSize(image,index,sizex,sizey):
-    '''TODO: NOT ALL IMAGES ARE 16X16'''
-    NUML = 10 # 8 sprites per line
-    indexw = index % NUML # modulus operator
-    indexh = index // NUML
-    rect = (indexw*sizex, indexh*sizey, sizex, sizey)
-    block_image =  pygame.transform.scale(image.subsurface(rect),(sizex*SCALEFACTOR,sizey*SCALEFACTOR))
-    return block_image    
-    
-#truncate filename removing its size description
-def fileNameTruncate(name):
-    newname = ""
-    for ch in name:
-        if ch.isalpha():
-            newname += ch
-        else:
-            return newname
-
-#returns dictionary
-def load_game_tiles():
-    tilefiles = [file for file in listdir("tiles/game/") if isfile(join("tiles/game/", file))] #load all the image files within the directory
-
-    tile_table = {} #init dictionary
-
-    for savedfile in tilefiles:
-        image = pygame.image.load("tiles/game/" + savedfile).convert_alpha()
-        ''' TODO: CHECK IF THESE PARAMETERS HAVE ANY USE '''
-        image_width, image_height = image.get_size()
-
-        tile_table[fileNameTruncate(savedfile)] = image
-
-    return tile_table
-
+  
 def print_ui_initial(ui_tileset,game_display,player,level_number):
     #print("Printing initial UI")
 
     #score text
-    game_display.blit(getBlockInImageDiffSize(ui_tileset["scoretext"], 0, 54,11), (0,0))
+    game_display.blit(cropBlockFromGraphic(ui_tileset["scoretext"], 0, 54,11), (0,0))
     leadingzeroes_score = str(player.score).zfill(5)
     for index in range(5):
         current_number = int(leadingzeroes_score[index] )
-        game_display.blit(getBlockInImageDiffSize(ui_tileset["numbers"], current_number, 8,11), (60*SCALEFACTOR+8*index*SCALEFACTOR,0))
+        game_display.blit(cropBlockFromGraphic(ui_tileset["numbers"], current_number, 8,11, 10), (60*TILE_SCALE_FACTOR+8*index*TILE_SCALE_FACTOR,0))
     
     #level text
-    game_display.blit(getBlockInImageDiffSize(ui_tileset["leveltext"], 0, 45,11), (120*SCALEFACTOR,0))
+    game_display.blit(cropBlockFromGraphic(ui_tileset["leveltext"], 0, 45,11), (120*TILE_SCALE_FACTOR,0))
     leadingzeroes_level = str(level_number).zfill(2)
     for index in range(2):
         current_level = int(leadingzeroes_level[index] )
-        game_display.blit(getBlockInImageDiffSize(ui_tileset["numbers"], current_level, 8,11), (170*SCALEFACTOR+8*index*SCALEFACTOR,0))
+        game_display.blit(cropBlockFromGraphic(ui_tileset["numbers"], current_level, 8,11, 10), (170*TILE_SCALE_FACTOR+8*index*TILE_SCALE_FACTOR,0))
     
     #daves text
-    game_display.blit(getBlockInImageDiffSize(ui_tileset["davestext"], 0, 50,11), (210*SCALEFACTOR,0))
+    game_display.blit(cropBlockFromGraphic(ui_tileset["davestext"], 0, 50,11), (210*TILE_SCALE_FACTOR,0))
     for index in range(player.lifes):
-        game_display.blit(getBlockInImageDiffSize(ui_tileset["daveicon"], 0, 14,12), (270*SCALEFACTOR+index*14*SCALEFACTOR,0))
+        game_display.blit(cropBlockFromGraphic(ui_tileset["daveicon"], 0, 14,12), (270*TILE_SCALE_FACTOR+index*14*TILE_SCALE_FACTOR,0))
         
 def update_ui_score(ui_tileset,game_display,score):
     #print("Updating UI")
     #score text
-    game_display.blit(getBlockInImageDiffSize(ui_tileset["scoretext"], 0, 54,11), (0,0))
+    game_display.blit(cropBlockFromGraphic(ui_tileset["scoretext"], 0, 54,11), (0,0))
     leadingzeroes_score = str(score).zfill(5)
     for index in range(5):
         current_number = int(leadingzeroes_score[index] )
-        game_display.blit(getBlockInImageDiffSize(ui_tileset["numbers"], current_number, 8,11), (60*SCALEFACTOR+8*index*SCALEFACTOR,0)) #X offset+each number offset
+        game_display.blit(cropBlockFromGraphic(ui_tileset["numbers"], current_number, 8,11,10), (60*TILE_SCALE_FACTOR+8*index*TILE_SCALE_FACTOR,0)) #X offset+each number offset
         
 def update_ui_trophy(ui_tileset,game_display): 
-    game_display.blit(getBlockInImageDiffSize(ui_tileset["gothrudoortext"], 0, 172,14), (70*SCALEFACTOR,192*SCALEFACTOR))
+    game_display.blit(cropBlockFromGraphic(ui_tileset["gothrudoortext"], 0, 172,14), (70*TILE_SCALE_FACTOR,192*TILE_SCALE_FACTOR))
 
 def update_ui_gun(ui_tileset,game_display): 
-    game_display.blit(getBlockInImageDiffSize(ui_tileset["gunicon"], 0, 16,11), (285*SCALEFACTOR,176*SCALEFACTOR))
-    game_display.blit(getBlockInImageDiffSize(ui_tileset["guntext"], 0, 27,11), (240*SCALEFACTOR,176*SCALEFACTOR))
+    game_display.blit(cropBlockFromGraphic(ui_tileset["gunicon"], 0, 16,11), (285*TILE_SCALE_FACTOR,176*TILE_SCALE_FACTOR))
+    game_display.blit(cropBlockFromGraphic(ui_tileset["guntext"], 0, 27,11), (240*TILE_SCALE_FACTOR,176*TILE_SCALE_FACTOR))
     
 def update_ui_jetpack(ui_tileset,game_display): 
-    game_display.blit(getBlockInImageDiffSize(ui_tileset["jetpacktext"], 0, 62,11), (0,176*SCALEFACTOR))
-    game_display.blit(getBlockInImageDiffSize(ui_tileset["jetpackmeter"], 0, 128,12), (70*SCALEFACTOR,176*SCALEFACTOR))
+    game_display.blit(cropBlockFromGraphic(ui_tileset["jetpacktext"], 0, 62,11), (0,176*TILE_SCALE_FACTOR))
+    game_display.blit(cropBlockFromGraphic(ui_tileset["jetpackmeter"], 0, 128,12), (70*TILE_SCALE_FACTOR,176*TILE_SCALE_FACTOR))
 
-#returns dictionary 
-'''TODO: UNIFY FUNCTIONS'''
+'''TODO: UNIFY THIS FUNCTION WITH load_tiles'''
+## returns dictionary
 def load_ui_tiles():
     tilefiles = [file for file in listdir("tiles/ui/") if isfile(join("tiles/ui/", file))] #load all the image files within the directory
 
@@ -182,167 +155,292 @@ def load_ui_tiles():
         ''' TODO: CHECK IF THESE PARAMETERS HAVE ANY USE '''
         image_width, image_height = image.get_size()
 
-        tile_table[fileNameTruncate(savedfile)] = image
+        ''' TODO: REVIEW THIS '''
+        tile_table[graphicPropertiesFromFilename(savedfile)[0]] = image
     #print(tile_table)
     return tile_table
 
-#display map in pygame
-def MapToDisplay(map, display, gfx_map, starting_x):
+'''
+Tile and gfxs
+'''
+
+## split a string separating numbers from letters
+def splitStringIntoLettersAndNumbers(string):
+    split_string = []
+    sub_string = ""
+    index = 0
+    
+    ''' TODO: REFACTOR? '''    
+    while index < len(string):
+        if string[index].isalpha():
+            while index < len(string) and string[index].isalpha():
+                sub_string += string[index]
+                index += 1
+        elif string[index].isdigit():
+             while index < len(string) and string[index].isdigit():
+                sub_string += string[index]
+                index += 1   
+        else:
+            index += 1
+        split_string.append(sub_string)
+        sub_string = ""
+        
+    return split_string
+
+## crop a set of tiles, getting the block in index X
+def cropBlockFromGraphic(image, index, size_x, size_y, num_of_blocks=1):
+    if (index >= num_of_blocks):
+        ErrorInvalidValue()
+        
+    x_index = index % num_of_blocks
+    x_index_pixel = x_index * size_x
+    
+    #select the tile to crop (y is always 0)
+    rectangle = (x_index_pixel, 0, size_x, size_y)
+    size_of_rectangle = (size_x * TILE_SCALE_FACTOR, size_y * TILE_SCALE_FACTOR)
+    cropped_tile = pygame.transform.scale(image.subsurface(rectangle), size_of_rectangle)
+    return cropped_tile  
+    
+## get name and size properties from filename
+def graphicPropertiesFromFilename(filename):
+    split_filename = splitStringIntoLettersAndNumbers(filename)
+
+    name = split_filename[0]
+    height = int(split_filename[3])
+    width = int(split_filename[1])
+    
+    return (name, height, width)
+
+''' TODO: UNIFY THIS FUNCTION WITH load_ui_tiles '''
+## returns dictionary
+def load_game_tiles():
+    tilefiles = [file for file in listdir("tiles/game/") if isfile(join("tiles/game/", file))] #load all the image files within the directory
+
+    tile_table = {} #init dictionary
+
+    for savedfile in tilefiles:
+        image = pygame.image.load("tiles/game/" + savedfile).convert_alpha()
+
+        tile_name, tile_height, tile_width = graphicPropertiesFromFilename(savedfile)
+        
+        tile_table[tile_name] = (image, tile_height, tile_width)
+
+    return tile_table
+
+'''
+Screen
+'''
+    
+## print a tile in the display screen
+def printTileInDisplay(tile, x, y, display, tileset, printing_sprite=False):
+    graphic_set = tileset[tile.getId()]
+    
+    set_width = graphic_set[2]
+    set_height = graphic_set[1]
+    set_image = graphic_set[0]
+    set_image_width = set_image.get_rect().size[0]
+    number_of_tiles_in_image = int(set_image_width / set_width)
+    
+    tile_graphic = cropBlockFromGraphic(set_image, tile.getGfxId(), set_width, set_height, number_of_tiles_in_image)
+    
+    if printing_sprite:
+        display_x = x * TILE_SCALE_FACTOR
+        display_y = y * TILE_SCALE_FACTOR 
+    else:
+        display_x = WIDTH_OF_MAP_NODE * x * TILE_SCALE_FACTOR
+        display_y = HEIGHT_OF_MAP_NODE * y * TILE_SCALE_FACTOR 
+    
+    display.blit(tile_graphic, (display_x, display_y))
+
+## display map in pygame
+def printMapInDisplay(map, display, tileset, screen_x_position):
     for y, row in enumerate(map.getNodeMatrix()):
         for x, col in enumerate(row):
             tile = map.getNode(x,y).getTile()
-            if (tile.getId() != "player") and inScreen(x, starting_x) and y > 0:
-                display.blit(getBlockInImage(gfx_map[tile.getId()], tile.getGfxId()), (16*(x - starting_x)*SCALEFACTOR, 16*SCALEFACTOR*y))
-
+            # won't print player nor the first line, neither other tiles that aren't in the screen
+            if (tile.getId() != "player") and isInScreen(x, screen_x_position) and (y > 0): 
+                adjusted_x = x - screen_x_position
+                printTileInDisplay(tile, adjusted_x, y, display, tileset)
+             
 #function used for scrolling the screen
-def moveScreenX(map, display, gfx_map, old_x, increment):
-    shift = 0
-    print(map.getWidth())
-    print(old_x + shift)
+def moveScreenX(map, display, tileset, old_screen_x, scroll_increment):
+    screen_shift = 0
+    reached_level_left_boundary = (old_screen_x + screen_shift <= 0)
+    reached_level_right_boundary = (old_screen_x + screen_shift + SCREEN_WIDTH_TILES >= map.getWidth())
+    
     #going left
-    while(shift > increment) and (old_x + shift > 0):
-        MapToDisplay(map, display, gfx_map, old_x + shift)
+    while (screen_shift > scroll_increment) and not reached_level_left_boundary:
+        printMapInDisplay(map, display, tileset, old_screen_x + screen_shift)
         pygame.display.flip()
-        shift -= 0.5
+        
+        screen_shift -= SCREEN_SHIFTING_VELOCITY
+        reached_level_left_boundary = (old_screen_x + screen_shift <= 0)
+        
     #going right
-    while(shift < increment) and (old_x + shift + SCREEN_WIDTH_TILES < map.getWidth()):
-        MapToDisplay(map, display, gfx_map, old_x + shift)
+    while (screen_shift < scroll_increment) and not reached_level_right_boundary:
+        printMapInDisplay(map, display, tileset, old_screen_x + screen_shift)
         pygame.display.flip()
-        shift += 0.5
-    return old_x + shift
+        
+        screen_shift += SCREEN_SHIFTING_VELOCITY
+        reached_level_right_boundary = (old_screen_x + screen_shift + SCREEN_WIDTH_TILES >= map.getWidth())
+        
+    return old_screen_x + screen_shift
 
 #check if a given point x is in screen
-def inScreen(x, screen_x):
+def isInScreen(x, screen_x):
     return (x >= screen_x) and (x < screen_x + SCREEN_WIDTH_TILES)
  
-def InterpicScreen(completed_levels, display, gfx_map):
+def InterpicScreen(completed_levels, display, tileset):
     Interpic = BuildLevel("interpic")
     
     clock = pygame.time.Clock()
     
-    MapToDisplay(Interpic, display, gfx_map, 0)
+    printMapInDisplay(Interpic, display, tileset, 0)
     
+    #init player
     player = Interpic.getPlayer()
     playerPosition = Interpic.getPlayerPosition()
-    player_position_x = 16 * playerPosition[0]
-    player_position_y = 16 * playerPosition[1]
+    player_position_x = WIDTH_OF_MAP_NODE * playerPosition[0]
+    player_position_y = HEIGHT_OF_MAP_NODE * playerPosition[1]
     
-    Interpic.setNodeTile(playerPosition[0], playerPosition[1], Tile()) 
- 
-    while(player_position_x < Interpic.getWidth() * 16):
+    Interpic.clearPlayerPosition()
+
+    #keep moving the player right, until it reaches the screen boundary
+    player_reached_boundary = (player_position_x >= Interpic.getWidth() * WIDTH_OF_MAP_NODE)
+    
+    while not player_reached_boundary:
         player_position_x += player.getMaxSpeedX() * player.getXSpeedFactor()
-        MapToDisplay(Interpic, display, gfx_map, 0)
-        display.blit(getBlockInImage(gfx_map["player"], player.getGfxId()), (player_position_x*SCALEFACTOR, player_position_y*SCALEFACTOR))
+     
+        #print map
+        printMapInDisplay(Interpic, display, tileset, 0)
+        #print player
+        printTileInDisplay(player, player_position_x, player_position_y, display, tileset, True)
+        
+        player_reached_boundary = (player_position_x >= Interpic.getWidth() * WIDTH_OF_MAP_NODE)
+        
         pygame.display.flip()
         clock.tick(200)
                         
- 
-def main():
-    ##pygame inits: START
-    pygame.init()
-    game_display = pygame.display.set_mode((320*SCALEFACTOR, 208*SCALEFACTOR))
-    game_display.fill((0, 0, 0))
+'''
+Pygame inits
+'''
+
+def init_display():
+    display = pygame.display.set_mode((SCREEN_WIDTH * TILE_SCALE_FACTOR, SCREEN_HEIGHT * TILE_SCALE_FACTOR))
+    display.fill((0, 0, 0))
     
+    return display
+
+                        
+def main():
+    ##Init pygame
+    pygame.init()
+    game_display = init_display()
+  
+    ##Init tiles
+    ''' TODO: UNIFY '''
     tileset = load_game_tiles()
     ui_tileset = load_ui_tiles()
     
-    current_level_number = 1
+    ##Init game
+    ended_game = False   
+
+    ''' TODO: TITLE SCREEN '''
+    current_level_number = 4    
     
-    ended_game = False
-    ##pygame inits: END
-    
-    ##Keys
+    ##Available Keys
     movement_keys = [pygame.K_UP, pygame.K_LEFT, pygame.K_RIGHT, pygame.K_DOWN]
     inv_keys = [pygame.K_LCTRL, pygame.K_RCTRL, pygame.K_LALT, pygame.K_RALT]
     
-    ##Engine
-    while not ended_game:
-        Level = BuildLevel(current_level_number)
-        
-        GamePlayer = Level.getPlayer()
-        playerPosition = Level.getPlayerPosition()
-        player_position_x = 16 * playerPosition[0]
-        player_position_y = 16 * playerPosition[1]
-        Level.setNodeTile(playerPosition[0], playerPosition[1], Tile())            ## Cleans the Player's original position, so the map can print it correct
-
-        screen_current_x = 0   ## The X position where the screen starts
-        
+    ##Game processing
+    while not ended_game:      
+        # init stuff
         clock = pygame.time.Clock()
-        pygame.display.update()      
+        pygame.display.update() 
+        
+        # build the level
+        (Level, GamePlayer, player_position_x, player_position_y, screen_x_position) = initLevel(current_level_number)
    
-        ##UI inits: START
-        print_ui_initial(ui_tileset,game_display,GamePlayer,1)
+        # UI Inits
+        print_ui_initial(ui_tileset, game_display, GamePlayer, 1)
         score_ui = 0 #initial score, everytime it changes, we update the ui
         trophy_ui = False #initial score, everytime it changes, we update the ui
         
-        update_ui_gun(ui_tileset,game_display)
-        update_ui_jetpack(ui_tileset,game_display)
-        ##UI inits: END
-
+        ''' TODO: THIS SHOULD BE INSIDE THE NEXT LOOP? '''
+        update_ui_gun(ui_tileset, game_display)
+        update_ui_jetpack(ui_tileset, game_display)
+        
+        # level processing controller
         ended_level = False
         
+        ## Level processing
         while not ended_level:
-            #get keys (invetory)
+            # get keys (invetory)
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     ended_level = True
                 elif event.type == pygame.KEYUP:
                     if event.key in [pygame.K_LEFT, pygame.K_RIGHT] and GamePlayer.getCurrentState() in [GamePlayer.state.WALK, GamePlayer.state.FLY, GamePlayer.state.JUMP]:
-                        pass
-                        GamePlayer.setVelocityX(0)
-                        GamePlayer.setDirectionX(direction.IDLE)
+                        GamePlayer.clearXMovement()
                     elif event.key in [pygame.K_UP, pygame.K_DOWN] and GamePlayer.getCurrentState() in [GamePlayer.state.FLY, GamePlayer.state.CLIMB]:
                         GamePlayer.setVelocityY(0)
                 elif event.type == pygame.KEYDOWN:
                     if event.key in inv_keys:
                         GamePlayer.inventoryInput(inv_keys.index(event.key))    
         
-            #get keys (movement)
+            # get keys (movement)
             pressed_keys = pygame.key.get_pressed()
             key_map = [0,0,0,0]
             for i, key in enumerate(movement_keys):
                 if pressed_keys[key]:
                     key_map[i] = 1
-            
             GamePlayer.movementInput(key_map)
             
-            #update the player position in the level
+            # update the player position in the level and treat collisions
             (player_position_x, player_position_y) = GamePlayer.updatePosition(player_position_x, player_position_y, Level)
             
-            #nextmap
+            # if the player ended the level, go on to the next
             if GamePlayer.getCurrentState() == GamePlayer.state.ENDMAP:
                 ended_level = True      
                 break;
             
-            ##print tiles
-            #moving screen left
-            if (screen_current_x > 0) and (player_position_x <= 16*screen_current_x + BOUNDARY):
-                screen_current_x = moveScreenX(Level, game_display, tileset, screen_current_x, -15)
-            #moving screen right
-            elif (screen_current_x + SCREEN_WIDTH_TILES < Level.getWidth()) and (player_position_x >= 16*screen_current_x + SCREEN_WIDTH - BOUNDARY):
-                screen_current_x = moveScreenX(Level, game_display, tileset, screen_current_x, 15)
-            #not moving
+            # if the player is close enough to one of the screen boundaries, move the screen.
+            player_close_to_left_boundary = (player_position_x <= WIDTH_OF_MAP_NODE * screen_x_position + BOUNDARY_DISTANCE_TRIGGER)
+            player_close_to_right_boundary = (player_position_x >= WIDTH_OF_MAP_NODE * screen_x_position + SCREEN_WIDTH - BOUNDARY_DISTANCE_TRIGGER)
+            reached_level_left_boundary = (screen_x_position <= 0)
+            reached_level_right_boundary = (screen_x_position + SCREEN_WIDTH_TILES > Level.getWidth())
+            
+            # move screen left
+            if player_close_to_left_boundary and not reached_level_left_boundary:
+                screen_x_position = moveScreenX(Level, game_display, tileset, screen_x_position, -15)
+            # move screen right
+            elif player_close_to_right_boundary and not reached_level_right_boundary:
+                screen_x_position = moveScreenX(Level, game_display, tileset, screen_x_position, 15)
+            # not moving (just update the screen)
             else:
-                MapToDisplay(Level, game_display, tileset, screen_current_x)
-                game_display.blit(getBlockInImage(tileset["player"], GamePlayer.getGfxId()), ((player_position_x - 16 * screen_current_x)*SCALEFACTOR, player_position_y*SCALEFACTOR))
-                
+                printMapInDisplay(Level, game_display, tileset, screen_x_position)
+                # print player accordingly to screen shift
+                ''' TODO: REFACTOR? '''
+                printTileInDisplay(GamePlayer, player_position_x - WIDTH_OF_MAP_NODE * screen_x_position, player_position_y, game_display, tileset, True)
+
+            # update UI
+            ''' TODO: PUT THIS INSIDE A HELPER FUNCTION? '''
             if score_ui != GamePlayer.score:
                 update_ui_score(ui_tileset,game_display,GamePlayer.score)
-                score_ui = GamePlayer.score   
-                
+                score_ui = GamePlayer.score
             if not trophy_ui and GamePlayer.inventory["trophy"] == 1:
                 update_ui_trophy(ui_tileset,game_display)
                 trophy_ui = True
 
             pygame.display.flip()
-
             pygame.event.pump()
-            
             clock.tick(200)
         
+        # Onto the next level
         current_level_number += 1        
         
         if current_level_number > 10:
+            ''' TODO: CREDITS SCREEN '''
             ended_game = True
         else:
             InterpicScreen(current_level_number, game_display, tileset)        

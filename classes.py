@@ -7,7 +7,15 @@ from enum import Enum #WE SO FUCKING NEED THIS AAAAAA
 Constants and enumerations
 '''
 
-SCALEFACTOR = 2
+TILE_SCALE_FACTOR = 2
+WIDTH_OF_MAP_NODE = 16
+HEIGHT_OF_MAP_NODE = 16
+SCREEN_SHIFTING_VELOCITY = 0.5
+
+BOUNDARY_DISTANCE_TRIGGER = 25
+SCREEN_WIDTH_TILES = 20
+SCREEN_WIDTH = 320
+SCREEN_HEIGHT = 208
 
 class direction(Enum):
     LEFT = -1
@@ -92,6 +100,10 @@ class Map(object):
             self.node_matrix[y][x].setTile(tile)
         else: ErrorInvalidValue()
 
+    def clearPlayerPosition(self):
+        playerPosition = self.getPlayerPosition()
+        self.setNodeTile(playerPosition[0], playerPosition[1], Tile())
+        
     def getNode(self, x, y):
         return self.node_matrix[y][x]
 
@@ -635,10 +647,10 @@ class Player(Dynamic):
             ##animation stuff
             self.animation_index = 0               # Number used to index the animation list of the corresponding state
             self.animation_counter = 0             # Counter that ticks until the next frame of animation should be displayed
-            self.animation_index_list = {self.state.WALK : [1.2, 2.4, 3.7, 2.4], 
+            self.animation_index_list = {self.state.WALK : [1, 2, 3, 2], 
                                             self.state.BLINK : [0], 
-                                            self.state.FALL : [13], 
-                                            self.state.JUMP : [13]}     # Dict of lists that specifies the index (displacement) of each animation frame based on the player tile. Indexed by the name of the self.state. (indexes are not integer because the tiles are not exactly the same size, apparently?)
+                                            self.state.FALL : [12], 
+                                            self.state.JUMP : [12]}     # Dict of lists that specifies the index (displacement) of each animation frame based on the player tile. Indexed by the name of the self.state. (indexes are not integer because the tiles are not exactly the same size, apparently?)
 
         else: ErrorInvalidConstructor()
 
@@ -857,6 +869,10 @@ class Player(Dynamic):
         if (self.velocity_y > self.MAX_SPEED_Y):
             self.velocity_y = self.MAX_SPEED_Y
 
+    def clearXMovement(self):
+        self.velocity_x = 0
+        self.direction_x = direction.IDLE
+            
     '''
     Getters and setters
     '''
