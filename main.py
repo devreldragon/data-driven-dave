@@ -7,7 +7,7 @@ import pygame
 Constants
 '''
 
-BOUNDARY = 20
+BOUNDARY = 25
 SCREEN_WIDTH_TILES = 20
 SCREEN_WIDTH = 320
 
@@ -15,215 +15,67 @@ SCREEN_WIDTH = 320
 Levels
 '''
 
-def buildLevelOne():
-    LevelOne = Map()
-
-    LevelOne.buildMapBorder(Solid())
-
-    LevelOne.buildWall(18, Solid())
-    LevelOne.buildWall(19, Solid())
-
-    orb = "items"
-    red_d = "items"
-    trophy = "trophy"
-
-    LevelOne.setNodeTile(1, 2, Item(orb, 0, 50))
-    LevelOne.setNodeTile(1, 5, Item())
-    LevelOne.setNodeTile(1, 6, Solid())
-    LevelOne.setNodeTile(1, 7, Item())
-    LevelOne.setNodeTile(1, 9, Solid("tunnel", 1))
-    LevelOne.setNodeTile(3, 3, Item())
-    LevelOne.setNodeTile(3, 4, Solid())
-    LevelOne.setNodeTile(4, 8, Solid())
-    LevelOne.setNodeTile(5, 5, Item())
-    LevelOne.setNodeTile(5, 6, Solid())
-    LevelOne.setNodeTile(5, 8, Solid())
-    LevelOne.setNodeTile(6, 8, Solid())
-    LevelOne.setNodeTile(7, 3, Item())
-    LevelOne.setNodeTile(7, 4, Solid())
-    LevelOne.setNodeTile(7, 7, Item())
-    LevelOne.setNodeTile(7, 8, Solid())
-    LevelOne.setNodeTile(9, 5, Item())
-    LevelOne.setNodeTile(9, 6, Solid())
-    LevelOne.setNodeTile(11, 3, Equipment(trophy, 0, 1000, "trophy"))
-    LevelOne.setNodeTile(11, 4, Solid())
-    LevelOne.setNodeTile(11, 8, Solid())
-    LevelOne.setNodeTile(11, 9, Solid())
-    LevelOne.setNodeTile(12, 8, Solid())
-    LevelOne.setNodeTile(12, 9, InteractiveScenery())
-    LevelOne.setNodeTile(13, 5, Item())
-    LevelOne.setNodeTile(13, 6, Solid())
-    LevelOne.setNodeTile(13, 8, Solid())
-    LevelOne.setNodeTile(14, 8, Solid())
-    LevelOne.setNodeTile(15, 3, Item())
-    LevelOne.setNodeTile(15, 4, Solid())
-    LevelOne.setNodeTile(15, 8, Solid())
-    LevelOne.setNodeTile(16, 8, Solid())
-    LevelOne.setNodeTile(17, 2, Item(red_d, 2, 150))
-    LevelOne.setNodeTile(17, 5, Item())
-    LevelOne.setNodeTile(17, 6, Solid())
-    LevelOne.setNodeTile(2, 9, Player())
-    return LevelOne
-
-def buildLevelTwo():
-    LevelTwo = Map()
-
-    LevelTwo.buildMapBorder(Solid())
-
-    ORB = Item("items", 0, 50)
-    BLUE_DIAMOND = Item("items", 1, 100)
-    RED_DIAMOND = Item("items", 2, 150)
-    TROPHY = Equipment("trophy", 0, 1000, "trophy") 
-    PINKPIPE = Solid("pinkpipe", 1)
-    FIRE = InteractiveScenery("fire", 0, InteractiveScenery.TYPE.HAZARD, 1)
-    WATER = InteractiveScenery("water", 0, InteractiveScenery.TYPE.HAZARD, 1)
-    TENTACLE = InteractiveScenery("tentacles", 0, InteractiveScenery.TYPE.HAZARD, 1)
-    DOOR = InteractiveScenery()
-    REDBRICK = Solid()
+def BuildLevel(level_number):
+    textmap = open("levels/" + str(level_number) + ".txt", 'r')
     
-    LevelTwo.setNodeTile(1, 9, Player())
+    height = len(textmap.readlines())
+    textmap.seek(0)
+    width = int(len(textmap.readline()) / 3)
+    textmap.seek(0)
+    Level = Map(height, width)
     
-    LevelTwo.setNodeTile(1, 2, RED_DIAMOND)
-    LevelTwo.setNodeTile(1, 4, PINKPIPE)
-    LevelTwo.setNodeTile(2, 6, PINKPIPE)
-    LevelTwo.setNodeTile(3, 6, PINKPIPE)
-    LevelTwo.setNodeTile(3, 10, FIRE)
-    LevelTwo.setNodeTile(4, 4, PINKPIPE)
-    LevelTwo.setNodeTile(4, 8, PINKPIPE)
-    LevelTwo.setNodeTile(4, 10, FIRE)
-    LevelTwo.setNodeTile(5, 8, PINKPIPE)
-    LevelTwo.setNodeTile(5, 10, FIRE)
-    LevelTwo.setNodeTile(6, 8, PINKPIPE)
-    LevelTwo.setNodeTile(6, 10, FIRE)
-    LevelTwo.setNodeTile(7, 2, BLUE_DIAMOND)
-    LevelTwo.setNodeTile(7, 10, FIRE)
-    LevelTwo.setNodeTile(8, 5, PINKPIPE)
-    LevelTwo.setNodeTile(8, 8, RED_DIAMOND)
-    LevelTwo.setNodeTile(8, 10, FIRE)
-    LevelTwo.setNodeTile(9, 5, PINKPIPE)
-    LevelTwo.setNodeTile(9, 6, REDBRICK)
-    LevelTwo.setNodeTile(9, 7, REDBRICK)
-    LevelTwo.setNodeTile(9, 8, REDBRICK)
-    LevelTwo.setNodeTile(9, 9, REDBRICK)
-    LevelTwo.setNodeTile(10, 5, PINKPIPE)
-    LevelTwo.setNodeTile(10, 9, BLUE_DIAMOND)
-    LevelTwo.setNodeTile(10, 10, FIRE)
-    LevelTwo.setNodeTile(11, 7, PINKPIPE)
-    LevelTwo.setNodeTile(11, 10, FIRE)
-    LevelTwo.setNodeTile(12, 10, FIRE)
-    LevelTwo.setNodeTile(13, 4, PINKPIPE)
-    LevelTwo.setNodeTile(13, 6, TROPHY)
-    LevelTwo.setNodeTile(13, 9, PINKPIPE)
-    LevelTwo.setNodeTile(13, 10, FIRE)
-    LevelTwo.setNodeTile(14, 5, REDBRICK)
-    LevelTwo.setNodeTile(14, 6, REDBRICK)
-    LevelTwo.setNodeTile(14, 7, REDBRICK)
-    LevelTwo.setNodeTile(14, 8, REDBRICK)
-    LevelTwo.setNodeTile(14, 9, REDBRICK)
-    LevelTwo.setNodeTile(15, 10, WATER)
-    LevelTwo.setNodeTile(16, 6, PINKPIPE)
-    LevelTwo.setNodeTile(16, 8, BLUE_DIAMOND)
-    LevelTwo.setNodeTile(16, 10, WATER)
-    LevelTwo.setNodeTile(17, 6, PINKPIPE)
-    LevelTwo.setNodeTile(17, 8, BLUE_DIAMOND)
-    LevelTwo.setNodeTile(17, 10, WATER)
-    LevelTwo.setNodeTile(18, 6, PINKPIPE)
-    LevelTwo.setNodeTile(18, 8, BLUE_DIAMOND)
-    LevelTwo.setNodeTile(18, 10, WATER)
-    LevelTwo.setNodeTile(19, 6, PINKPIPE)
-    LevelTwo.setNodeTile(19, 8, BLUE_DIAMOND)
-    LevelTwo.setNodeTile(19, 10, WATER)
-    LevelTwo.setNodeTile(20, 2, ORB)
-    LevelTwo.setNodeTile(20, 6, PINKPIPE)
-    LevelTwo.setNodeTile(20, 8, BLUE_DIAMOND)
-    LevelTwo.setNodeTile(20, 10, WATER)
-    LevelTwo.setNodeTile(21, 10, WATER)
-    for i in range(5, 10):
-        LevelTwo.setNodeTile(22, i, REDBRICK)
-    LevelTwo.setNodeTile(23, 4, REDBRICK)
-    LevelTwo.setNodeTile(23, 5, REDBRICK) 
-    LevelTwo.setNodeTile(24, 3, REDBRICK)
-    LevelTwo.setNodeTile(24, 4, REDBRICK)
-    LevelTwo.setNodeTile(24, 7, REDBRICK)
-    LevelTwo.setNodeTile(24, 8, REDBRICK)
-    LevelTwo.setNodeTile(25, 3, REDBRICK)
-    LevelTwo.setNodeTile(25, 6, REDBRICK)
-    LevelTwo.setNodeTile(26, 3, REDBRICK)
-    LevelTwo.setNodeTile(26, 5, REDBRICK)
-    LevelTwo.setNodeTile(26, 6, REDBRICK)
-    LevelTwo.setNodeTile(26, 8, REDBRICK)
-    LevelTwo.setNodeTile(26, 9, REDBRICK)
-    LevelTwo.setNodeTile(27, 3, REDBRICK)
-    LevelTwo.setNodeTile(27, 5, REDBRICK)
-    LevelTwo.setNodeTile(27, 8, REDBRICK)
-    LevelTwo.setNodeTile(27, 9, ORB)
-    LevelTwo.setNodeTile(28, 3, REDBRICK)
-    LevelTwo.setNodeTile(28, 5, REDBRICK)
-    LevelTwo.setNodeTile(28, 6, ORB)
-    for i in range(5, 9):
-        LevelTwo.setNodeTile(29, i, REDBRICK)    
-    for i in range(2, 6):
-        LevelTwo.setNodeTile(30, i, REDBRICK)
-    for i in range(2, 6):
-        LevelTwo.setNodeTile(31, i, REDBRICK)
-    LevelTwo.setNodeTile(31, 8, REDBRICK)
-    LevelTwo.setNodeTile(31, 9, ORB)
-    LevelTwo.setNodeTile(32, 5, REDBRICK)
-    for i in range(7, 10):
-        LevelTwo.setNodeTile(32, i, REDBRICK)    
-    LevelTwo.setNodeTile(33, 3, REDBRICK)
-    LevelTwo.setNodeTile(33, 5, REDBRICK)
-    LevelTwo.setNodeTile(34, 3, REDBRICK)
-    LevelTwo.setNodeTile(34, 5, REDBRICK)
-    LevelTwo.setNodeTile(34, 6, REDBRICK)
-    LevelTwo.setNodeTile(34, 7, REDBRICK)
-    LevelTwo.setNodeTile(35, 3, REDBRICK)
-    LevelTwo.setNodeTile(35, 9, REDBRICK)
-    LevelTwo.setNodeTile(36, 3, REDBRICK)
-    LevelTwo.setNodeTile(36, 7, REDBRICK)
-    LevelTwo.setNodeTile(36, 9, ORB)
-    for i in range(3, 10):
-        LevelTwo.setNodeTile(37, i, REDBRICK)
-    for i in range(38, 48):
-        LevelTwo.setNodeTile(i, 3, REDBRICK)
-        LevelTwo.setNodeTile(i, 10, FIRE)
-    for i in range(48, 50):
-        LevelTwo.setNodeTile(i, 2, REDBRICK)
-        LevelTwo.setNodeTile(i, 3, REDBRICK)
-        LevelTwo.setNodeTile(i, 10, FIRE) 
-    LevelTwo.setNodeTile(47, 2, DOOR)
+    for y, line in enumerate(textmap.readlines()):
+        x = 0
+        while (x < width):
+            text_tile = line[(3*x):(3*x + 2)]
+            tile_type = tileFromText(text_tile)
+            Level.setNodeTile(x, y, tile_type)
+            x += 1
+            
+    return Level       
     
-    #write the letters
-    ##C
-    LevelTwo.setNodeTile(38, 5, TENTACLE)
-    LevelTwo.setNodeTile(38, 6, TENTACLE)
-    LevelTwo.setNodeTile(38, 7, TENTACLE)
-    LevelTwo.setNodeTile(39, 4, TENTACLE)
-    LevelTwo.setNodeTile(39, 8, TENTACLE)
-    LevelTwo.setNodeTile(40, 4, TENTACLE)
-    LevelTwo.setNodeTile(40, 8, TENTACLE)
     
-    ##I
-    LevelTwo.setNodeTile(42, 4, TENTACLE)
-    LevelTwo.setNodeTile(42, 8, TENTACLE)
-    LevelTwo.setNodeTile(43, 4, TENTACLE)
-    LevelTwo.setNodeTile(43, 5, TENTACLE)
-    LevelTwo.setNodeTile(43, 6, TENTACLE)
-    LevelTwo.setNodeTile(43, 7, TENTACLE)
-    LevelTwo.setNodeTile(43, 8, TENTACLE)
-    LevelTwo.setNodeTile(44, 4, TENTACLE)
-    LevelTwo.setNodeTile(44, 8, TENTACLE)
-    
-    ##C
-    LevelTwo.setNodeTile(46, 5, TENTACLE)
-    LevelTwo.setNodeTile(46, 6, TENTACLE)
-    LevelTwo.setNodeTile(46, 7, TENTACLE)
-    LevelTwo.setNodeTile(47, 4, TENTACLE)
-    LevelTwo.setNodeTile(47, 8, TENTACLE)
-    LevelTwo.setNodeTile(48, 4, TENTACLE)
-    LevelTwo.setNodeTile(48, 8, TENTACLE) 
+def tileFromText(text_tile):
+    try:
+        gfx_id = int(text_tile[1])
+    except:
+        gfx_id = 0
 
-    return LevelTwo
+    if text_tile == "DO":
+        return InteractiveScenery()
+    elif text_tile == "FR":
+        return InteractiveScenery("fire", 0, InteractiveScenery.TYPE.HAZARD, 1)
+    elif text_tile == "WA":
+        return InteractiveScenery("water", 0, InteractiveScenery.TYPE.HAZARD, 1)
+    elif text_tile == "TN":
+        return InteractiveScenery("tentacles", 0, InteractiveScenery.TYPE.HAZARD, 1)
+    elif text_tile == "TR":
+        return Equipment("trophy", 0, 1000, "trophy") 
+    elif text_tile == "GU":
+        return Equipment("gun", 0, 0, "gun")
+    elif text_tile == "JE":
+        return Equipment("jetpack", 0, 0, "jetpack")
+    elif text_tile == "LO":
+        return InteractiveScenery("treelog", 0, InteractiveScenery.TYPE.TREE, 0)
+    elif text_tile == "pl":
+        return Player()
+    elif text_tile[0] == 'B':
+        return Solid("solid", gfx_id)
+    elif text_tile[0] == 'T':
+        return Solid("tunnel", gfx_id)
+    elif text_tile[0] == 'S':
+        return Tile("scenery", gfx_id)
+    elif text_tile[0] == 'M':
+        return Tile("moonstars", gfx_id)
+    elif text_tile[0] == 'E':
+        return Tile("tree", gfx_id)
+    elif text_tile[0] == 'I':
+        scores = [50, 100, 150, 200, 300, 500]
+        return Item("items", gfx_id, scores[1])
+    elif text_tile[0] == 'P':
+        return Solid("pinkpipe", gfx_id)
+    else:
+        return Tile("scenery", 0)
     
     
 '''
@@ -346,12 +198,13 @@ def MapToDisplay(map, display, gfx_map, starting_x):
 def moveScreenX(map, display, gfx_map, old_x, increment):
     shift = 0
     #going left
-    while(shift > increment):
+    while(shift > increment) and (old_x + shift > 0):
         MapToDisplay(map, display, gfx_map, old_x + shift)
         pygame.display.flip()
         shift -= 0.5
     #going right
-    while(shift < increment):
+    ''' TODO: FIX THIS '''
+    while(shift < increment) and (old_x + shift < map.getWidth()):
         MapToDisplay(map, display, gfx_map, old_x + shift)
         pygame.display.flip()
         shift += 0.5
@@ -361,9 +214,6 @@ def inScreen(x, screen_x):
     return (x >= screen_x) and (x < screen_x + SCREEN_WIDTH_TILES)
         
 def main():
-    #Level = buildLevelOne()
-    Level = buildLevelTwo()
-
     ##pygame inits: START
     pygame.init()
     game_display = pygame.display.set_mode((320*SCALEFACTOR, 208*SCALEFACTOR))
@@ -372,93 +222,108 @@ def main():
     tileset = load_game_tiles()
     ui_tileset = load_ui_tiles()
     
-    GamePlayer = Level.getPlayer()
-    playerPosition = Level.getPlayerPosition()
-    player_position_x = 16 * playerPosition[0]
-    player_position_y = 16 * playerPosition[1]
-    Level.setNodeTile(playerPosition[0], playerPosition[1], Tile())            ## Cleans the Player's original position, so the map can print it correct
-
-    screen_current_x = 0   ## The X position where the screen starts
+    current_level_number = 4
     
-    clock = pygame.time.Clock()
-    pygame.display.update()
-    ended = False
+    ended_game = False
     ##pygame inits: END
-    
-    ##UI inits: START
-    print_ui_initial(ui_tileset,game_display,GamePlayer,1)
-    score_ui = 0 #initial score, everytime it changes, we update the ui
-    trophy_ui = False #initial score, everytime it changes, we update the ui
-    
-    update_ui_gun(ui_tileset,game_display)
-    update_ui_jetpack(ui_tileset,game_display)
-    ##UI inits: END
     
     ##Keys
     movement_keys = [pygame.K_UP, pygame.K_LEFT, pygame.K_RIGHT, pygame.K_DOWN]
     inv_keys = [pygame.K_LCTRL, pygame.K_RCTRL, pygame.K_LALT, pygame.K_RALT]
     
     ##Engine
-    while not ended:
-        #get keys (invetory)
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                ended = True
-            elif event.type == pygame.KEYUP:
-                if event.key in [pygame.K_LEFT, pygame.K_RIGHT] and GamePlayer.getCurrentState() in [GamePlayer.state.WALK, GamePlayer.state.FLY, GamePlayer.state.JUMP]:
-                    pass
-                    GamePlayer.setVelocityX(0)
-                    GamePlayer.setDirectionX(direction.IDLE)
-                elif event.key in [pygame.K_UP, pygame.K_DOWN] and GamePlayer.getCurrentState() in [GamePlayer.state.FLY, GamePlayer.state.CLIMB]:
-                    GamePlayer.setVelocityY(0)
-            elif event.type == pygame.KEYDOWN:
-                if event.key in inv_keys:
-                    GamePlayer.inventoryInput(inv_keys.index(event.key))    
-    
-        #get keys (movement)
-        pressed_keys = pygame.key.get_pressed()
-        key_map = [0,0,0,0]
-        for i, key in enumerate(movement_keys):
-            if pressed_keys[key]:
-                key_map[i] = 1
+    while not ended_game:
+        Level = BuildLevel(current_level_number)
         
-        GamePlayer.movementInput(key_map)
+        GamePlayer = Level.getPlayer()
+        playerPosition = Level.getPlayerPosition()
+        player_position_x = 16 * playerPosition[0]
+        player_position_y = 16 * playerPosition[1]
+        Level.setNodeTile(playerPosition[0], playerPosition[1], Tile())            ## Cleans the Player's original position, so the map can print it correct
+
+        screen_current_x = 0   ## The X position where the screen starts
         
-        #update the player position in the level
-        (player_position_x, player_position_y) = GamePlayer.updatePosition(player_position_x, player_position_y, Level)
+        clock = pygame.time.Clock()
+        pygame.display.update()      
+   
+        ##UI inits: START
+        print_ui_initial(ui_tileset,game_display,GamePlayer,1)
+        score_ui = 0 #initial score, everytime it changes, we update the ui
+        trophy_ui = False #initial score, everytime it changes, we update the ui
         
-        #nextmap
-        if GamePlayer.getCurrentState() == GamePlayer.state.ENDMAP:
-            '''TODO: interpic and next level'''
-            ended = True        
+        update_ui_gun(ui_tileset,game_display)
+        update_ui_jetpack(ui_tileset,game_display)
+        ##UI inits: END
+
+        ended_level = False
         
-        ##print tiles
-        #moving screen left
-        if (screen_current_x > 0) and (player_position_x <= 16*screen_current_x + BOUNDARY):
-            moveScreenX(Level, game_display, tileset, screen_current_x, -15)
-            screen_current_x -= 15
-        #moving screen right
-        elif (screen_current_x + SCREEN_WIDTH_TILES < Level.getWidth()) and (player_position_x >= 16*screen_current_x + SCREEN_WIDTH - BOUNDARY):
-            moveScreenX(Level, game_display, tileset, screen_current_x, 15)
-            screen_current_x += 15
-        #not moving
+        while not ended_level:
+            #get keys (invetory)
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    ended_level = True
+                elif event.type == pygame.KEYUP:
+                    if event.key in [pygame.K_LEFT, pygame.K_RIGHT] and GamePlayer.getCurrentState() in [GamePlayer.state.WALK, GamePlayer.state.FLY, GamePlayer.state.JUMP]:
+                        pass
+                        GamePlayer.setVelocityX(0)
+                        GamePlayer.setDirectionX(direction.IDLE)
+                    elif event.key in [pygame.K_UP, pygame.K_DOWN] and GamePlayer.getCurrentState() in [GamePlayer.state.FLY, GamePlayer.state.CLIMB]:
+                        GamePlayer.setVelocityY(0)
+                elif event.type == pygame.KEYDOWN:
+                    if event.key in inv_keys:
+                        GamePlayer.inventoryInput(inv_keys.index(event.key))    
+        
+            #get keys (movement)
+            pressed_keys = pygame.key.get_pressed()
+            key_map = [0,0,0,0]
+            for i, key in enumerate(movement_keys):
+                if pressed_keys[key]:
+                    key_map[i] = 1
+            
+            GamePlayer.movementInput(key_map)
+            
+            #update the player position in the level
+            (player_position_x, player_position_y) = GamePlayer.updatePosition(player_position_x, player_position_y, Level)
+            
+            #nextmap
+            if GamePlayer.getCurrentState() == GamePlayer.state.ENDMAP:
+                ended_level = True      
+                break;
+            
+            ##print tiles
+            #moving screen left
+            if (screen_current_x > 0) and (player_position_x <= 16*screen_current_x + BOUNDARY):
+                moveScreenX(Level, game_display, tileset, screen_current_x, -15)
+                screen_current_x -= 15
+            #moving screen right
+            elif (screen_current_x + SCREEN_WIDTH_TILES < Level.getWidth()) and (player_position_x >= 16*screen_current_x + SCREEN_WIDTH - BOUNDARY):
+                moveScreenX(Level, game_display, tileset, screen_current_x, 15)
+                screen_current_x += 15
+            #not moving
+            else:
+                MapToDisplay(Level, game_display, tileset, screen_current_x)
+                game_display.blit(getBlockInImage(tileset["player"], GamePlayer.getGfxId()), ((player_position_x - 16 * screen_current_x)*SCALEFACTOR, player_position_y*SCALEFACTOR))
+                
+            if score_ui != GamePlayer.score:
+                update_ui_score(ui_tileset,game_display,GamePlayer.score)
+                score_ui = GamePlayer.score   
+                
+            if not trophy_ui and GamePlayer.inventory["trophy"] == 1:
+                update_ui_trophy(ui_tileset,game_display)
+                trophy_ui = True
+
+            pygame.display.flip()
+
+            pygame.event.pump()
+            
+            clock.tick(200)
+        
+        current_level_number += 1        
+        
+        if current_level_number > 10:
+            ended_game = True
         else:
-            MapToDisplay(Level, game_display, tileset, screen_current_x)
-            game_display.blit(getBlockInImage(tileset["player"], GamePlayer.getGfxId()), ((player_position_x - 16 * screen_current_x)*SCALEFACTOR, player_position_y*SCALEFACTOR))
-            
-        if score_ui != GamePlayer.score:
-            update_ui_score(ui_tileset,game_display,GamePlayer.score)
-            score_ui = GamePlayer.score   
-            
-        if not trophy_ui and GamePlayer.inventory["trophy"] == 1:
-            update_ui_trophy(ui_tileset,game_display)
-            trophy_ui = True
-
-        pygame.display.flip()
-
-        pygame.event.pump()
-        
-        clock.tick(200)
+            InterpicScreen(current_level_number)        
 
     pygame.quit()
     quit()

@@ -16,8 +16,6 @@ class direction(Enum):
     UP = 2
     DOWN = 3
 
-##TODO: Review id() field in classes
-
 '''
 Errors
 '''
@@ -51,10 +49,18 @@ class Map(object):
     Methods
     '''
     
-    def __init__(self):
-        self.height = 11
-        self.width = 150
-        self.node_matrix = [[MapNode() for i in range(self.width)] for j in range(self.height)]
+    def __init__(self, *args):
+        #default constructor
+        if(len(args) == 0):
+            self.height = 11
+            self.width = 150
+            self.node_matrix = [[MapNode() for i in range(self.width)] for j in range(self.height)]
+        elif(len(args) == 2):
+            ''' TODO: TEST INSTANCES '''
+            self.height = args[0]
+            self.width = args[1]
+            self.node_matrix = [[MapNode() for i in range(self.width)] for j in range(self.height)]        
+        else: ErrorInvalidConstructor()
 
     def addMapLine(self):
         self.height += 1
@@ -586,6 +592,7 @@ class Dynamic(Tile):
         return self.state_list
         '''
 
+        
 class Player(Dynamic):
     '''
     Player represents the player object (not the controller) in the game
@@ -933,3 +940,4 @@ class Enemy(Dynamic):
     '''
 
     '''TODO: IMPLEMENT THIS (I'M TOO LAZY NOW)'''
+
