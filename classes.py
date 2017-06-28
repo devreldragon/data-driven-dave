@@ -896,6 +896,9 @@ class Player(Dynamic):
 
     def getMaxSpeedY(self):
         return self.MAX_SPEED_Y
+        
+    def getXSpeedFactor(self):
+        return self.X_SPEED_FACTOR
 
 
 class Enemy(Dynamic):

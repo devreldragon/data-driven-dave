@@ -197,22 +197,46 @@ def MapToDisplay(map, display, gfx_map, starting_x):
 #function used for scrolling the screen
 def moveScreenX(map, display, gfx_map, old_x, increment):
     shift = 0
+    print(map.getWidth())
+    print(old_x + shift)
     #going left
     while(shift > increment) and (old_x + shift > 0):
         MapToDisplay(map, display, gfx_map, old_x + shift)
         pygame.display.flip()
         shift -= 0.5
     #going right
-    ''' TODO: FIX THIS '''
-    while(shift < increment) and (old_x + shift < map.getWidth()):
+    while(shift < increment) and (old_x + shift + SCREEN_WIDTH_TILES < map.getWidth()):
         MapToDisplay(map, display, gfx_map, old_x + shift)
         pygame.display.flip()
         shift += 0.5
+    return old_x + shift
 
 #check if a given point x is in screen
 def inScreen(x, screen_x):
     return (x >= screen_x) and (x < screen_x + SCREEN_WIDTH_TILES)
-        
+ 
+def InterpicScreen(completed_levels, display, gfx_map):
+    Interpic = BuildLevel("interpic")
+    
+    clock = pygame.time.Clock()
+    
+    MapToDisplay(Interpic, display, gfx_map, 0)
+    
+    player = Interpic.getPlayer()
+    playerPosition = Interpic.getPlayerPosition()
+    player_position_x = 16 * playerPosition[0]
+    player_position_y = 16 * playerPosition[1]
+    
+    Interpic.setNodeTile(playerPosition[0], playerPosition[1], Tile()) 
+ 
+    while(player_position_x < Interpic.getWidth() * 16):
+        player_position_x += player.getMaxSpeedX() * player.getXSpeedFactor()
+        MapToDisplay(Interpic, display, gfx_map, 0)
+        display.blit(getBlockInImage(gfx_map["player"], player.getGfxId()), (player_position_x*SCALEFACTOR, player_position_y*SCALEFACTOR))
+        pygame.display.flip()
+        clock.tick(200)
+                        
+ 
 def main():
     ##pygame inits: START
     pygame.init()
@@ -222,7 +246,7 @@ def main():
     tileset = load_game_tiles()
     ui_tileset = load_ui_tiles()
     
-    current_level_number = 4
+    current_level_number = 1
     
     ended_game = False
     ##pygame inits: END
@@ -293,12 +317,10 @@ def main():
             ##print tiles
             #moving screen left
             if (screen_current_x > 0) and (player_position_x <= 16*screen_current_x + BOUNDARY):
-                moveScreenX(Level, game_display, tileset, screen_current_x, -15)
-                screen_current_x -= 15
+                screen_current_x = moveScreenX(Level, game_display, tileset, screen_current_x, -15)
             #moving screen right
             elif (screen_current_x + SCREEN_WIDTH_TILES < Level.getWidth()) and (player_position_x >= 16*screen_current_x + SCREEN_WIDTH - BOUNDARY):
-                moveScreenX(Level, game_display, tileset, screen_current_x, 15)
-                screen_current_x += 15
+                screen_current_x = moveScreenX(Level, game_display, tileset, screen_current_x, 15)
             #not moving
             else:
                 MapToDisplay(Level, game_display, tileset, screen_current_x)
@@ -323,7 +345,7 @@ def main():
         if current_level_number > 10:
             ended_game = True
         else:
-            InterpicScreen(current_level_number)        
+            InterpicScreen(current_level_number, game_display, tileset)        
 
     pygame.quit()
     quit()
