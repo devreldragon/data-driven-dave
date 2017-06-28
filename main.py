@@ -308,6 +308,7 @@ def InterpicScreen(completed_levels, display, tileset):
     #keep moving the player right, until it reaches the screen boundary
     player_reached_boundary = (player_position_x >= Interpic.getWidth() * WIDTH_OF_MAP_NODE)
     
+    ''' TODO: ANIMATION '''
     while not player_reached_boundary:
         player_position_x += player.getMaxSpeedX() * player.getXSpeedFactor()
      
