@@ -52,7 +52,7 @@ class Map(object):
     '''
     
     def __init__(self):
-        self.height = 11
+        self.height = 10
         self.width = 150
         self.node_matrix = [[MapNode() for i in range(self.width)] for j in range(self.height)]
 
@@ -70,10 +70,10 @@ class Map(object):
         right = self.width - 1
 
         for x in range(right + 1):
-            self.setNodeTile(x, 1, tile)
+            self.setNodeTile(x, 0, tile)
             self.setNodeTile(x, bottom, tile)
 
-        for y in range(2, bottom):
+        for y in range(1, bottom):
             self.setNodeTile(0, y, tile)
             self.setNodeTile(right, y, tile)
 
