@@ -4,6 +4,14 @@ from os.path import isfile, join
 import pygame
 
 '''
+Constants
+'''
+
+BOUNDARY = 20
+SCREEN_WIDTH_TILES = 20
+SCREEN_WIDTH = 320
+
+'''
 Levels
 '''
 
@@ -19,42 +27,42 @@ def buildLevelOne():
     red_d = "items"
     trophy = "trophy"
 
-    LevelOne.setNodeTile(1, 1, Item(orb, 0, 50))
-    LevelOne.setNodeTile(1, 4, Item())
-    LevelOne.setNodeTile(1, 5, Solid())
-    LevelOne.setNodeTile(1, 6, Item())
-    LevelOne.setNodeTile(1,8, Solid("tunnel", 1))
-    LevelOne.setNodeTile(3, 2, Item())
-    LevelOne.setNodeTile(3, 3, Solid())
-    LevelOne.setNodeTile(4, 7, Solid())
-    LevelOne.setNodeTile(5, 4, Item())
-    LevelOne.setNodeTile(5, 5, Solid())
-    LevelOne.setNodeTile(5, 7, Solid())
-    LevelOne.setNodeTile(6, 7, Solid())
-    LevelOne.setNodeTile(7, 2, Item())
-    LevelOne.setNodeTile(7, 3, Solid())
-    LevelOne.setNodeTile(7, 6, Item())
-    LevelOne.setNodeTile(7, 7, Solid())
-    LevelOne.setNodeTile(9, 4, Item())
-    LevelOne.setNodeTile(9, 5, Solid())
-    LevelOne.setNodeTile(11, 2, Equipment(trophy, 0, 1000, "trophy"))
-    LevelOne.setNodeTile(11, 3, Solid())
-    LevelOne.setNodeTile(11, 7, Solid())
+    LevelOne.setNodeTile(1, 2, Item(orb, 0, 50))
+    LevelOne.setNodeTile(1, 5, Item())
+    LevelOne.setNodeTile(1, 6, Solid())
+    LevelOne.setNodeTile(1, 7, Item())
+    LevelOne.setNodeTile(1, 9, Solid("tunnel", 1))
+    LevelOne.setNodeTile(3, 3, Item())
+    LevelOne.setNodeTile(3, 4, Solid())
+    LevelOne.setNodeTile(4, 8, Solid())
+    LevelOne.setNodeTile(5, 5, Item())
+    LevelOne.setNodeTile(5, 6, Solid())
+    LevelOne.setNodeTile(5, 8, Solid())
+    LevelOne.setNodeTile(6, 8, Solid())
+    LevelOne.setNodeTile(7, 3, Item())
+    LevelOne.setNodeTile(7, 4, Solid())
+    LevelOne.setNodeTile(7, 7, Item())
+    LevelOne.setNodeTile(7, 8, Solid())
+    LevelOne.setNodeTile(9, 5, Item())
+    LevelOne.setNodeTile(9, 6, Solid())
+    LevelOne.setNodeTile(11, 3, Equipment(trophy, 0, 1000, "trophy"))
+    LevelOne.setNodeTile(11, 4, Solid())
     LevelOne.setNodeTile(11, 8, Solid())
-    LevelOne.setNodeTile(12, 7, Solid())
-    LevelOne.setNodeTile(12, 8, InteractiveScenery())
-    LevelOne.setNodeTile(13, 4, Item())
-    LevelOne.setNodeTile(13, 5, Solid())
-    LevelOne.setNodeTile(13, 7, Solid())
-    LevelOne.setNodeTile(14, 7, Solid())
-    LevelOne.setNodeTile(15, 2, Item())
-    LevelOne.setNodeTile(15, 3, Solid())
-    LevelOne.setNodeTile(15, 7, Solid())
-    LevelOne.setNodeTile(16, 7, Solid())
-    LevelOne.setNodeTile(17, 1, Item(red_d, 2, 150))
-    LevelOne.setNodeTile(17, 4, Item())
-    LevelOne.setNodeTile(17, 5, Solid())
-    LevelOne.setNodeTile(2, 8, Player())
+    LevelOne.setNodeTile(11, 9, Solid())
+    LevelOne.setNodeTile(12, 8, Solid())
+    LevelOne.setNodeTile(12, 9, InteractiveScenery())
+    LevelOne.setNodeTile(13, 5, Item())
+    LevelOne.setNodeTile(13, 6, Solid())
+    LevelOne.setNodeTile(13, 8, Solid())
+    LevelOne.setNodeTile(14, 8, Solid())
+    LevelOne.setNodeTile(15, 3, Item())
+    LevelOne.setNodeTile(15, 4, Solid())
+    LevelOne.setNodeTile(15, 8, Solid())
+    LevelOne.setNodeTile(16, 8, Solid())
+    LevelOne.setNodeTile(17, 2, Item(red_d, 2, 150))
+    LevelOne.setNodeTile(17, 5, Item())
+    LevelOne.setNodeTile(17, 6, Solid())
+    LevelOne.setNodeTile(2, 9, Player())
     return LevelOne
 
 def buildLevelTwo():
@@ -326,20 +334,35 @@ def load_ui_tiles():
     #print(tile_table)
     return tile_table
 
-
-    
 #display map in pygame
-def MapToDisplay(map, display, gfx_map):
+def MapToDisplay(map, display, gfx_map, starting_x):
     for y, row in enumerate(map.getNodeMatrix()):
         for x, col in enumerate(row):
             tile = map.getNode(x,y).getTile()
-            if tile.getId() != "player":              #won't print player
-                display.blit(getBlockInImage(gfx_map[tile.getId()], tile.getGfxId()), (16*SCALEFACTOR*x, 16*SCALEFACTOR*y+16*SCALEFACTOR))
+            if (tile.getId() != "player") and inScreen(x, starting_x) and y > 0:
+                display.blit(getBlockInImage(gfx_map[tile.getId()], tile.getGfxId()), (16*(x - starting_x)*SCALEFACTOR, 16*SCALEFACTOR*y))
 
+#function used for scrolling the screen
+def moveScreenX(map, display, gfx_map, old_x, increment):
+    shift = 0
+    #going left
+    while(shift > increment):
+        MapToDisplay(map, display, gfx_map, old_x + shift)
+        pygame.display.flip()
+        shift -= 0.5
+    #going right
+    while(shift < increment):
+        MapToDisplay(map, display, gfx_map, old_x + shift)
+        pygame.display.flip()
+        shift += 0.5
 
+#check if a given point x is in screen
+def inScreen(x, screen_x):
+    return (x >= screen_x) and (x < screen_x + SCREEN_WIDTH_TILES)
+        
 def main():
-    Level = buildLevelOne()
-    #Level = buildLevelTwo()
+    #Level = buildLevelOne()
+    Level = buildLevelTwo()
 
     ##pygame inits: START
     pygame.init()
@@ -355,24 +378,29 @@ def main():
     player_position_y = 16 * playerPosition[1]
     Level.setNodeTile(playerPosition[0], playerPosition[1], Tile())            ## Cleans the Player's original position, so the map can print it correct
 
+    screen_current_x = 0   ## The X position where the screen starts
+    
     clock = pygame.time.Clock()
     pygame.display.update()
     ended = False
     ##pygame inits: END
-
-    movement_keys = [pygame.K_UP, pygame.K_LEFT, pygame.K_RIGHT, pygame.K_DOWN]
-    inv_keys = [pygame.K_LCTRL, pygame.K_RCTRL, pygame.K_LALT, pygame.K_RALT]
     
+    ##UI inits: START
     print_ui_initial(ui_tileset,game_display,GamePlayer,1)
     score_ui = 0 #initial score, everytime it changes, we update the ui
     trophy_ui = False #initial score, everytime it changes, we update the ui
     
     update_ui_gun(ui_tileset,game_display)
     update_ui_jetpack(ui_tileset,game_display)
-
+    ##UI inits: END
     
+    ##Keys
+    movement_keys = [pygame.K_UP, pygame.K_LEFT, pygame.K_RIGHT, pygame.K_DOWN]
+    inv_keys = [pygame.K_LCTRL, pygame.K_RCTRL, pygame.K_LALT, pygame.K_RALT]
+    
+    ##Engine
     while not ended:
-
+        #get keys (invetory)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 ended = True
@@ -387,6 +415,7 @@ def main():
                 if event.key in inv_keys:
                     GamePlayer.inventoryInput(inv_keys.index(event.key))    
     
+        #get keys (movement)
         pressed_keys = pygame.key.get_pressed()
         key_map = [0,0,0,0]
         for i, key in enumerate(movement_keys):
@@ -395,15 +424,28 @@ def main():
         
         GamePlayer.movementInput(key_map)
         
+        #update the player position in the level
         (player_position_x, player_position_y) = GamePlayer.updatePosition(player_position_x, player_position_y, Level)
         
+        #nextmap
         if GamePlayer.getCurrentState() == GamePlayer.state.ENDMAP:
             '''TODO: interpic and next level'''
-            ended = True
+            ended = True        
         
-        MapToDisplay(Level, game_display, tileset)
-        game_display.blit(getBlockInImage(tileset["player"], GamePlayer.getGfxId()), (player_position_x*SCALEFACTOR, player_position_y*SCALEFACTOR+16*SCALEFACTOR))
-        
+        ##print tiles
+        #moving screen left
+        if (screen_current_x > 0) and (player_position_x <= 16*screen_current_x + BOUNDARY):
+            moveScreenX(Level, game_display, tileset, screen_current_x, -15)
+            screen_current_x -= 15
+        #moving screen right
+        elif (screen_current_x + SCREEN_WIDTH_TILES < Level.getWidth()) and (player_position_x >= 16*screen_current_x + SCREEN_WIDTH - BOUNDARY):
+            moveScreenX(Level, game_display, tileset, screen_current_x, 15)
+            screen_current_x += 15
+        #not moving
+        else:
+            MapToDisplay(Level, game_display, tileset, screen_current_x)
+            game_display.blit(getBlockInImage(tileset["player"], GamePlayer.getGfxId()), ((player_position_x - 16 * screen_current_x)*SCALEFACTOR, player_position_y*SCALEFACTOR))
+            
         if score_ui != GamePlayer.score:
             update_ui_score(ui_tileset,game_display,GamePlayer.score)
             score_ui = GamePlayer.score   
@@ -412,8 +454,6 @@ def main():
             update_ui_trophy(ui_tileset,game_display)
             trophy_ui = True
 
-            
-            
         pygame.display.flip()
 
         pygame.event.pump()
