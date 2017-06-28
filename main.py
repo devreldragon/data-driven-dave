@@ -269,6 +269,7 @@ def load_game_tiles():
     return tile_table
 
 def print_ui_initial(ui_tileset,game_display,player,level_number):
+    #print("Printing initial UI")
 
     #score text
     game_display.blit(getBlockInImageDiffSize(ui_tileset["scoretext"], 0, 54,11), (0,0))
@@ -289,13 +290,25 @@ def print_ui_initial(ui_tileset,game_display,player,level_number):
     for index in range(player.lifes):
         game_display.blit(getBlockInImageDiffSize(ui_tileset["daveicon"], 0, 14,12), (270*SCALEFACTOR+index*14*SCALEFACTOR,0))
         
-def update_ui_score(ui_tileset,game_display,score): 
+def update_ui_score(ui_tileset,game_display,score):
+    #print("Updating UI")
     #score text
     game_display.blit(getBlockInImageDiffSize(ui_tileset["scoretext"], 0, 54,11), (0,0))
     leadingzeroes_score = str(score).zfill(5)
     for index in range(5):
         current_number = int(leadingzeroes_score[index] )
-        game_display.blit(getBlockInImageDiffSize(ui_tileset["numbers"], current_number, 8,11), (60*SCALEFACTOR+8*index*SCALEFACTOR,0))
+        game_display.blit(getBlockInImageDiffSize(ui_tileset["numbers"], current_number, 8,11), (60*SCALEFACTOR+8*index*SCALEFACTOR,0)) #X offset+each number offset
+        
+def update_ui_trophy(ui_tileset,game_display): 
+    game_display.blit(getBlockInImageDiffSize(ui_tileset["gothrudoortext"], 0, 172,14), (70*SCALEFACTOR,192*SCALEFACTOR))
+
+def update_ui_gun(ui_tileset,game_display): 
+    game_display.blit(getBlockInImageDiffSize(ui_tileset["gunicon"], 0, 16,11), (285*SCALEFACTOR,176*SCALEFACTOR))
+    game_display.blit(getBlockInImageDiffSize(ui_tileset["guntext"], 0, 27,11), (240*SCALEFACTOR,176*SCALEFACTOR))
+    
+def update_ui_jetpack(ui_tileset,game_display): 
+    game_display.blit(getBlockInImageDiffSize(ui_tileset["jetpacktext"], 0, 62,11), (0,176*SCALEFACTOR))
+    game_display.blit(getBlockInImageDiffSize(ui_tileset["jetpackmeter"], 0, 128,12), (70*SCALEFACTOR,176*SCALEFACTOR))
 
 #returns dictionary 
 '''TODO: UNIFY FUNCTIONS'''
@@ -330,7 +343,7 @@ def main():
 
     ##pygame inits: START
     pygame.init()
-    game_display = pygame.display.set_mode((320*SCALEFACTOR, 192*SCALEFACTOR))
+    game_display = pygame.display.set_mode((320*SCALEFACTOR, 208*SCALEFACTOR))
     game_display.fill((0, 0, 0))
     
     tileset = load_game_tiles()
@@ -352,6 +365,11 @@ def main():
     
     print_ui_initial(ui_tileset,game_display,GamePlayer,1)
     score_ui = 0 #initial score, everytime it changes, we update the ui
+    trophy_ui = False #initial score, everytime it changes, we update the ui
+    
+    update_ui_gun(ui_tileset,game_display)
+    update_ui_jetpack(ui_tileset,game_display)
+
     
     while not ended:
 
@@ -388,8 +406,14 @@ def main():
         
         if score_ui != GamePlayer.score:
             update_ui_score(ui_tileset,game_display,GamePlayer.score)
-            score_ui = GamePlayer.score
+            score_ui = GamePlayer.score   
+            
+        if not trophy_ui and GamePlayer.inventory["trophy"] == 1:
+            update_ui_trophy(ui_tileset,game_display)
+            trophy_ui = True
 
+            
+            
         pygame.display.flip()
 
         pygame.event.pump()
