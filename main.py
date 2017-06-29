@@ -347,7 +347,7 @@ def main():
     ended_game = False   
 
     ''' TODO: TITLE SCREEN '''
-    current_level_number = 4    
+    current_level_number = 5  
     
     ##Available Keys
     movement_keys = [pygame.K_UP, pygame.K_LEFT, pygame.K_RIGHT, pygame.K_DOWN]

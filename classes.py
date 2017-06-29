@@ -648,9 +648,11 @@ class Player(Dynamic):
             self.animation_index = 0               # Number used to index the animation list of the corresponding state
             self.animation_counter = 0             # Counter that ticks until the next frame of animation should be displayed
             self.animation_index_list = {self.state.WALK : [1, 2, 3, 2], 
-                                            self.state.BLINK : [0], 
+                                            self.state.BLINK : [0, -1], 
                                             self.state.FALL : [12], 
-                                            self.state.JUMP : [12]}     # Dict of lists that specifies the index (displacement) of each animation frame based on the player tile. Indexed by the name of the self.state. (indexes are not integer because the tiles are not exactly the same size, apparently?)
+                                            self.state.JUMP : [12],
+                                            self.state.CLIMB : [15, 16, 17],
+                                            self.state.FLY : [24, 25, 26]}     # Dict of lists that specifies the index (displacement) of each animation frame based on the player tile. Indexed by the name of the self.state. (indexes are not integer because the tiles are not exactly the same size, apparently?)
 
         else: ErrorInvalidConstructor()
 
@@ -672,6 +674,7 @@ class Player(Dynamic):
             if self.cur_state in [self.state.BLINK, self.state.WALK] and self.inventory["tree"] == 1:
                 self.setCurrentState(self.state.CLIMB)
                 self.velocity_y = - self.MAX_SPEED_Y
+                self.updateAnimation()
             elif self.cur_state in [self.state.BLINK, self.state.WALK]:
                 self.setCurrentState(self.state.JUMP)
                 self.velocity_y = - self.JUMP_SPEED
@@ -679,16 +682,16 @@ class Player(Dynamic):
                 self.velocity_y = - self.MAX_SPEED_Y
         if k_leftarrow:
             self.direction_x = direction.LEFT
-            
+
             if self.cur_state in [self.state.BLINK, self.state.WALK, self.state.JUMP, self.state.CLIMB, self.state.FLY]:
                 self.velocity_x = self.MAX_SPEED_X * self.X_SPEED_FACTOR
             elif self.cur_state == self.state.FALL:
                 self.velocity_x = self.MAX_SPEED_X #when falling, velocity increases to the max  
-                
             if self.cur_state == self.state.BLINK:
                 self.setCurrentState(self.state.WALK)
-            elif self.cur_state == self.state.CLIMB:
-                self.self.setCurrentState(self.state.FALL)
+            elif self.cur_state == self.state.CLIMB and self.inventory["tree"] == 0:
+                self.setCurrentState(self.state.FALL)
+                self.velocity_y = self.MAX_SPEED_Y
         if k_rightarrow:
             self.direction_x = direction.RIGHT
             
@@ -699,8 +702,9 @@ class Player(Dynamic):
                 
             if self.cur_state == self.state.BLINK:
                 self.setCurrentState(self.state.WALK)
-            elif self.cur_state == self.state.CLIMB:
-                self.self.setCurrentState(self.state.FALL)
+            elif self.cur_state == self.state.CLIMB and self.inventory["tree"] == 0:
+                self.setCurrentState(self.state.FALL)
+                self.velocity_y = self.MAX_SPEED_Y
         if k_downarrow:
             if self.cur_state in [self.state.CLIMB, self.state.FLY]:
                 self.velocity_y = self.MAX_SPEED_Y
@@ -716,8 +720,12 @@ class Player(Dynamic):
             if self.cur_state == self.state.FLY:
                 self.setCurrentState(self.state.FALL)
                 self.velocity_x = self.MAX_SPEED_X #when falling, velocity increases to the max
+                self.velocity_y = self.MAX_SPEED_Y 
             else:
                 self.setCurrentState(self.state.FLY)
+                self.velocity_x = 0
+                self.velocity_y = 0
+                self.updateAnimation()
         if k_alt and self.inventory["gun"]:
             return 1    #treat gunfire externally (because we need the map)
         return 0
@@ -749,6 +757,7 @@ class Player(Dynamic):
             self.velocity_x = self.MAX_SPEED_X * self.X_SPEED_FACTOR
             self.velocity_y = 0
             self.direction_x = direction.IDLE
+            self.updateAnimation()
         # was jumping and hit ceiling
         elif self.cur_state == self.state.JUMP:
             self.setCurrentState(self.state.FALL)
