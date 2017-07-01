@@ -50,13 +50,13 @@ class Map(object):
     '''
     Constants
     '''
-    
+
     COLLISION = Enum('COLLISION', 'NONE SOLID ENEMY ITEM EQUIP INTSCEN')
-    
+
     '''
     Methods
     '''
-    
+
     def __init__(self, *args):
         #default constructor
         if(len(args) == 0):
@@ -67,7 +67,7 @@ class Map(object):
             ''' TODO: TEST INSTANCES '''
             self.height = args[0]
             self.width = args[1]
-            self.node_matrix = [[MapNode() for i in range(self.width)] for j in range(self.height)]        
+            self.node_matrix = [[MapNode() for i in range(self.width)] for j in range(self.height)]
         else: ErrorInvalidConstructor()
 
     def addMapLine(self):
@@ -103,7 +103,7 @@ class Map(object):
     def clearPlayerPosition(self):
         playerPosition = self.getPlayerPosition()
         self.setNodeTile(playerPosition[0], playerPosition[1], Tile())
-        
+
     def getNode(self, x, y):
         return self.node_matrix[y][x]
 
@@ -124,7 +124,7 @@ class Map(object):
         item = isinstance(self.node_matrix[y][x].getTile(), Item)
         intscen = isinstance(self.node_matrix[y][x].getTile(), InteractiveScenery)
         enemy = isinstance(self.node_matrix[y][x].getTile(), Enemy)
-        
+
         if solid:
             return self.COLLISION.SOLID
         elif item:
@@ -135,10 +135,10 @@ class Map(object):
             return self.COLLISION.ENEMY
         else:
             return False
-        
+
     def checkCollision(self, player_pos, solid_only=False):
         TOLERANCE_VALUE = 1 #the dave can walk a little bit "into" the blocks
-    
+
         x_left = floor((player_pos[0] + TOLERANCE_VALUE)/16)
         y_top = floor((player_pos[1])/16)
         x_right = floor((player_pos[0] + 15 - TOLERANCE_VALUE) / 16)
@@ -151,7 +151,7 @@ class Map(object):
 
         ## GAMBIARRA: collision priority (won't check others if solid_only = true):
         priority = [self.COLLISION.SOLID, self.COLLISION.ITEM, self.COLLISION.ENEMY, self.COLLISION.INTSCEN]
-        
+
         for col in priority:
             if collision_topleft == col:
                 return (collision_topleft, (x_left, y_top))
@@ -162,12 +162,12 @@ class Map(object):
             elif collision_bottomright == col:
                 return (collision_bottomright, (x_right, y_bottom))
             if solid_only: break
-        
+
         return (self.COLLISION.NONE, (-1,-1))
 
     def checkSolidCollision(self, player_pos):
         return (self.checkCollision(player_pos, True)[0] == self.COLLISION.SOLID)
-        
+
     '''
     Getters and Setters
     '''
@@ -345,8 +345,8 @@ class Scenery(Tile):
                 self.id = id
                 self.gfx_id = gfx_id
         else: ErrorInvalidConstructor()
- 
- 
+
+
 class Solid(Tile):
     '''
     Solid is an abstract class which represents a solid tile (block) in the game
@@ -484,7 +484,7 @@ class InteractiveScenery(Tile):
     '''
 
     TYPE = Enum('TYPE', 'GOAL HAZARD TREE')
-    
+
     '''
     Constructors
     '''
@@ -504,7 +504,7 @@ class InteractiveScenery(Tile):
             auto = args[3]
 
             ''' TODO: TEST INSTANCES '''
-            
+
             '''
             if not(isinstance(id, str)) or not(isinstance(gfx_id, int)) or not(self.isStateValid(target_state, possible_states)) or (auto not in [0, 1]):
                 ErrorInvalidValue()
@@ -527,7 +527,7 @@ class InteractiveScenery(Tile):
     def setType(self, type):
         ''' TODO: CHECK INSTANCE '''
         self.type = type
-    
+
     def setAuto(self, auto):
         if auto in [0,1]:
             self.auto = auto
@@ -535,7 +535,7 @@ class InteractiveScenery(Tile):
 
     def getType(self):
         return self.type
-        
+
     def getAuto(self):
         return self.auto
 
@@ -578,7 +578,7 @@ class Dynamic(Tile):
             return 1
         else: return 0
     '''
-        
+
     '''
     Getters and setters
     '''
@@ -604,7 +604,7 @@ class Dynamic(Tile):
         return self.state_list
         '''
 
-        
+
 class Player(Dynamic):
     '''
     Player represents the player object (not the controller) in the game
@@ -616,7 +616,7 @@ class Player(Dynamic):
     '''
     Constants
     '''
-    
+
     SCALE_FACTOR = 2
     MAX_SPEED_X = 0.4 * SCALE_FACTOR
     MAX_SPEED_Y = 0.4 * SCALE_FACTOR
@@ -625,7 +625,7 @@ class Player(Dynamic):
     GRAVITY = 0.01          #gravity acceleration
     ANIMATION_COUNTER_MAX = 20
     MAX_LIFES = 5
-    
+
     '''
     Constructors
     '''
@@ -640,16 +640,17 @@ class Player(Dynamic):
             self.velocity_y = 0                                             # The velocity and direction in the y axis (module + value)
             self.velocity_x = self.MAX_SPEED_X * self.X_SPEED_FACTOR        # The velocity in the x axis (only value)
             self.direction_x = direction.IDLE                               # Shows the current direction of movement (-1 = left, 1 = right, 0 = none)
+            self.flip_sprite = True
             self.inventory = {"jetpack": 0, "gun": 0, "trophy": 0, "tree": 0}
             self.score = 0
             self.lifes = 3
-       
+
             ##animation stuff
             self.animation_index = 0               # Number used to index the animation list of the corresponding state
             self.animation_counter = 0             # Counter that ticks until the next frame of animation should be displayed
-            self.animation_index_list = {self.state.WALK : [1, 2, 3, 2], 
-                                            self.state.BLINK : [0, -1], 
-                                            self.state.FALL : [12], 
+            self.animation_index_list = {self.state.WALK : [1, 2, 3, 2],
+                                            self.state.BLINK : [0, -1],
+                                            self.state.FALL : [12],
                                             self.state.JUMP : [12],
                                             self.state.CLIMB : [15, 16, 17],
                                             self.state.FLY : [24, 25, 26]}     # Dict of lists that specifies the index (displacement) of each animation frame based on the player tile. Indexed by the name of the self.state. (indexes are not integer because the tiles are not exactly the same size, apparently?)
@@ -669,7 +670,7 @@ class Player(Dynamic):
         k_leftarrow = (pressed_keys[1])
         k_rightarrow = (pressed_keys[2])
         k_downarrow = (pressed_keys[3])
-        
+
         if k_uparrow:
             if self.cur_state in [self.state.BLINK, self.state.WALK] and self.inventory["tree"] == 1:
                 self.setCurrentState(self.state.CLIMB)
@@ -686,7 +687,7 @@ class Player(Dynamic):
             if self.cur_state in [self.state.BLINK, self.state.WALK, self.state.JUMP, self.state.CLIMB, self.state.FLY]:
                 self.velocity_x = self.MAX_SPEED_X * self.X_SPEED_FACTOR
             elif self.cur_state == self.state.FALL:
-                self.velocity_x = self.MAX_SPEED_X #when falling, velocity increases to the max  
+                self.velocity_x = self.MAX_SPEED_X #when falling, velocity increases to the max
             if self.cur_state == self.state.BLINK:
                 self.setCurrentState(self.state.WALK)
             elif self.cur_state == self.state.CLIMB and self.inventory["tree"] == 0:
@@ -694,12 +695,12 @@ class Player(Dynamic):
                 self.velocity_y = self.MAX_SPEED_Y
         if k_rightarrow:
             self.direction_x = direction.RIGHT
-            
+
             if self.cur_state in [self.state.BLINK, self.state.WALK, self.state.JUMP, self.state.CLIMB, self.state.FLY]:
                 self.velocity_x = self.MAX_SPEED_X * self.X_SPEED_FACTOR
             elif self.cur_state == self.state.FALL:
                 self.velocity_x = self.MAX_SPEED_X #when falling, velocity increases to the max
-                
+
             if self.cur_state == self.state.BLINK:
                 self.setCurrentState(self.state.WALK)
             elif self.cur_state == self.state.CLIMB and self.inventory["tree"] == 0:
@@ -712,15 +713,15 @@ class Player(Dynamic):
     def inventoryInput(self, key):
         if self.cur_state in [self.state.ENDMAP, self.state.DIE]:
             return -1
-        
+
         k_ctrl = (key == 0) or (key == 1)
         k_alt = (key == 2) or (key == 3)
-        
+
         if k_ctrl and self.inventory["jetpack"]:
             if self.cur_state == self.state.FLY:
                 self.setCurrentState(self.state.FALL)
                 self.velocity_x = self.MAX_SPEED_X #when falling, velocity increases to the max
-                self.velocity_y = self.MAX_SPEED_Y 
+                self.velocity_y = self.MAX_SPEED_Y
             else:
                 self.setCurrentState(self.state.FLY)
                 self.velocity_x = 0
@@ -729,28 +730,28 @@ class Player(Dynamic):
         if k_alt and self.inventory["gun"]:
             return 1    #treat gunfire externally (because we need the map)
         return 0
-                
+
     ## LIFES
     def takeLife(self):
         if self.lifes > 0:
             self.lifes -= 1
-        else: 
+        else:
             ''' TODO: GAME OVER '''
-                    
+
     def giveLife(self):
         if self.lifes < self.MAX_LIFES:
             self.lifes += 1
-        
+
     ## TREAT JUMPING
     def treatJumping(self):
         if self.cur_state == self.state.JUMP:
-            self.addVelocityY(self.GRAVITY)             # Jumping is basically a velocity spike with a gravity based decay. This is basically calculating the decay at each frame.                   
+            self.addVelocityY(self.GRAVITY)             # Jumping is basically a velocity spike with a gravity based decay. This is basically calculating the decay at each frame.
             if self.velocity_y == self.MAX_SPEED_Y:
                 self.setCurrentState(self.state.FALL)
                 self.velocity_x = self.MAX_SPEED_X #when falling, velocity increases to the max
-     
+
     ## TREAT SOLID COLLISION IN Y AXIS
-    def treatSolidCollisionY(self, current_y, target_y):    
+    def treatSolidCollisionY(self, current_y, target_y):
         # landed
         if self.cur_state in [self.state.JUMP, self.state.FALL] and target_y > current_y:
             self.setCurrentState(self.state.WALK)
@@ -768,23 +769,23 @@ class Player(Dynamic):
     def collectItem(self, item_pos, level):
         x = item_pos[0]
         y = item_pos[1]
-        
+
         item = level.getNode(x, y).getTile()
         if isinstance(item, Equipment):
-            self.inventory[item.getType()] = 1            
+            self.inventory[item.getType()] = 1
         self.score += item.getScore()
-        
+
         if isinstance(self.score/5000, int):
             self.give_life()
-        
+
         level.setNodeTile(x, y, Scenery())
         print(self.score)
-    
+
     ## PROCESS SCENERY THAT'S INTERACTIVE
     def processScenerySpecial(self, element_pos, level):
         x = element_pos[0]
         y = element_pos[1]
-    
+
         element = level.getNode(x, y).getTile()
         if element.getType() == element.TYPE.GOAL and self.inventory["trophy"] == 1:
             self.setCurrentState(self.state.ENDMAP)
@@ -793,15 +794,15 @@ class Player(Dynamic):
             self.takeLife()
         elif element.getType() == element.TYPE.TREE:
             self.inventory["tree"] = 1
-        
+
     ## TREAT ENEMY COLLISION
     def treatEnemyCollisionY(self, current_y, target_y):
         pass
-            
-    ## UPDATES THE PLAYER POSITION BASED ON THE STATE HE'S IN
-    def updatePosition(self, player_x, player_y, level):        
 
-        self.inventory["tree"] = 0    
+    ## UPDATES THE PLAYER POSITION BASED ON THE STATE HE'S IN
+    def updatePosition(self, player_x, player_y, level):
+
+        self.inventory["tree"] = 0
         collision = level.checkCollision((player_x, player_y))
         collision_type = collision[0]
         collider_pos = collision[1]
@@ -816,45 +817,44 @@ class Player(Dynamic):
         elif collision_type == level.COLLISION.ENEMY:
             ''' TODO: KILL BOTH ENEMY AND PLAYER '''
             pass
-   
+
         # Checks if the player walked into a pit
         if self.cur_state == self.state.WALK:
-            if not level.checkSolidCollision((player_x, player_y + 1)):       
+            if not level.checkSolidCollision((player_x, player_y + 1)):
                 self.setCurrentState(self.state.FALL)
                 self.velocity_x = self.MAX_SPEED_X
-                self.velocity_y = self.MAX_SPEED_Y  
+                self.velocity_y = self.MAX_SPEED_Y
 
         ## Move X: START
         player_newx = player_x + self.velocity_x * self.direction_x.value                   # Tries to walk to the direction the player's going
         solid_collision = level.checkSolidCollision((player_newx, player_y))
-                
+
         if solid_collision:                                                                 # If a collision occurs,
             player_newx = player_x                                                          # undo the movement
             if self.cur_state == self.state.FALL:                                           # If player's falling and released movement keys,
-                self.direction_x = direction.IDLE                                           # stop the uncontrolled fall 
+                self.direction_x = direction.IDLE                                           # stop the uncontrolled fall
                 self.velocity_x = 0
         ## Move X: END
-            
+
         ## Move Y: START
         player_newy = player_y + self.velocity_y
-   
+
         # Check for solid collisions
         solid_collision = level.checkSolidCollision((player_newx, player_newy))
-        
+
         if self.cur_state != self.state.DIE:
             if solid_collision:
                 self.treatSolidCollisionY(player_y, player_newy)
                 player_newy = player_y
-        
+
         # If jumping, gravity is acting upon the player
         self.treatJumping()
         ## Move Y: END
-        
+
         ## Animation: START
         if (player_x != player_newx or player_y != player_newy) and self.cur_state != self.state.ENDMAP:          # If the player moved, updates the animation
             self.updateAnimation()
         ## Animation: END
-        
         return (player_newx, player_newy)
 
     ## UPDATE ANIMATION
@@ -881,7 +881,7 @@ class Player(Dynamic):
     def clearXMovement(self):
         self.velocity_x = 0
         self.direction_x = direction.IDLE
-            
+
     '''
     Getters and setters
     '''
@@ -889,7 +889,7 @@ class Player(Dynamic):
     def setVelocityX(self, vel):
         '''TODO: TEST INSTANCE'''
         self.velocity_x = vel
-        
+
     def setDirectionX(self, direction):
         '''TODO: TEST INSTANCE'''
         self.direction_x = direction
@@ -897,7 +897,7 @@ class Player(Dynamic):
     def setVelocityY(self, vel):
         '''TODO: TEST INSTANCE'''
         self.velocity_y = vel
-        
+
     def setCurrentState(self, newstate):
         '''TODO: TEST INSTANCE?'''
         self.cur_state = newstate
@@ -909,19 +909,19 @@ class Player(Dynamic):
 
     def getVelocityY(self):
         return self.velocity_y
-    
+
     def getVelocityX(self):
         return self.velocity_x
-        
+
     def getGravity(self):
         return self.GRAVITY
-        
+
     def getMaxSpeedX(self):
         return self.MAX_SPEED_X
 
     def getMaxSpeedY(self):
         return self.MAX_SPEED_Y
-        
+
     def getXSpeedFactor(self):
         return self.X_SPEED_FACTOR
 
@@ -968,4 +968,3 @@ class Enemy(Dynamic):
     '''
 
     '''TODO: IMPLEMENT THIS (I'M TOO LAZY NOW)'''
-
