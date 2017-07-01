@@ -2,7 +2,7 @@
 import sys
 from math import floor
 from enum import Enum #WE SO FUCKING NEED THIS AAAAAA
-
+from random import randint
 '''
 Constants and enumerations
 '''
@@ -484,6 +484,7 @@ class InteractiveScenery(Tile):
     '''
 
     TYPE = Enum('TYPE', 'GOAL HAZARD TREE')
+    ANIM_TIMER_MAX = 30
 
     '''
     Constructors
@@ -495,6 +496,7 @@ class InteractiveScenery(Tile):
             self.id = "door"
             self.gfx_id = 0
             self.type = self.TYPE.GOAL
+            self.anim_timer = self.ANIM_TIMER_MAX
             self.auto = 1
         #alternative constructor (id, gfx_id, type, auto)
         elif len(args) == 4:
@@ -512,6 +514,7 @@ class InteractiveScenery(Tile):
             '''
             self.id = id
             self.gfx_id = gfx_id
+            self.anim_timer = self.ANIM_TIMER_MAX
             self.type = type
             self.auto = auto
         else: ErrorInvalidConstructor()
@@ -538,6 +541,15 @@ class InteractiveScenery(Tile):
 
     def getAuto(self):
         return self.auto
+
+    def getGfxId(self):
+        self.anim_timer -= 1
+        if (self.anim_timer == 0):
+            self.anim_timer = self.ANIM_TIMER_MAX
+            if (self.id == "water" or self.id =="fire" or self.id=="tentacles"):
+                self.gfx_id = randint(0,4)
+
+        return self.gfx_id
 
 
 class Dynamic(Tile):

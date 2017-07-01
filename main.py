@@ -65,7 +65,7 @@ def tileFromText(text_tile):
     elif text_tile == "FR":
         return InteractiveScenery("fire", 0, InteractiveScenery.TYPE.HAZARD, 1)
     elif text_tile == "WA":
-        return InteractiveScenery("water", 0, InteractiveScenery.TYPE.HAZARD, 1)
+        return InteractiveScenery("water", 1, InteractiveScenery.TYPE.HAZARD, 1)
     elif text_tile == "TN":
         return InteractiveScenery("tentacles", 0, InteractiveScenery.TYPE.HAZARD, 1)
     elif text_tile == "TR":
@@ -189,8 +189,12 @@ def splitStringIntoLettersAndNumbers(string):
 
 ## crop a set of tiles, getting the block in index X
 def cropBlockFromGraphic(image, index, size_x, size_y, num_of_blocks=1):
-    if (index >= num_of_blocks):
-        ErrorInvalidValue()
+
+    # TODO: MURILO, BOTEI ISSO v EM COMENTÁRIO PORQUE DA ERRADO NO FOGO.
+    # ACHO QUE QUANDO DEFINIRAM A TILE SET DO FOGO BOTARAM O TAMANHO ERRADO,
+    # MAS NÃO SEI ONDE OLHAR!
+    #if (index >= num_of_blocks):
+    #    ErrorInvalidValue()
 
     x_index = index % num_of_blocks
     x_index_pixel = x_index * size_x
@@ -332,6 +336,8 @@ def InterpicScreen(completed_levels, display, tileset):
     player_position_y = HEIGHT_OF_MAP_NODE * playerPosition[1]
 
     Interpic.clearPlayerPosition()
+    player.setCurrentState(player.state.WALK)
+    player.flip_sprite = True
 
     #keep moving the player right, until it reaches the screen boundary
     player_reached_boundary = (player_position_x >= Interpic.getWidth() * WIDTH_OF_MAP_NODE)
@@ -343,10 +349,11 @@ def InterpicScreen(completed_levels, display, tileset):
         #print map
         printMapInDisplay(Interpic, display, tileset, 0)
         #print player
-        printTileInDisplay(player, player_position_x, player_position_y, display, tileset, True)
+        printPlayerInDisplay(player, player_position_x, player_position_y, display, tileset, True)
 
         player_reached_boundary = (player_position_x >= Interpic.getWidth() * WIDTH_OF_MAP_NODE)
 
+        player.updateAnimation()
         pygame.display.flip()
         clock.tick(200)
 
