@@ -74,8 +74,6 @@ def tileFromText(text_tile):
         return Equipment("gun", 0, 0, "gun")
     elif text_tile == "JE":
         return Equipment("jetpack", 0, 0, "jetpack")
-    elif text_tile == "LO":
-        return InteractiveScenery("treelog", 0, InteractiveScenery.TYPE.TREE, 0)
     elif text_tile == "pl":
         return Player()
     elif text_tile[0] == 'B':
@@ -87,7 +85,7 @@ def tileFromText(text_tile):
     elif text_tile[0] == 'M':
         return Tile("moonstars", gfx_id)
     elif text_tile[0] == 'E':
-        return Tile("tree", gfx_id)
+        return InteractiveScenery("tree", gfx_id, InteractiveScenery.TYPE.TREE, 0)
     elif text_tile[0] == 'I':
         scores = [50, 100, 150, 200, 300, 500]
         return Item("items", gfx_id, scores[1])
@@ -416,7 +414,7 @@ def main():
                 if event.type == pygame.QUIT:
                     ended_level = True
                 elif event.type == pygame.KEYUP:
-                    if event.key in [pygame.K_LEFT, pygame.K_RIGHT] and GamePlayer.getCurrentState() in [GamePlayer.state.WALK, GamePlayer.state.FLY, GamePlayer.state.JUMP]:
+                    if event.key in [pygame.K_LEFT, pygame.K_RIGHT] and GamePlayer.getCurrentState() in [GamePlayer.state.WALK, GamePlayer.state.FLY, GamePlayer.state.JUMP, GamePlayer.state.CLIMB]:
                         GamePlayer.clearXMovement()
                     elif event.key in [pygame.K_UP, pygame.K_DOWN] and GamePlayer.getCurrentState() in [GamePlayer.state.FLY, GamePlayer.state.CLIMB]:
                         GamePlayer.setVelocityY(0)

@@ -693,6 +693,9 @@ class Player(Dynamic):
                 self.velocity_y = - self.JUMP_SPEED
             elif self.cur_state in [self.state.FLY, self.state.CLIMB]:
                 self.velocity_y = - self.MAX_SPEED_Y
+                if self.cur_state == self.state.CLIMB and self.inventory["tree"] == 0:
+                    self.setCurrentState(self.state.FALL)
+                    self.velocity_y = self.MAX_SPEED_Y  
         if k_leftarrow:
             self.direction_x = direction.LEFT
 
@@ -721,6 +724,9 @@ class Player(Dynamic):
         if k_downarrow:
             if self.cur_state in [self.state.CLIMB, self.state.FLY]:
                 self.velocity_y = self.MAX_SPEED_Y
+                if self.cur_state == self.state.CLIMB and self.inventory["tree"] == 0:
+                    self.setCurrentState(self.state.FALL)
+                    self.velocity_y = self.MAX_SPEED_Y                    
 
     def inventoryInput(self, key):
         if self.cur_state in [self.state.ENDMAP, self.state.DIE]:
