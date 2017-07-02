@@ -13,11 +13,12 @@ TILE_SCALE_FACTOR = 2
 WIDTH_OF_MAP_NODE = 16
 HEIGHT_OF_MAP_NODE = 16
 SCREEN_SHIFTING_VELOCITY = 0.5
+ANIMATION_VELOCITY = 2
 
 BOUNDARY_DISTANCE_TRIGGER = 25
-SCREEN_WIDTH_TILES = 20
-SCREEN_WIDTH = 320
-SCREEN_HEIGHT = 208
+
+SCREEN_WIDTH = 320 * TILE_SCALE_FACTOR
+SCREEN_HEIGHT = 208 * TILE_SCALE_FACTOR
 
 class direction(Enum):
     LEFT = -1
@@ -41,11 +42,18 @@ Classes
 '''
 
 class Screen(object):
-    ##Attributes:
-    ##self.x_pos
-    ##self.width
-    ##self.height
-    ##self.display
+    '''
+    Screen is a class used to keep the game screen (and the display along with it)
+    It has the following attributes:
+        width: integer represents the width of the screen
+        height: integer represents the height of the screen
+        x_pos: integer represents the X position of the screen inside the map
+        display: pygame.display contains the display used in pygame to display the screen
+    '''
+    
+    '''
+    Constructors
+    '''
     
     def __init__(self, width, height):
         self.width = width
@@ -54,8 +62,12 @@ class Screen(object):
         self.display = pygame.display.set_mode((width, height))
         self.display.fill((0, 0, 0))  
         
+    '''
+    Other methods
+    '''
+        
     def isXInScreen(self, x):
-        return (x >= self.x_pos) and (x < self.x_pos + SCREEN_WIDTH_TILES)
+        return (x >= self.x_pos) and (x < self.x_pos + self.getWidthInTiles())
 
     def printTile(self, x, y, tile_graphic):
         screen_x = x * TILE_SCALE_FACTOR
@@ -68,8 +80,8 @@ class Screen(object):
             for x, col in enumerate(row):
                 tile = map.getNode(x,y).getTile()
                 
-                # won't print player nor the first line, neither other tiles that aren't in the screen
-                if (tile.getId() != "player") and self.isXInScreen(x) and (y > 0):
+                # won't print the first line, neither other tiles that aren't in the screen
+                if self.isXInScreen(x) and (y > 0):
                     adjusted_x = x - self.x_pos
                     tile_graphic = tile.getGraphic(tileset)
                     self.printTile(WIDTH_OF_MAP_NODE * adjusted_x, HEIGHT_OF_MAP_NODE * y, tile_graphic)
@@ -88,10 +100,9 @@ class Screen(object):
         self.printTile(player_x, player_y, player_graphic)
                     
     def moveScreenX(self, map, amount, tileset):
-        ''' TODO : WORK ON CONSTANTS '''
         screen_shift = 0
         reached_level_left_boundary = (self.x_pos <= 0)
-        reached_level_right_boundary = (self.x_pos + self.width/32 >= map.getWidth())
+        reached_level_right_boundary = (self.x_pos + self.getWidthInTiles() >= map.getWidth())
         
         #going left
         while (screen_shift > amount) and not reached_level_left_boundary:
@@ -109,9 +120,67 @@ class Screen(object):
             
             screen_shift += SCREEN_SHIFTING_VELOCITY
             self.x_pos += SCREEN_SHIFTING_VELOCITY 
-            reached_level_right_boundary = (self.x_pos + self.width/32 >= map.getWidth())      
+            reached_level_right_boundary = (self.x_pos + self.getWidthInTiles() >= map.getWidth())      
+            
+    '''
+    Getters and setters
+    '''
+    
+    def getWidth(self):
+        return self.width
         
+    def getRawWidth(self):
+        return int(self.width / TILE_SCALE_FACTOR)
+        
+    def getWidthInTiles(self):
+        return int(self.width / (WIDTH_OF_MAP_NODE * TILE_SCALE_FACTOR))
+        
+    def getHeight(self):
+        return self.height
 
+    def getRawHeight(self):
+        return int(self.height / TILE_SCALE_FACTOR)
+        
+    def getHeightInTiles(self):
+        return int(self.height / (HEIGHT_OF_MAP_NODE * TILE_SCALE_FACTOR))
+        
+    def getXPosition(self):
+        return self.x_pos
+        
+    def getXPositionInPixels(self):
+        return self.x_pos * WIDTH_OF_MAP_NODE
+        
+    def getDisplay(self):
+        return self.display
+        
+    def setWidth(self, width):
+        if not isinstance(width, int) and width < 0:
+            ErrorInvalidValue()
+        else:
+            self.width = width;
+            
+    def setHeight(self, height):
+        if not isinstance(height, int) and height < 0:
+            ErrorInvalidValue()
+        else:
+            self.height = height;
+            
+    def setXPosition(self, x_position):
+        if not isinstance(x_position, int) and x_position < 0:
+            ErrorInvalidValue()
+        else:
+            self.x_pos = x_position;
+            
+    '''
+    TODO: Does this work?
+    def setDisplay(self, new_display):
+        if not isinstance(new_display, pygame.display):
+            ErrorInvalidValue()
+        else:
+            self.display = new_display
+            '''
+
+            
 class Map(object):
     '''
     Map represents a logic map of the level
@@ -174,24 +243,22 @@ class Map(object):
             self.node_matrix[y][x].setTile(tile)
         else: ErrorInvalidValue()
 
-    def clearPlayerPosition(self):
-        playerPosition = self.getPlayerPosition()
-        self.setNodeTile(playerPosition[0], playerPosition[1], Tile())
-
     def getNode(self, x, y):
         return self.node_matrix[y][x]
 
-    def getPlayerPosition(self):
+    def getPlayerSpawnerPosition(self, id):
         for y, line in enumerate(self.node_matrix):
             for x, col in enumerate(line):
-                if self.node_matrix[y][x].getTile().getId() == "player":
+                if self.node_matrix[y][x].getTile().getId() == "player_spawner" and self.node_matrix[y][x].getTile().getSpawnerId() == id:
                     return (x, y)
 
+    '''
     def getPlayer(self):
         playerPos = self.getPlayerPosition()
         y = playerPos[1]
         x = playerPos[0]
         return self.node_matrix[y][x].getTile()
+    '''
 
     def getCollisionType(self, x, y):
         solid = isinstance(self.node_matrix[y][x].getTile(), Solid)
@@ -365,30 +432,29 @@ class Tile(object):
     '''
     Other methods
     '''
-
-    def isTileValid(tile):
-        if isinstance(tile, Tile):
-            if (tile.id < 0) or (tile.gfx_id < 0):
-                return 0
-            else: return 1
            
-    def getGraphic(self, tileset):
-        graphic_set = tileset[self.id]
+    def getGraphic(self, tileset):   
+        #if the tile id is a spawner, print a black scenery instead
+        try:
+            graphic_set = tileset[self.id]
+        except:
+            graphic_set = tileset["scenery"]
 
         graphic_set_width = graphic_set[2]
         graphic_set_height = graphic_set[1]
-        graphic_set_image = graphic_set[0]
-        graphic_set_image_width = graphic_set_image.get_rect().size[0]
-        number_of_tiles_in_image = int(graphic_set_image_width / graphic_set_width)    
+        graphic_set_image = graphic_set[0]   
 
-        ''' TODO: INVESTIGATE '''
-        x_index = self.gfx_id % number_of_tiles_in_image
-        x_index_pixel = x_index * graphic_set_width
+        #if the gfx_id is -1, print black scenery instead
+        if(self.gfx_id == -1):
+            return pygame.Surface((graphic_set_width * TILE_SCALE_FACTOR, graphic_set_height * TILE_SCALE_FACTOR))
+
+        selected_tile_pos = self.gfx_id * graphic_set_width
 
         #select the tile to crop (y is always 0)
-        rectangle = (x_index_pixel, 0, graphic_set_width, graphic_set_height)
+        rectangle = (selected_tile_pos, 0, graphic_set_width, graphic_set_height)
         size_of_rectangle = (graphic_set_width * TILE_SCALE_FACTOR, graphic_set_height * TILE_SCALE_FACTOR)
         cropped_tile = pygame.transform.scale(graphic_set_image.subsurface(rectangle), size_of_rectangle)
+        
         return cropped_tile        
 
     '''
@@ -520,60 +586,63 @@ class Equipment(Item):
     '''
     Collectible represents an item that gives scores to the player when collected
     It extends Item, and has the following arguments:
-        type: string represents if the equipment is a trophy, jetpack or gun
+        anim_timer: integer represents a timer for the animation of a trophy
     '''
 
+    TYPE = Enum('TYPE', 'TROPHY GUN JETPACK')
+    ANIM_TIMER_MAX = 30
+    
     def __init__(self, *args):
         #default constructor
         if len(args) == 0:
             self.id = "trophy"
             self.gfx_id = 0
             self.score = 1000
-            self.type = "trophy"
-        #alternative constructor (id, gfx_id, score, type)
-        elif len(args) == 4:
+            self.anim_timer = self.ANIM_TIMER_MAX
+        #alternative constructor (id, gfx_id, score)
+        elif len(args) == 3:
             id = args[0]
             gfx_id = args[1]
             score = args[2]
-            type = args[3]
 
-            if not(isinstance(id, str)) or not(isinstance(gfx_id, int)) or not(isinstance(score, int)) or not(self.validType(type)) or score < 0:
+            if not(isinstance(id, str)) or not(isinstance(gfx_id, int)) or not(isinstance(score, int)) or score < 0:
                 ErrorInvalidValue()
             else:
                 self.id = id
                 self.gfx_id = gfx_id
                 self.score = score
-                self.type = type
+                self.anim_timer = self.ANIM_TIMER_MAX
         else: ErrorInvalidConstructor()
 
     '''
     Other methods
     '''
 
-    def validType(self, type):
-        if type in ["trophy", "jetpack", "gun"]:
-            return 1
-        else: return 0
+    def getGraphic(self, tileset):
+        self.anim_timer -= ANIMATION_VELOCITY
+        
+        if (self.anim_timer == 0):
+            self.anim_timer = self.ANIM_TIMER_MAX
+            
+            if (self.id == "trophy"):
+                if self.gfx_id == 4:
+                    self.gfx_id = 0 
+                else: self.gfx_id += 1
+
+        #call superclass method
+        return super(Equipment, self).getGraphic(tileset)    
 
     '''
     Getters and setters
     '''
-
-    def setType(self, type):
-        if self.validType(type):
-            self.type = type
-        else: ErrorInvalidValue()
-
-    def getType(self):
-        return self.type
 
 
 class InteractiveScenery(Tile):
     '''
     InteractiveScenery represents a scenery tile which the player can interact with
     It has the following arguments:
-        target_state: string indicating the state the player can go when interacting with this object
-        auto: boolean indicating if the state above is called automatically when having contact with the object
+        type: enumeration indicating the type of the tile
+        anim_timer = integer represents the timer of the animation
     '''
 
     TYPE = Enum('TYPE', 'GOAL HAZARD TREE')
@@ -590,13 +659,11 @@ class InteractiveScenery(Tile):
             self.gfx_id = 0
             self.type = self.TYPE.GOAL
             self.anim_timer = self.ANIM_TIMER_MAX
-            self.auto = 1
-        #alternative constructor (id, gfx_id, type, auto)
-        elif len(args) == 4:
+        #alternative constructor (id, gfx_id, type)
+        elif len(args) == 3:
             id = args[0]
             gfx_id = args[1]
             type = args[2]
-            auto = args[3]
 
             ''' TODO: TEST INSTANCES '''
 
@@ -607,15 +674,28 @@ class InteractiveScenery(Tile):
             '''
             self.id = id
             self.gfx_id = gfx_id
-            self.anim_timer = self.ANIM_TIMER_MAX
             self.type = type
-            self.auto = auto
+            self.anim_timer = self.ANIM_TIMER_MAX
         else: ErrorInvalidConstructor()
 
     '''
     Other methods
     '''
 
+    def getGraphic(self, tileset):
+        self.anim_timer -= ANIMATION_VELOCITY
+        
+        if (self.anim_timer == 0):
+            self.anim_timer = self.ANIM_TIMER_MAX
+            
+            if (self.type == self.TYPE.HAZARD):
+                if self.gfx_id == 3:
+                    self.gfx_id = 0 
+                else: self.gfx_id += 1
+
+        #call superclass method
+        return super(InteractiveScenery, self).getGraphic(tileset)
+    
     '''
     Getters and setters
     '''
@@ -624,33 +704,46 @@ class InteractiveScenery(Tile):
         ''' TODO: CHECK INSTANCE '''
         self.type = type
 
-    def setAuto(self, auto):
-        if auto in [0,1]:
-            self.auto = auto
-        else: ErrorInvalidValue()
-
     def getType(self):
         return self.type
 
-    def getAuto(self):
-        return self.auto
 
-    def getGfxId(self):
-        self.anim_timer -= 1
-        if (self.anim_timer == 0):
-            self.anim_timer = self.ANIM_TIMER_MAX
-            if (self.id == "water" or self.id =="fire" or self.id=="tentacles"):
-                self.gfx_id = randint(0,4)
+class PlayerSpawner(Tile):
+    ''' TODO: DESCRIPTION '''
+    
+    def __init__(self, *args):
+        if len(args) == 0:
+            self.id = "player_spawner"
+            self.gfx_id = -1
+            self.spawner_id = 0
+        elif len(args) == 3:
+            id = args[0]
+            gfx_id = args[1]
+            spawner_id = args[2]
+            
+            ''' TODO: TEST INSTANCES '''
+            
+            self.id = id
+            self.gfx_id = gfx_id
+            self.spawner_id = spawner_id
+        else: ErrorInvalidConstructor()
+        
+    def getSpawnerId(self):
+        return self.spawner_id
+        
+    def setSpawnerId(self, id):
+        if not isinstance(id, int) or id < 0:
+            ErrorInvalidValue()
+        else:
+            self.spawner_id = id
 
-        return self.gfx_id
-
-
+        
 class Dynamic(Tile):
     '''
     Dynamic represents a dynamic object in the game, which can be a player or an enemy (two different classes)
     It has the following arguments:
-        state: string represents the state of the object, which configures how the object behaves
-        state_list: list of strings represents the available states of the object
+        cur_state: string represents the state of the object, which configures how the object behaves
+        state: list of strings represents the available states of the object
     '''
 
     '''
@@ -662,26 +755,15 @@ class Dynamic(Tile):
         if len(args) == 0:
             self.id = "undefined"
             self.gfx_id = -1
-            self.state = Enum('state', 'UNDEFINED')
-            self.cur_state = self.state.UNDEFINED
-        #alternative constructor (id, gfx_id, states, cur_state)
-        elif len(args) == 4:
+        #alternative constructor (id, gfx_id)
+        elif len(args) == 2:
             '''TODO: CHECK INSTANCES '''
             self.id = args[0]
             self.gfx_id = args[1]
-            self.state = args[2]
-            self.cur_state = args[3]
         else: ErrorInvalidConstructor()
 
     '''
     Other methods
-    '''
-
-    '''
-    def isStateValid(self, state):
-        if state in self.state_list:
-            return 1
-        else: return 0
     '''
 
     '''
@@ -692,22 +774,8 @@ class Dynamic(Tile):
         ''' TODO: CHECK INSTANCE '''
         self.cur_state = state
 
-    '''
-    def setStateList(self, state_list):
-        for state in state_list:
-            if not(isinstance(state, str)):
-                ErrorInvalidValue()
-                return;
-        self.state_list = state_list
-        '''
-
     def getCurrentState(self):
         return self.cur_state
-
-    '''
-    def getStateList(self):
-        return self.state_list
-        '''
 
 
 class Player(Dynamic):
@@ -730,6 +798,7 @@ class Player(Dynamic):
     GRAVITY = 0.01          #gravity acceleration
     ANIMATION_COUNTER_MAX = 20
     MAX_LIFES = 5
+    BLINKING_SPEED = 1
 
     '''
     Constructors
@@ -753,12 +822,14 @@ class Player(Dynamic):
             ##animation stuff
             self.animation_index = 0               # Number used to index the animation list of the corresponding state
             self.animation_counter = 0             # Counter that ticks until the next frame of animation should be displayed
+            self.blinking_timer = self.BLINKING_SPEED
             self.animation_index_list = {self.state.WALK : [1, 2, 3, 2],
                                             self.state.BLINK : [0, -1],
                                             self.state.FALL : [12],
                                             self.state.JUMP : [12],
                                             self.state.CLIMB : [15, 16, 17],
-                                            self.state.FLY : [24, 25, 26]}     # Dict of lists that specifies the index (displacement) of each animation frame based on the player tile. Indexed by the name of the self.state. (indexes are not integer because the tiles are not exactly the same size, apparently?)
+                                            self.state.FLY : [24, 25, 26],
+                                            self.state.DIE : [-1]}     # Dict of lists that specifies the index (displacement) of each animation frame based on the player tile. Indexed by the name of the self.state. (indexes are not integer because the tiles are not exactly the same size, apparently?)
 
         else: ErrorInvalidConstructor()
 
@@ -844,15 +915,22 @@ class Player(Dynamic):
 
     ## LIFES
     def takeLife(self):
-        if self.lifes > 0:
-            self.lifes -= 1
-        else:
-            ''' TODO: GAME OVER '''
+        self.lifes -= 1
 
     def giveLife(self):
         if self.lifes < self.MAX_LIFES:
             self.lifes += 1
-
+            
+    def resetPosAndState(self):
+        if self.lifes < 0:
+            return -1
+        
+        self.setCurrentState(self.state.BLINK)
+        self.gfxId = 0
+        self.velocity_y = 0
+        self.velocity_x = 0
+        self.direction_x = direction.IDLE 
+            
     ## TREAT JUMPING
     def treatJumping(self):
         if self.cur_state == self.state.JUMP:
@@ -883,7 +961,7 @@ class Player(Dynamic):
 
         item = level.getNode(x, y).getTile()
         if isinstance(item, Equipment):
-            self.inventory[item.getType()] = 1
+            self.inventory[item.getId()] = 1
         self.score += item.getScore()
 
         if isinstance(self.score/5000, int):
@@ -911,8 +989,7 @@ class Player(Dynamic):
         pass
 
     ## UPDATES THE PLAYER POSITION BASED ON THE STATE HE'S IN
-    def updatePosition(self, player_x, player_y, level):
-
+    def updatePosition(self, player_x, player_y, level):    
         self.inventory["tree"] = 0
         collision = level.checkCollision((player_x, player_y))
         collision_type = collision[0]
@@ -963,9 +1040,14 @@ class Player(Dynamic):
         ## Move Y: END
 
         ## Animation: START
+        self.blinking_timer -= 1
         if (player_x != player_newx or player_y != player_newy) and self.cur_state != self.state.ENDMAP:          # If the player moved, updates the animation
             self.updateAnimation()
+        elif self.cur_state == self.state.BLINK and self.blinking_timer == 0:
+            self.updateAnimation()
+            self.blinking_timer = self.BLINKING_SPEED
         ## Animation: END
+        
         return (player_newx, player_newy)
 
     ## UPDATE ANIMATION
@@ -978,7 +1060,7 @@ class Player(Dynamic):
             if self.animation_index < len(self.animation_index_list[self.cur_state]):           # Rotates the number that indexes the list of frames of that self.state.
                 self.animation_index = self.animation_index + 1                                         # Basically means that the animation frames will alternate in the list's order.
             if self.animation_index == len(self.animation_index_list[self.cur_state]):
-                    self.animation_index = 0
+                self.animation_index = 0
 
         self.gfx_id = self.animation_index_list[self.cur_state][self.animation_index]          # Did not use setter here because we are not sending integer indexes.
 

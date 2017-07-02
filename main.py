@@ -38,14 +38,10 @@ def initLevel(level_number):
     Level = BuildLevel(level_number)
 
     #init player and his positions
-    GamePlayer = Level.getPlayer()
-    playerPosition = Level.getPlayerPosition()
+    GamePlayer = Player()
+    playerPosition = Level.getPlayerSpawnerPosition(0)
     player_position_x = WIDTH_OF_MAP_NODE * playerPosition[0]
     player_position_y = HEIGHT_OF_MAP_NODE * playerPosition[1]
-
-    #clear the residue left by player spawner
-    ''' TODO: INVESTIGATE THIS '''
-    Level.clearPlayerPosition()
 
     return (Level, GamePlayer, player_position_x, player_position_y)
 
@@ -59,19 +55,19 @@ def tileFromText(text_tile):
     if text_tile == "DO":
         return InteractiveScenery()
     elif text_tile == "FR":
-        return InteractiveScenery("fire", 0, InteractiveScenery.TYPE.HAZARD, 1)
+        return InteractiveScenery("fire", randint(0,3), InteractiveScenery.TYPE.HAZARD)
     elif text_tile == "WA":
-        return InteractiveScenery("water", 1, InteractiveScenery.TYPE.HAZARD, 1)
+        return InteractiveScenery("water", randint(0,3), InteractiveScenery.TYPE.HAZARD)
     elif text_tile == "TN":
-        return InteractiveScenery("tentacles", 0, InteractiveScenery.TYPE.HAZARD, 1)
+        return InteractiveScenery("tentacles", randint(0,3), InteractiveScenery.TYPE.HAZARD)
     elif text_tile == "TR":
-        return Equipment("trophy", 0, 1000, "trophy")
+        return Equipment("trophy", 0, 1000)
     elif text_tile == "GU":
-        return Equipment("gun", 0, 0, "gun")
+        return Equipment("gun", 0, 0)
     elif text_tile == "JE":
-        return Equipment("jetpack", 0, 0, "jetpack")
-    elif text_tile == "pl":
-        return Player()
+        return Equipment("jetpack", 0, 0)
+    elif text_tile[0] == "p":
+        return PlayerSpawner("player_spawner", -1, gfx_id)
     elif text_tile[0] == 'B':
         return Solid("solid", gfx_id)
     elif text_tile[0] == 'T':
@@ -81,7 +77,7 @@ def tileFromText(text_tile):
     elif text_tile[0] == 'M':
         return Tile("moonstars", gfx_id)
     elif text_tile[0] == 'E':
-        return InteractiveScenery("tree", gfx_id, InteractiveScenery.TYPE.TREE, 0)
+        return InteractiveScenery("tree", gfx_id, InteractiveScenery.TYPE.TREE)
     elif text_tile[0] == 'I':
         scores = [50, 100, 150, 200, 300, 500]
         return Item("items", gfx_id, scores[1])
@@ -219,28 +215,28 @@ def load_game_tiles():
     return tile_table
 
 '''
-Screen
+Interpic
 '''
 
-def InterpicScreen(completed_levels, screen, tileset):
+def showInterpic(completed_levels, screen, tileset):
     Interpic = BuildLevel("interpic")
 
     clock = pygame.time.Clock()
 
+    screen.setXPosition(0)    
     screen.printMap(Interpic, tileset)
 
     #init player
-    player = Interpic.getPlayer()
-    playerPosition = Interpic.getPlayerPosition()
+    player = Player()
+    playerPosition = Interpic.getPlayerSpawnerPosition(0)
     player_position_x = WIDTH_OF_MAP_NODE * playerPosition[0]
     player_position_y = HEIGHT_OF_MAP_NODE * playerPosition[1]
 
-    Interpic.clearPlayerPosition()
     player.setCurrentState(player.state.WALK)
     player.flip_sprite = True
 
     #keep moving the player right, until it reaches the screen boundary
-    player_reached_boundary = (player_position_x >= Interpic.getWidth() * WIDTH_OF_MAP_NODE)
+    player_reached_boundary = (player_position_x >= screen.getRawWidth())
 
     while not player_reached_boundary:
         player_position_x += player.getMaxSpeedX() * player.getXSpeedFactor()
@@ -250,12 +246,11 @@ def InterpicScreen(completed_levels, screen, tileset):
         #print player
         screen.printPlayer(player, player_position_x, player_position_y, tileset)
 
-        player_reached_boundary = (player_position_x >= Interpic.getWidth() * WIDTH_OF_MAP_NODE)
+        player_reached_boundary = (player_position_x >= screen.getRawWidth())
 
         player.updateAnimation()
         pygame.display.flip()
         clock.tick(200)
-
 
 '''
 Pygame inits
@@ -264,7 +259,7 @@ Pygame inits
 def main():
     ##Init pygame
     pygame.init()
-    game_screen = Screen(SCREEN_WIDTH * TILE_SCALE_FACTOR, SCREEN_HEIGHT * TILE_SCALE_FACTOR)
+    game_screen = Screen(SCREEN_WIDTH, SCREEN_HEIGHT)
     
     ##Init tiles
     ''' TODO: UNIFY '''
@@ -275,7 +270,7 @@ def main():
     ended_game = False
 
     ''' TODO: TITLE SCREEN '''
-    current_level_number = 5
+    current_level_number = 3
 
     ##Available Keys
     movement_keys = [pygame.K_UP, pygame.K_LEFT, pygame.K_RIGHT, pygame.K_DOWN]
@@ -289,6 +284,8 @@ def main():
 
         # build the level
         (Level, GamePlayer, player_position_x, player_position_y) = initLevel(current_level_number)
+        DeathPuff = Dynamic("explosion", 0)
+        death_timer = -1
 
         # UI Inits
         print_ui_initial(ui_tileset, game_screen.display, GamePlayer, 1)
@@ -326,21 +323,41 @@ def main():
             GamePlayer.movementInput(key_map)
 
             # update the player position in the level and treat collisions
-            (player_position_x, player_position_y) = GamePlayer.updatePosition(player_position_x, player_position_y, Level)
+            if GamePlayer.getCurrentState() != GamePlayer.state.DIE:
+                (player_position_x, player_position_y) = GamePlayer.updatePosition(player_position_x, player_position_y, Level)
 
             # if the player ended the level, go on to the next
             if GamePlayer.getCurrentState() == GamePlayer.state.ENDMAP:
                 ended_level = True
                 break;
             elif GamePlayer.getCurrentState() == GamePlayer.state.DIE:
-                GamePlayer.killPlayer(player_position_x, player_position_y)
+                ''' TODO: FIX AND REFACTOR '''
+                if death_timer == -1:
+                    DeathPuff.setGfxId(0)
+                    GamePlayer.takeLife()
+                    death_timer = 120
                 
-
+                player_position_y += 0.25
+                death_timer -= 1
+                
+                if death_timer == 0:
+                    death_timer = -1
+                    game_screen.setXPosition(0)
+                    DeathPuff.setGfxId(-1)
+                    
+                    if (GamePlayer.resetPosAndState() != -1):
+                        (player_position_x, player_position_y) = Level.getPlayerSpawnerPosition(0)
+                        player_position_x *= WIDTH_OF_MAP_NODE
+                        player_position_y *= HEIGHT_OF_MAP_NODE
+                    else:
+                        ended_level = True
+                        ended_game = True
+                
             # if the player is close enough to one of the screen boundaries, move the screen.
-            player_close_to_left_boundary = (player_position_x <= WIDTH_OF_MAP_NODE * game_screen.x_pos + BOUNDARY_DISTANCE_TRIGGER)
-            player_close_to_right_boundary = (player_position_x >= WIDTH_OF_MAP_NODE * game_screen.x_pos + SCREEN_WIDTH - BOUNDARY_DISTANCE_TRIGGER)
-            reached_level_left_boundary = (game_screen.x_pos <= 0)
-            reached_level_right_boundary = (game_screen.x_pos + SCREEN_WIDTH_TILES > Level.getWidth())
+            player_close_to_left_boundary = (player_position_x <= game_screen.getXPositionInPixels() + BOUNDARY_DISTANCE_TRIGGER)
+            player_close_to_right_boundary = (player_position_x >= game_screen.getXPositionInPixels() + game_screen.getRawWidth() - BOUNDARY_DISTANCE_TRIGGER)
+            reached_level_left_boundary = (game_screen.getXPosition() <= 0)
+            reached_level_right_boundary = (game_screen.getXPosition() + game_screen.getWidthInTiles() > Level.getWidth())         
 
             # move screen left
             if player_close_to_left_boundary and not reached_level_left_boundary:
@@ -352,8 +369,10 @@ def main():
             else:
                 game_screen.printMap(Level, tileset)
                 # print player accordingly to screen shift
-                ''' TODO: REFACTOR? '''
-                game_screen.printPlayer(GamePlayer, player_position_x - WIDTH_OF_MAP_NODE * game_screen.x_pos, player_position_y, tileset)
+                if GamePlayer.getCurrentState() != GamePlayer.state.DIE:
+                    game_screen.printPlayer(GamePlayer, player_position_x - game_screen.getXPositionInPixels(), player_position_y, tileset)
+                else:
+                    game_screen.printTile(player_position_x, player_position_y, DeathPuff.getGraphic(tileset))
 
             # update UI
             ''' TODO: PUT THIS INSIDE A HELPER FUNCTION? '''
@@ -375,7 +394,7 @@ def main():
             ''' TODO: CREDITS SCREEN '''
             ended_game = True
         else:
-            InterpicScreen(current_level_number, game_screen, tileset)
+            showInterpic(current_level_number, game_screen, tileset)
 
     pygame.quit()
     quit()
