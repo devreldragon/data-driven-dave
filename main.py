@@ -1,7 +1,7 @@
 from classes import *
 from os import listdir
 from os.path import isfile, join
-import pygame
+
 
 '''
 Level construction
@@ -47,11 +47,7 @@ def initLevel(level_number):
     ''' TODO: INVESTIGATE THIS '''
     Level.clearPlayerPosition()
 
-    #the X position, in the map, where the screen starts
-    ''' TODO: PLAYER MIGHT START IN THE MIDDLE OF THE MAP (Bonus rooms) '''
-    screen_x_position = 0
-
-    return (Level, GamePlayer, player_position_x, player_position_y, screen_x_position)
+    return (Level, GamePlayer, player_position_x, player_position_y)
 
 def tileFromText(text_tile):
     #if the tile has an index, store it
@@ -187,13 +183,6 @@ def splitStringIntoLettersAndNumbers(string):
 
 ## crop a set of tiles, getting the block in index X
 def cropBlockFromGraphic(image, index, size_x, size_y, num_of_blocks=1):
-
-    # TODO: MURILO, BOTEI ISSO v EM COMENTÁRIO PORQUE DA ERRADO NO FOGO.
-    # ACHO QUE QUANDO DEFINIRAM A TILE SET DO FOGO BOTARAM O TAMANHO ERRADO,
-    # MAS NÃO SEI ONDE OLHAR!
-    #if (index >= num_of_blocks):
-    #    ErrorInvalidValue()
-
     x_index = index % num_of_blocks
     x_index_pixel = x_index * size_x
 
@@ -233,99 +222,12 @@ def load_game_tiles():
 Screen
 '''
 
-## print a tile in the display screen
-def printTileInDisplay(tile, x, y, display, tileset, printing_sprite=False):
-    graphic_set = tileset[tile.getId()]
-
-    set_width = graphic_set[2]
-    set_height = graphic_set[1]
-    set_image = graphic_set[0]
-    set_image_width = set_image.get_rect().size[0]
-    number_of_tiles_in_image = int(set_image_width / set_width)
-
-    tile_graphic = cropBlockFromGraphic(set_image, tile.getGfxId(), set_width, set_height, number_of_tiles_in_image)
-
-    if printing_sprite:
-        display_x = x * TILE_SCALE_FACTOR
-        display_y = y * TILE_SCALE_FACTOR
-    else:
-        display_x = WIDTH_OF_MAP_NODE * x * TILE_SCALE_FACTOR
-        display_y = HEIGHT_OF_MAP_NODE * y * TILE_SCALE_FACTOR
-
-    display.blit(tile_graphic, (display_x, display_y))
-
-def printPlayerInDisplay(player, x, y, display, tileset, printing_sprite=False):
-    graphic_set = tileset[player.getId()]
-
-    set_width = graphic_set[2]
-    set_height = graphic_set[1]
-    set_image = graphic_set[0]
-    set_image_width = set_image.get_rect().size[0]
-    number_of_tiles_in_image = int(set_image_width / set_width)
-
-    tile_graphic = cropBlockFromGraphic(set_image, player.getGfxId(), set_width, set_height, number_of_tiles_in_image)
-    if (player.direction_x == direction.RIGHT):
-        player.flip_sprite = True
-    elif (player.direction_x == direction.LEFT):
-        player.flip_sprite = False
-
-
-    if (player.flip_sprite):
-        tile_graphic = pygame.transform.flip(tile_graphic,1,0);
-
-    if printing_sprite:
-        display_x = x * TILE_SCALE_FACTOR
-        display_y = y * TILE_SCALE_FACTOR
-    else:
-        display_x = WIDTH_OF_MAP_NODE * x * TILE_SCALE_FACTOR
-        display_y = HEIGHT_OF_MAP_NODE * y * TILE_SCALE_FACTOR
-
-    display.blit(tile_graphic, (display_x, display_y))
-
-## display map in pygame
-def printMapInDisplay(map, display, tileset, screen_x_position):
-    for y, row in enumerate(map.getNodeMatrix()):
-        for x, col in enumerate(row):
-            tile = map.getNode(x,y).getTile()
-            # won't print player nor the first line, neither other tiles that aren't in the screen
-            if (tile.getId() != "player") and isInScreen(x, screen_x_position) and (y > 0):
-                adjusted_x = x - screen_x_position
-                printTileInDisplay(tile, adjusted_x, y, display, tileset)
-
-#function used for scrolling the screen
-def moveScreenX(map, display, tileset, old_screen_x, scroll_increment):
-    screen_shift = 0
-    reached_level_left_boundary = (old_screen_x + screen_shift <= 0)
-    reached_level_right_boundary = (old_screen_x + screen_shift + SCREEN_WIDTH_TILES >= map.getWidth())
-
-    #going left
-    while (screen_shift > scroll_increment) and not reached_level_left_boundary:
-        printMapInDisplay(map, display, tileset, old_screen_x + screen_shift)
-        pygame.display.flip()
-
-        screen_shift -= SCREEN_SHIFTING_VELOCITY
-        reached_level_left_boundary = (old_screen_x + screen_shift <= 0)
-
-    #going right
-    while (screen_shift < scroll_increment) and not reached_level_right_boundary:
-        printMapInDisplay(map, display, tileset, old_screen_x + screen_shift)
-        pygame.display.flip()
-
-        screen_shift += SCREEN_SHIFTING_VELOCITY
-        reached_level_right_boundary = (old_screen_x + screen_shift + SCREEN_WIDTH_TILES >= map.getWidth())
-
-    return old_screen_x + screen_shift
-
-#check if a given point x is in screen
-def isInScreen(x, screen_x):
-    return (x >= screen_x) and (x < screen_x + SCREEN_WIDTH_TILES)
-
-def InterpicScreen(completed_levels, display, tileset):
+def InterpicScreen(completed_levels, screen, tileset):
     Interpic = BuildLevel("interpic")
 
     clock = pygame.time.Clock()
 
-    printMapInDisplay(Interpic, display, tileset, 0)
+    screen.printMap(Interpic, tileset)
 
     #init player
     player = Interpic.getPlayer()
@@ -340,14 +242,13 @@ def InterpicScreen(completed_levels, display, tileset):
     #keep moving the player right, until it reaches the screen boundary
     player_reached_boundary = (player_position_x >= Interpic.getWidth() * WIDTH_OF_MAP_NODE)
 
-    ''' TODO: ANIMATION '''
     while not player_reached_boundary:
         player_position_x += player.getMaxSpeedX() * player.getXSpeedFactor()
 
         #print map
-        printMapInDisplay(Interpic, display, tileset, 0)
+        screen.printMap(Interpic, tileset)
         #print player
-        printPlayerInDisplay(player, player_position_x, player_position_y, display, tileset, True)
+        screen.printPlayer(player, player_position_x, player_position_y, tileset)
 
         player_reached_boundary = (player_position_x >= Interpic.getWidth() * WIDTH_OF_MAP_NODE)
 
@@ -355,22 +256,16 @@ def InterpicScreen(completed_levels, display, tileset):
         pygame.display.flip()
         clock.tick(200)
 
+
 '''
 Pygame inits
 '''
 
-def init_display():
-    display = pygame.display.set_mode((SCREEN_WIDTH * TILE_SCALE_FACTOR, SCREEN_HEIGHT * TILE_SCALE_FACTOR))
-    display.fill((0, 0, 0))
-
-    return display
-
-
 def main():
     ##Init pygame
     pygame.init()
-    game_display = init_display()
-
+    game_screen = Screen(SCREEN_WIDTH * TILE_SCALE_FACTOR, SCREEN_HEIGHT * TILE_SCALE_FACTOR)
+    
     ##Init tiles
     ''' TODO: UNIFY '''
     tileset = load_game_tiles()
@@ -393,16 +288,16 @@ def main():
         pygame.display.update()
 
         # build the level
-        (Level, GamePlayer, player_position_x, player_position_y, screen_x_position) = initLevel(current_level_number)
+        (Level, GamePlayer, player_position_x, player_position_y) = initLevel(current_level_number)
 
         # UI Inits
-        print_ui_initial(ui_tileset, game_display, GamePlayer, 1)
+        print_ui_initial(ui_tileset, game_screen.display, GamePlayer, 1)
         score_ui = 0 #initial score, everytime it changes, we update the ui
         trophy_ui = False #initial score, everytime it changes, we update the ui
 
         ''' TODO: THIS SHOULD BE INSIDE THE NEXT LOOP? '''
-        update_ui_gun(ui_tileset, game_display)
-        update_ui_jetpack(ui_tileset, game_display)
+        update_ui_gun(ui_tileset, game_screen.display)
+        update_ui_jetpack(ui_tileset, game_screen.display)
 
         # level processing controller
         ended_level = False
@@ -437,33 +332,36 @@ def main():
             if GamePlayer.getCurrentState() == GamePlayer.state.ENDMAP:
                 ended_level = True
                 break;
+            elif GamePlayer.getCurrentState() == GamePlayer.state.DIE:
+                GamePlayer.killPlayer(player_position_x, player_position_y)
+                
 
             # if the player is close enough to one of the screen boundaries, move the screen.
-            player_close_to_left_boundary = (player_position_x <= WIDTH_OF_MAP_NODE * screen_x_position + BOUNDARY_DISTANCE_TRIGGER)
-            player_close_to_right_boundary = (player_position_x >= WIDTH_OF_MAP_NODE * screen_x_position + SCREEN_WIDTH - BOUNDARY_DISTANCE_TRIGGER)
-            reached_level_left_boundary = (screen_x_position <= 0)
-            reached_level_right_boundary = (screen_x_position + SCREEN_WIDTH_TILES > Level.getWidth())
+            player_close_to_left_boundary = (player_position_x <= WIDTH_OF_MAP_NODE * game_screen.x_pos + BOUNDARY_DISTANCE_TRIGGER)
+            player_close_to_right_boundary = (player_position_x >= WIDTH_OF_MAP_NODE * game_screen.x_pos + SCREEN_WIDTH - BOUNDARY_DISTANCE_TRIGGER)
+            reached_level_left_boundary = (game_screen.x_pos <= 0)
+            reached_level_right_boundary = (game_screen.x_pos + SCREEN_WIDTH_TILES > Level.getWidth())
 
             # move screen left
             if player_close_to_left_boundary and not reached_level_left_boundary:
-                screen_x_position = moveScreenX(Level, game_display, tileset, screen_x_position, -15)
+                game_screen.moveScreenX(Level, -15, tileset)
             # move screen right
             elif player_close_to_right_boundary and not reached_level_right_boundary:
-                screen_x_position = moveScreenX(Level, game_display, tileset, screen_x_position, 15)
+                game_screen.moveScreenX(Level, 15, tileset)
             # not moving (just update the screen)
             else:
-                printMapInDisplay(Level, game_display, tileset, screen_x_position)
+                game_screen.printMap(Level, tileset)
                 # print player accordingly to screen shift
                 ''' TODO: REFACTOR? '''
-                printPlayerInDisplay(GamePlayer, player_position_x - WIDTH_OF_MAP_NODE * screen_x_position, player_position_y, game_display, tileset, True)
+                game_screen.printPlayer(GamePlayer, player_position_x - WIDTH_OF_MAP_NODE * game_screen.x_pos, player_position_y, tileset)
 
             # update UI
             ''' TODO: PUT THIS INSIDE A HELPER FUNCTION? '''
             if score_ui != GamePlayer.score:
-                update_ui_score(ui_tileset,game_display,GamePlayer.score)
+                update_ui_score(ui_tileset,game_screen.display,GamePlayer.score)
                 score_ui = GamePlayer.score
             if not trophy_ui and GamePlayer.inventory["trophy"] == 1:
-                update_ui_trophy(ui_tileset,game_display)
+                update_ui_trophy(ui_tileset,game_screen.display)
                 trophy_ui = True
 
             pygame.display.flip()
@@ -477,7 +375,7 @@ def main():
             ''' TODO: CREDITS SCREEN '''
             ended_game = True
         else:
-            InterpicScreen(current_level_number, game_display, tileset)
+            InterpicScreen(current_level_number, game_screen, tileset)
 
     pygame.quit()
     quit()

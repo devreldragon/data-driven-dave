@@ -1,8 +1,10 @@
 
 import sys
 from math import floor
-from enum import Enum #WE SO FUCKING NEED THIS AAAAAA
+from enum import Enum
 from random import randint
+import pygame
+
 '''
 Constants and enumerations
 '''
@@ -37,6 +39,78 @@ def ErrorInvalidConstructor():
 '''
 Classes
 '''
+
+class Screen(object):
+    ##Attributes:
+    ##self.x_pos
+    ##self.width
+    ##self.height
+    ##self.display
+    
+    def __init__(self, width, height):
+        self.width = width
+        self.height = height
+        self.x_pos = 0      
+        self.display = pygame.display.set_mode((width, height))
+        self.display.fill((0, 0, 0))  
+        
+    def isXInScreen(self, x):
+        return (x >= self.x_pos) and (x < self.x_pos + SCREEN_WIDTH_TILES)
+
+    def printTile(self, x, y, tile_graphic):
+        screen_x = x * TILE_SCALE_FACTOR
+        screen_y = y * TILE_SCALE_FACTOR
+
+        self.display.blit(tile_graphic, (screen_x, screen_y))
+
+    def printMap(self, map, tileset):
+        for y, row in enumerate(map.getNodeMatrix()):
+            for x, col in enumerate(row):
+                tile = map.getNode(x,y).getTile()
+                
+                # won't print player nor the first line, neither other tiles that aren't in the screen
+                if (tile.getId() != "player") and self.isXInScreen(x) and (y > 0):
+                    adjusted_x = x - self.x_pos
+                    tile_graphic = tile.getGraphic(tileset)
+                    self.printTile(WIDTH_OF_MAP_NODE * adjusted_x, HEIGHT_OF_MAP_NODE * y, tile_graphic)
+                    
+    def printPlayer(self, player, player_x, player_y, tileset):
+        player_graphic = player.getGraphic(tileset) 
+        
+        if (player.direction_x == direction.RIGHT):
+            player.flip_sprite = True
+        elif (player.direction_x == direction.LEFT):
+            player.flip_sprite = False        
+            
+        if (player.flip_sprite):
+            player_graphic = pygame.transform.flip(player_graphic,1,0);
+                
+        self.printTile(player_x, player_y, player_graphic)
+                    
+    def moveScreenX(self, map, amount, tileset):
+        ''' TODO : WORK ON CONSTANTS '''
+        screen_shift = 0
+        reached_level_left_boundary = (self.x_pos <= 0)
+        reached_level_right_boundary = (self.x_pos + self.width/32 >= map.getWidth())
+        
+        #going left
+        while (screen_shift > amount) and not reached_level_left_boundary:
+            self.printMap(map, tileset)
+            pygame.display.flip()
+
+            screen_shift -= SCREEN_SHIFTING_VELOCITY
+            self.x_pos -= SCREEN_SHIFTING_VELOCITY 
+            reached_level_left_boundary = (self.x_pos <= 0)
+
+        #going right
+        while (screen_shift < amount) and not reached_level_right_boundary:
+            self.printMap(map, tileset)
+            pygame.display.flip()
+            
+            screen_shift += SCREEN_SHIFTING_VELOCITY
+            self.x_pos += SCREEN_SHIFTING_VELOCITY 
+            reached_level_right_boundary = (self.x_pos + self.width/32 >= map.getWidth())      
+        
 
 class Map(object):
     '''
@@ -297,6 +371,25 @@ class Tile(object):
             if (tile.id < 0) or (tile.gfx_id < 0):
                 return 0
             else: return 1
+           
+    def getGraphic(self, tileset):
+        graphic_set = tileset[self.id]
+
+        graphic_set_width = graphic_set[2]
+        graphic_set_height = graphic_set[1]
+        graphic_set_image = graphic_set[0]
+        graphic_set_image_width = graphic_set_image.get_rect().size[0]
+        number_of_tiles_in_image = int(graphic_set_image_width / graphic_set_width)    
+
+        ''' TODO: INVESTIGATE '''
+        x_index = self.gfx_id % number_of_tiles_in_image
+        x_index_pixel = x_index * graphic_set_width
+
+        #select the tile to crop (y is always 0)
+        rectangle = (x_index_pixel, 0, graphic_set_width, graphic_set_height)
+        size_of_rectangle = (graphic_set_width * TILE_SCALE_FACTOR, graphic_set_height * TILE_SCALE_FACTOR)
+        cropped_tile = pygame.transform.scale(graphic_set_image.subsurface(rectangle), size_of_rectangle)
+        return cropped_tile        
 
     '''
     Getters and setters
