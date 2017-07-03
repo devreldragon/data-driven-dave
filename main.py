@@ -271,7 +271,7 @@ def main():
     game_over = False
 
     ''' TODO: TITLE SCREEN '''
-    current_level_number = 5
+    current_level_number = 1
 
     ##Available Keys
     movement_keys = [pygame.K_UP, pygame.K_LEFT, pygame.K_RIGHT, pygame.K_DOWN]
@@ -413,13 +413,14 @@ def main():
         # Onto the next level
         current_level_number += 1
 
-        if current_level_number > 10 and ended_game:
+        if current_level_number > 10 and ended_level:
             ''' TODO: CREDITS SCREEN '''
             ended_game = True
-        elif ended_game:
+        elif ended_level and not game_over:
             showInterpic(current_level_number, game_screen, tileset)
         elif game_over:
             ''' TODO: GAME OVER SCREEN '''
+            ended_game = True
             pass
             
     pygame.quit()
