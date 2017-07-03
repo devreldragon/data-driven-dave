@@ -271,7 +271,7 @@ def main():
     game_over = False
 
     ''' TODO: TITLE SCREEN '''
-    current_level_number = 3
+    current_level_number = 5
 
     ##Available Keys
     movement_keys = [pygame.K_UP, pygame.K_LEFT, pygame.K_RIGHT, pygame.K_DOWN]
@@ -287,6 +287,7 @@ def main():
         (Level, GamePlayer, player_position_x, player_position_y) = initLevel(current_level_number)
         DeathPuff = AnimatedSprite("explosion", 0)
         death_timer = -1
+        friendly_shot = 0
 
         # UI Inits
         print_ui_initial(ui_tileset, game_screen.display, GamePlayer, 1)
@@ -313,7 +314,9 @@ def main():
                         GamePlayer.setVelocityY(0)
                 elif event.type == pygame.KEYDOWN:
                     if event.key in inv_keys:
-                        GamePlayer.inventoryInput(inv_keys.index(event.key))
+                        if GamePlayer.inventoryInput(inv_keys.index(event.key)) and not friendly_shot:
+                            friendly_shot = Level.spawnFriendlyFire(GamePlayer.getDirectionX())
+                            friendly_shot_x, friendly_shot_y = player_position_x + GamePlayer.getDirectionX().value * WIDTH_OF_MAP_NODE, player_position_y
 
             # get keys (movement)
             pressed_keys = pygame.key.get_pressed()
@@ -326,6 +329,13 @@ def main():
             # update the player position in the level and treat collisions
             if GamePlayer.getCurrentState() != GamePlayer.state.DIE:
                 (player_position_x, player_position_y) = GamePlayer.updatePosition(player_position_x, player_position_y, Level)
+                
+            # update friendly shot position, if there is one
+            if friendly_shot:
+                friendly_shot_x = friendly_shot.updatePosition(friendly_shot_x, friendly_shot_y, Level)
+                if (friendly_shot_x == -1):
+                    del friendly_shot
+                    friendly_shot = 0
 
             # if the player ended the level, go on to the next
             if GamePlayer.getCurrentState() == GamePlayer.state.ENDMAP:
@@ -369,10 +379,22 @@ def main():
             # not moving (just update the screen)
             else:
                 game_screen.printMap(Level, tileset)
-                # print player accordingly to screen shift
+                
+                if friendly_shot:
+                    game_screen.printTile(friendly_shot_x - game_screen.getXPositionInPixels(), friendly_shot_y, friendly_shot.getGraphic(tileset))
+                    
+                    bullet_bypassed_screen_right_boundary = (friendly_shot_x >= game_screen.getXPositionInPixels() + game_screen.getRawWidth())
+                    bullet_bypassed_screen_left_boundary = (friendly_shot_x <= game_screen.getXPositionInPixels())
+                    
+                    if bullet_bypassed_screen_right_boundary or bullet_bypassed_screen_left_boundary:
+                        del friendly_shot
+                        friendly_shot = 0
+                
                 if GamePlayer.getCurrentState() != GamePlayer.state.DIE:
+                    # print player accordingly to screen shift
                     game_screen.printPlayer(GamePlayer, player_position_x - game_screen.getXPositionInPixels(), player_position_y, tileset)
                 else:
+                    # print death puff accordingly to screen shift
                     game_screen.printTile(player_position_x - game_screen.getXPositionInPixels(), player_position_y, DeathPuff.getGraphic(tileset))
 
             # update UI

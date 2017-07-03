@@ -251,15 +251,7 @@ class Map(object):
             for x, col in enumerate(line):
                 if self.node_matrix[y][x].getTile().getId() == "player_spawner" and self.node_matrix[y][x].getTile().getSpawnerId() == id:
                     return (x, y)
-
-    '''
-    def getPlayer(self):
-        playerPos = self.getPlayerPosition()
-        y = playerPos[1]
-        x = playerPos[0]
-        return self.node_matrix[y][x].getTile()
-    '''
-
+                    
     def getCollisionType(self, x, y):
         solid = isinstance(self.node_matrix[y][x].getTile(), Solid)
         item = isinstance(self.node_matrix[y][x].getTile(), Item)
@@ -277,7 +269,7 @@ class Map(object):
         else:
             return False
 
-    def checkCollision(self, player_pos, solid_only=False):
+    def checkPlayerCollision(self, player_pos, solid_only=False):
         TOLERANCE_VALUE = 1 #the dave can walk a little bit "into" the blocks
 
         x_left = floor((player_pos[0] + TOLERANCE_VALUE)/16)
@@ -306,9 +298,42 @@ class Map(object):
 
         return (self.COLLISION.NONE, (-1,-1))
 
-    def checkSolidCollision(self, player_pos):
-        return (self.checkCollision(player_pos, True)[0] == self.COLLISION.SOLID)
+    def checkPlayerSolidCollision(self, player_pos):
+        return (self.checkPlayerCollision(player_pos, True)[0] == self.COLLISION.SOLID)
 
+    def spawnFriendlyFire(self, direction):       
+        if (direction == direction.RIGHT):
+            shot = Shot()
+        else: shot = Shot("bullet", 1, direction.LEFT)
+        
+        return shot
+        
+    def checkShotCollision(self, shot_x, shot_y):
+        x_left = int(shot_x // 16)
+        y_top = int(shot_y // 16)
+        ''' TODO: REFACTOR SHOT GFX CONSTANTS (11 and 2) '''
+        x_right = int((shot_x + 11) // 16)
+        y_bottom = int((shot_y + 2) // 16)
+        
+        collision_topleft = self.getCollisionType(x_left, y_top)
+        collision_topright = self.getCollisionType(x_right, y_top)
+        collision_bottomleft = self.getCollisionType(x_left, y_bottom)
+        collision_bottomright = self.getCollisionType(x_right, y_bottom)  
+
+        priority = [self.COLLISION.ENEMY, self.COLLISION.SOLID]
+        
+        for col in priority:
+            if collision_topleft == col:
+                return (collision_topleft, (x_left, y_top))
+            elif collision_topright == col:
+                return (collision_topright, (x_right, y_top))
+            elif collision_bottomleft == col:
+                return (collision_bottomleft, (x_left, y_bottom))
+            elif collision_bottomright == col:
+                return (collision_bottomright, (x_right, y_bottom))       
+        
+        return (self.COLLISION.NONE, (-1,-1))
+        
     '''
     Getters and Setters
     '''
@@ -999,7 +1024,7 @@ class Player(Dynamic):
     ## UPDATES THE PLAYER POSITION BASED ON THE STATE HE'S IN
     def updatePosition(self, player_x, player_y, level):    
         self.inventory["tree"] = 0
-        collision = level.checkCollision((player_x, player_y))
+        collision = level.checkPlayerCollision((player_x, player_y))
         collision_type = collision[0]
         collider_pos = collision[1]
 
@@ -1016,14 +1041,14 @@ class Player(Dynamic):
 
         # Checks if the player walked into a pit
         if self.cur_state == self.state.WALK:
-            if not level.checkSolidCollision((player_x, player_y + 1)):
+            if not level.checkPlayerSolidCollision((player_x, player_y + 1)):
                 self.setCurrentState(self.state.FALL)
                 self.velocity_x = self.MAX_SPEED_X
                 self.velocity_y = self.MAX_SPEED_Y
 
         ## Move X: START
         player_newx = player_x + self.velocity_x * self.direction_x.value                   # Tries to walk to the direction the player's going
-        solid_collision = level.checkSolidCollision((player_newx, player_y))
+        solid_collision = level.checkPlayerSolidCollision((player_newx, player_y))
 
         if solid_collision:                                                                 # If a collision occurs,
             player_newx = player_x                                                          # undo the movement
@@ -1036,7 +1061,7 @@ class Player(Dynamic):
         player_newy = player_y + self.velocity_y
 
         # Check for solid collisions
-        solid_collision = level.checkSolidCollision((player_newx, player_newy))
+        solid_collision = level.checkPlayerSolidCollision((player_newx, player_newy))
 
         if self.cur_state != self.state.DIE:
             if solid_collision:
@@ -1081,7 +1106,6 @@ class Player(Dynamic):
 
     def clearXMovement(self):
         self.velocity_x = 0
-        self.direction_x = direction.IDLE
 
     '''
     Getters and setters
@@ -1176,6 +1200,66 @@ class AnimatedSprite(Dynamic):
         #call superclass method
         return super(AnimatedSprite, self).getGraphic(tileset)
         
+
+class Shot(Dynamic):
+    '''
+    Shot represents a shot in the game (going straight)
+    It has the following arguments:
+        direction: enumeration represents the direction of the shot
+    '''
+    
+    '''
+    Constants
+    '''
+    
+    MAX_SPEED_X = 0.4 * TILE_SCALE_FACTOR
+    
+    '''
+    Constructors
+    '''
+
+    def __init__(self, *args):
+        #default constructor
+        if len(args) == 0:
+            self.id = "bullet"
+            self.gfx_id = 0
+            self.direction = direction.RIGHT
+        #alternative constructor (id, gfx_id, direction)
+        elif len(args) == 3:
+            '''TODO: CHECK INSTANCES '''
+            self.id = args[0]
+            self.gfx_id = args[1]
+            self.direction = args[2]
+        else: ErrorInvalidConstructor()
+
+    '''
+    Other methods
+    '''
+    
+    def updatePosition(self, current_x, current_y, level):
+        new_x = current_x + self.direction.value * self.MAX_SPEED_X
+        
+        collision = level.checkShotCollision(current_x, current_y)
+        
+        if (collision[0] == level.COLLISION.ENEMY):
+            ''' TODO: KILL ENEMY '''
+            return -1
+        elif (collision[0] == level.COLLISION.SOLID):
+            return -1
+            
+        return new_x
+    
+    '''
+    Getters and setters
+    '''   
+    
+    def setDirection(self, dir):
+        ''' TODO: CHECK INSTANCE '''
+        self.dir = dir
+        
+    def getDirection(self):
+        return self.dir
+
         
 class Enemy(Dynamic):
     '''
