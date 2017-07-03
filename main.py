@@ -268,6 +268,7 @@ def main():
 
     ##Init game
     ended_game = False
+    game_over = False
 
     ''' TODO: TITLE SCREEN '''
     current_level_number = 3
@@ -277,14 +278,14 @@ def main():
     inv_keys = [pygame.K_LCTRL, pygame.K_RCTRL, pygame.K_LALT, pygame.K_RALT]
 
     ##Game processing
-    while not ended_game:
+    while not ended_game and not game_over:
         # init stuff
         clock = pygame.time.Clock()
         pygame.display.update()
 
         # build the level
         (Level, GamePlayer, player_position_x, player_position_y) = initLevel(current_level_number)
-        DeathPuff = Dynamic("explosion", 0)
+        DeathPuff = AnimatedSprite("explosion", 0)
         death_timer = -1
 
         # UI Inits
@@ -331,7 +332,7 @@ def main():
                 ended_level = True
                 break;
             elif GamePlayer.getCurrentState() == GamePlayer.state.DIE:
-                ''' TODO: FIX AND REFACTOR '''
+                ''' TODO: REFACTOR '''
                 if death_timer == -1:
                     DeathPuff.setGfxId(0)
                     GamePlayer.takeLife()
@@ -351,7 +352,7 @@ def main():
                         player_position_y *= HEIGHT_OF_MAP_NODE
                     else:
                         ended_level = True
-                        ended_game = True
+                        game_over = True
                 
             # if the player is close enough to one of the screen boundaries, move the screen.
             player_close_to_left_boundary = (player_position_x <= game_screen.getXPositionInPixels() + BOUNDARY_DISTANCE_TRIGGER)
@@ -372,7 +373,7 @@ def main():
                 if GamePlayer.getCurrentState() != GamePlayer.state.DIE:
                     game_screen.printPlayer(GamePlayer, player_position_x - game_screen.getXPositionInPixels(), player_position_y, tileset)
                 else:
-                    game_screen.printTile(player_position_x, player_position_y, DeathPuff.getGraphic(tileset))
+                    game_screen.printTile(player_position_x - game_screen.getXPositionInPixels(), player_position_y, DeathPuff.getGraphic(tileset))
 
             # update UI
             ''' TODO: PUT THIS INSIDE A HELPER FUNCTION? '''
@@ -382,7 +383,7 @@ def main():
             if not trophy_ui and GamePlayer.inventory["trophy"] == 1:
                 update_ui_trophy(ui_tileset,game_screen.display)
                 trophy_ui = True
-
+                
             pygame.display.flip()
             pygame.event.pump()
             clock.tick(200)
@@ -390,12 +391,15 @@ def main():
         # Onto the next level
         current_level_number += 1
 
-        if current_level_number > 10:
+        if current_level_number > 10 and ended_game:
             ''' TODO: CREDITS SCREEN '''
             ended_game = True
-        else:
+        elif ended_game:
             showInterpic(current_level_number, game_screen, tileset)
-
+        elif game_over:
+            ''' TODO: GAME OVER SCREEN '''
+            pass
+            
     pygame.quit()
     quit()
 

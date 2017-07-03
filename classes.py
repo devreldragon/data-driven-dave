@@ -747,6 +747,10 @@ class Dynamic(Tile):
     '''
 
     '''
+    Constants
+    '''
+    
+    '''
     Constructors
     '''
 
@@ -765,7 +769,7 @@ class Dynamic(Tile):
     '''
     Other methods
     '''
-
+    
     '''
     Getters and setters
     '''
@@ -837,6 +841,9 @@ class Player(Dynamic):
     Other methods
     '''
 
+    def getGraphic(self, tileset):
+        return Tile.getGraphic(self, tileset)
+    
     ## INPUT/KEYS TREATMENT
     def movementInput(self, pressed_keys):
         if self.cur_state in [self.state.ENDMAP, self.state.DIE]:
@@ -930,6 +937,7 @@ class Player(Dynamic):
         self.velocity_y = 0
         self.velocity_x = 0
         self.direction_x = direction.IDLE 
+        self.blinking_timer = self.BLINKING_SPEED
             
     ## TREAT JUMPING
     def treatJumping(self):
@@ -1119,6 +1127,56 @@ class Player(Dynamic):
         return self.X_SPEED_FACTOR
 
 
+class AnimatedSprite(Dynamic):
+    '''
+    AnimatedSprite represents an animated sprite in the game.
+    It has the following arguments:
+        anim_timer: integer represents the animation timer of the sprite
+    '''
+
+    '''
+    Constants
+    '''    
+    
+    ANIM_TIMER_MAX = 30    
+    
+    '''
+    Constructors
+    '''
+
+    def __init__(self, *args):
+        #default constructor
+        if len(args) == 0:
+            self.id = "undefined"
+            self.gfx_id = -1
+            self.anim_timer = self.ANIM_TIMER_MAX
+        #alternative constructor (id, gfx_id)
+        elif len(args) == 2:
+            '''TODO: CHECK INSTANCES '''
+            self.id = args[0]
+            self.gfx_id = args[1]
+            self.anim_timer = self.ANIM_TIMER_MAX
+        else: ErrorInvalidConstructor()
+
+    '''
+    Other methods
+    '''
+
+    def getGraphic(self, tileset):
+        self.anim_timer -= ANIMATION_VELOCITY
+        
+        if (self.anim_timer == 0):
+            self.anim_timer = self.ANIM_TIMER_MAX
+            
+            if (self.id == "explosion"):
+                if self.gfx_id == 3:
+                    self.gfx_id = 0 
+                else: self.gfx_id += 1
+
+        #call superclass method
+        return super(AnimatedSprite, self).getGraphic(tileset)
+        
+        
 class Enemy(Dynamic):
     '''
     Enemy represents a moving enemy in the game
