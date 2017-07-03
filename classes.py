@@ -15,6 +15,9 @@ HEIGHT_OF_MAP_NODE = 16
 SCREEN_SHIFTING_VELOCITY = 0.5
 ANIMATION_VELOCITY = 2
 
+GAME_SCREEN_START = 15
+GAME_SCREEN_END = 163
+
 BOUNDARY_DISTANCE_TRIGGER = 25
 
 SCREEN_WIDTH = 320 * TILE_SCALE_FACTOR
@@ -73,15 +76,16 @@ class Screen(object):
         screen_x = x * TILE_SCALE_FACTOR
         screen_y = y * TILE_SCALE_FACTOR
 
-        self.display.blit(tile_graphic, (screen_x, screen_y))
+        if (y > GAME_SCREEN_START) and (y < GAME_SCREEN_END):
+            self.display.blit(tile_graphic, (screen_x, screen_y))
 
     def printMap(self, map, tileset):
         for y, row in enumerate(map.getNodeMatrix()):
             for x, col in enumerate(row):
                 tile = map.getNode(x,y).getTile()
                 
-                # won't print the first line, neither other tiles that aren't in the screen
-                if self.isXInScreen(x) and (y > 0):
+                # won't print the first line, neither other tiles that aren't in the game screen
+                if self.isXInScreen(x) and (y * HEIGHT_OF_MAP_NODE > GAME_SCREEN_START) and (y * HEIGHT_OF_MAP_NODE < GAME_SCREEN_END):
                     adjusted_x = x - self.x_pos
                     tile_graphic = tile.getGraphic(tileset)
                     self.printTile(WIDTH_OF_MAP_NODE * adjusted_x, HEIGHT_OF_MAP_NODE * y, tile_graphic)
@@ -1072,6 +1076,17 @@ class Player(Dynamic):
         self.treatJumping()
         ## Move Y: END
 
+        ## Jetpack gas: START
+        if (self.cur_state == self.state.FLY) and self.inventory["jetpack"] > 0:
+            self.inventory["jetpack"] -= 0.005
+            print(self.inventory["jetpack"])
+        elif (self.cur_state == self.state.FLY):
+            self.inventory["jetpack"] = 0
+            self.setCurrentState(self.state.FALL)
+            self.velocity_x = self.MAX_SPEED_X #when falling, velocity increases to the max
+            self.velocity_y = self.MAX_SPEED_Y    
+        ## Jetpack gas: END       
+        
         ## Animation: START
         self.blinking_timer -= 1
         if (player_x != player_newx or player_y != player_newy) and self.cur_state != self.state.ENDMAP:          # If the player moved, updates the animation
