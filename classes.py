@@ -12,24 +12,40 @@ Constants and enumerations
 TILE_SCALE_FACTOR = 2
 WIDTH_OF_MAP_NODE = 16
 HEIGHT_OF_MAP_NODE = 16
-SCREEN_SHIFTING_VELOCITY = 0.5
 ANIMATION_VELOCITY = 2
-
-GAME_SCREEN_START = 15
-GAME_SCREEN_END = 163
 
 BOUNDARY_DISTANCE_TRIGGER = 25
 
 SCREEN_WIDTH = 320 * TILE_SCALE_FACTOR
 SCREEN_HEIGHT = 208 * TILE_SCALE_FACTOR
 
-class direction(Enum):
+TILE_IDS = []
+
+class DIRECTION(Enum):
     LEFT = -1
     IDLE = 0
     RIGHT = 1
     UP = 2
     DOWN = 3
+    
+class COLLISION(Enum):
+    SOLID = 0
+    ITEM = 1
+    ENEMY = 2
+    INTSCEN = 3
+    NONE = 4
 
+class INTSCENERYTYPE(Enum):
+    GOAL = 0
+    HAZARD = 1
+    TREE = 2
+    
+''' TODO : CHECK IF THIS IS NECESSARY '''
+class EQUIPTYPE(Enum):
+    TROPHY = 0
+    GUN = 1
+    JETPACK = 2
+    
 '''
 Errors
 '''
@@ -46,13 +62,21 @@ Classes
 
 class Screen(object):
     '''
-    Screen is a class used to keep the game screen (and the display along with it)
+    Screen is a class used to store the game screen (and the display along with it)
     It has the following attributes:
-        width: integer represents the width of the screen
-        height: integer represents the height of the screen
-        x_pos: integer represents the X position of the screen inside the map
+        width: integer represents the width of the screen in pixels
+        height: integer represents the height of the screen in pixels
+        x_pos: integer represents the X position of the screen inside the map (in tiles)
         display: pygame.display contains the display used in pygame to display the screen
     '''
+    
+    '''
+    Constants
+    '''
+    
+    GAME_SCREEN_START = 15
+    GAME_SCREEN_END = 163
+    SCREEN_SHIFTING_VELOCITY = 0.5
     
     '''
     Constructors
@@ -73,33 +97,32 @@ class Screen(object):
         return (x >= self.x_pos) and (x < self.x_pos + self.getWidthInTiles())
 
     def printTile(self, x, y, tile_graphic):
-        screen_x = x * TILE_SCALE_FACTOR
-        screen_y = y * TILE_SCALE_FACTOR
-
-        if (y > GAME_SCREEN_START) and (y < GAME_SCREEN_END):
-            self.display.blit(tile_graphic, (screen_x, screen_y))
+        scaled_x = x * TILE_SCALE_FACTOR
+        scaled_y = y * TILE_SCALE_FACTOR    
+    
+        # print the tile only if it's out of the UI
+        if (y > self.GAME_SCREEN_START) and (y < self.GAME_SCREEN_END):
+            self.display.blit(tile_graphic, (scaled_x, scaled_y))
 
     def printMap(self, map, tileset):
         for y, row in enumerate(map.getNodeMatrix()):
             for x, col in enumerate(row):
                 tile = map.getNode(x,y).getTile()
+                absolute_y = y * HEIGHT_OF_MAP_NODE
                 
-                # won't print the first line, neither other tiles that aren't in the game screen
-                if self.isXInScreen(x) and (y * HEIGHT_OF_MAP_NODE > GAME_SCREEN_START) and (y * HEIGHT_OF_MAP_NODE < GAME_SCREEN_END):
-                    adjusted_x = x - self.x_pos
-                    tile_graphic = tile.getGraphic(tileset)
-                    self.printTile(WIDTH_OF_MAP_NODE * adjusted_x, HEIGHT_OF_MAP_NODE * y, tile_graphic)
+                # won't print the first line, neither other tiles that aren't in the game screen (considering the current x position)
+                if self.isXInScreen(x) and (absolute_y > self.GAME_SCREEN_START) and (absolute_y < self.GAME_SCREEN_END):
+                    adjusted_x = x - self.x_pos                                     #print the tile accordingly to the screen shift
+                    absolute_x = adjusted_x * WIDTH_OF_MAP_NODE                     #store the x pos in pixels
+                    tile_graphic = tile.getGraphic(tileset)                         #get the tile graphic
+                    self.printTile(absolute_x, absolute_y, tile_graphic)
                     
     def printPlayer(self, player, player_x, player_y, tileset):
         player_graphic = player.getGraphic(tileset) 
-        
-        if (player.direction_x == direction.RIGHT):
-            player.flip_sprite = True
-        elif (player.direction_x == direction.LEFT):
-            player.flip_sprite = False        
+        player.setSpriteDirection()
             
-        if (player.flip_sprite):
-            player_graphic = pygame.transform.flip(player_graphic,1,0);
+        if (player.isSpriteFlipped()):
+            player_graphic = pygame.transform.flip(player_graphic,1,0)
                 
         self.printTile(player_x, player_y, player_graphic)
                     
@@ -113,8 +136,8 @@ class Screen(object):
             self.printMap(map, tileset)
             pygame.display.flip()
 
-            screen_shift -= SCREEN_SHIFTING_VELOCITY
-            self.x_pos -= SCREEN_SHIFTING_VELOCITY 
+            screen_shift -= self.SCREEN_SHIFTING_VELOCITY
+            self.x_pos -= self.SCREEN_SHIFTING_VELOCITY 
             reached_level_left_boundary = (self.x_pos <= 0)
 
         #going right
@@ -133,7 +156,7 @@ class Screen(object):
     def getWidth(self):
         return self.width
         
-    def getRawWidth(self):
+    def getUnscaledWidth(self):
         return int(self.width / TILE_SCALE_FACTOR)
         
     def getWidthInTiles(self):
@@ -142,7 +165,7 @@ class Screen(object):
     def getHeight(self):
         return self.height
 
-    def getRawHeight(self):
+    def getUnscaledHeight(self):
         return int(self.height / TILE_SCALE_FACTOR)
         
     def getHeightInTiles(self):
@@ -151,7 +174,7 @@ class Screen(object):
     def getXPosition(self):
         return self.x_pos
         
-    def getXPositionInPixels(self):
+    def getXPositionInPixelsUnscaled(self):
         return self.x_pos * WIDTH_OF_MAP_NODE
         
     def getDisplay(self):
@@ -176,7 +199,7 @@ class Screen(object):
             self.x_pos = x_position;
             
     '''
-    TODO: Does this work?
+    TODO: Does this work? Do we need it?
     def setDisplay(self, new_display):
         if not isinstance(new_display, pygame.display):
             ErrorInvalidValue()
@@ -195,12 +218,6 @@ class Map(object):
     '''
 
     '''
-    Constants
-    '''
-
-    COLLISION = Enum('COLLISION', 'NONE SOLID ENEMY ITEM EQUIP INTSCEN')
-
-    '''
     Methods
     '''
 
@@ -209,146 +226,145 @@ class Map(object):
         if(len(args) == 0):
             self.height = 11
             self.width = 150
-            self.node_matrix = [[MapNode() for i in range(self.width)] for j in range(self.height)]
+            self.node_matrix = self.buildMapMatrix()
+        #alternative constructor (height, width)
         elif(len(args) == 2):
-            ''' TODO: TEST INSTANCES '''
+            if not self.validConstructorArgs(*args):
+                ErrorInvalidValue()
+            
             self.height = args[0]
             self.width = args[1]
-            self.node_matrix = [[MapNode() for i in range(self.width)] for j in range(self.height)]
+            self.node_matrix = self.buildMapMatrix()
         else: ErrorInvalidConstructor()
 
-    def addMapLine(self):
-        self.height += 1
-        self.node_matrix.append([MapNode() for i in range(self.width)])
+    def buildMapMatrix(self):
+        return [[MapNode() for i in range(self.width)] for j in range(self.height)]
 
-    def addMapColumn(self):
-        self.width += 1
-        for map_line in self.node_matrix:
-            map_line.append(MapNode())
-
-    def buildMapBorder(self, tile):
-        bottom = self.height - 1
-        right = self.width - 1
-
-        for x in range(right + 1):
-            self.setNodeTile(x, 1, tile)
-            self.setNodeTile(x, bottom, tile)
-
-        for y in range(2, bottom):
-            self.setNodeTile(0, y, tile)
-            self.setNodeTile(right, y, tile)
-
-    def buildWall(self, x, tile):
-        for y in range(1, self.height):
-            self.setNodeTile(x, y, tile)
-
+    def validConstructorArgs(self, *args):
+        height = args[0]
+        width = args[1]
+        
+        return (isinstance(height, int) and isinstance(width, int) and height >= 0 and width >= 0)
+        
+    def validateCoordinates(self, x, y):
+        return (isinstance(x, int) and isinstance(y, int) and x >= 0 and y >= 0 and x < self.width and y < self.height)
+        
     def setNodeTile(self, x, y, tile):
-        if (x < self.width) and (y < self.height):
+        if self.validateCoordinates(x, y) and isinstance(tile, Tile):
             self.node_matrix[y][x].setTile(tile)
         else: ErrorInvalidValue()
 
     def getNode(self, x, y):
-        return self.node_matrix[y][x]
+        if self.validateCoordinates(x, y):
+            return self.node_matrix[y][x]
+        else: ErrorInvalidValue()
 
-    def getPlayerSpawnerPosition(self, id):
+    def getPlayerSpawnerPosition(self, spawner_id):
         for y, line in enumerate(self.node_matrix):
             for x, col in enumerate(line):
-                if self.node_matrix[y][x].getTile().getId() == "player_spawner" and self.node_matrix[y][x].getTile().getSpawnerId() == id:
+                if self.node_matrix[y][x].getTile().getId() == "player_spawner" and self.node_matrix[y][x].getTile().getSpawnerId() == spawner_id:
                     return (x, y)
+        return (-1, -1)
                     
     def getCollisionType(self, x, y):
+        if not self.validateCoordinates(x, y):
+            ErrorInvalidValue()
+    
         solid = isinstance(self.node_matrix[y][x].getTile(), Solid)
         item = isinstance(self.node_matrix[y][x].getTile(), Item)
         intscen = isinstance(self.node_matrix[y][x].getTile(), InteractiveScenery)
         enemy = isinstance(self.node_matrix[y][x].getTile(), Enemy)
 
         if solid:
-            return self.COLLISION.SOLID
+            return COLLISION.SOLID
         elif item:
-            return self.COLLISION.ITEM
+            return COLLISION.ITEM
         elif intscen:
-            return self.COLLISION.INTSCEN
+            return COLLISION.INTSCEN
         elif enemy:
-            return self.COLLISION.ENEMY
+            return COLLISION.ENEMY
         else:
-            return False
+            return COLLISION.NONE
 
-    def checkPlayerCollision(self, player_pos, solid_only=False):
+    def checkPlayerCollision(self, player_x, player_y, player_width, player_height, solid_only=False):
         TOLERANCE_VALUE = 1 #the dave can walk a little bit "into" the blocks
-
-        x_left = floor((player_pos[0] + TOLERANCE_VALUE)/16)
-        y_top = floor((player_pos[1])/16)
-        x_right = floor((player_pos[0] + 15 - TOLERANCE_VALUE) / 16)
-        y_bottom = floor((player_pos[1] + 15) / 16)
+        
+        ''' TODO: TEST X AND Y MAYBE? '''
+        
+        x_left = int((player_x + TOLERANCE_VALUE) // WIDTH_OF_MAP_NODE)
+        y_top = int(player_y // HEIGHT_OF_MAP_NODE)
+        x_right = int((player_x + player_width-1 - TOLERANCE_VALUE) // WIDTH_OF_MAP_NODE)
+        y_bottom = int((player_y + player_height-1) // HEIGHT_OF_MAP_NODE)
 
         collision_topleft = self.getCollisionType(x_left, y_top)
         collision_topright = self.getCollisionType(x_right, y_top)
         collision_bottomleft = self.getCollisionType(x_left, y_bottom)
         collision_bottomright = self.getCollisionType(x_right, y_bottom)
 
-        ## GAMBIARRA: collision priority (won't check others if solid_only = true):
-        priority = [self.COLLISION.SOLID, self.COLLISION.ITEM, self.COLLISION.ENEMY, self.COLLISION.INTSCEN]
-
-        for col in priority:
-            if collision_topleft == col:
+        for col_type in COLLISION:
+            if collision_topleft == col_type:
                 return (collision_topleft, (x_left, y_top))
-            elif collision_topright == col:
+            elif collision_topright == col_type:
                 return (collision_topright, (x_right, y_top))
-            elif collision_bottomleft == col:
+            elif collision_bottomleft == col_type:
                 return (collision_bottomleft, (x_left, y_bottom))
-            elif collision_bottomright == col:
+            elif collision_bottomright == col_type:
                 return (collision_bottomright, (x_right, y_bottom))
             if solid_only: break
+        
+        return (COLLISION.NONE, (-1, -1))
 
-        return (self.COLLISION.NONE, (-1,-1))
+    ''' TODO : PLAYER SIZE '''
+    def isPlayerCollidingWithSolid(self, player_x, player_y, player_width=20, player_height=16):
+        return (self.checkPlayerCollision(player_x, player_y, player_width, player_height, True)[0] == COLLISION.SOLID)
 
-    def checkPlayerSolidCollision(self, player_pos):
-        return (self.checkPlayerCollision(player_pos, True)[0] == self.COLLISION.SOLID)
-
-    def spawnFriendlyFire(self, direction):       
-        if (direction == direction.RIGHT):
+    def spawnFriendlyFire(self, direction):
+        if (direction == DIRECTION.RIGHT):
             shot = Shot()
-        else: shot = Shot("bullet", 1, direction.LEFT)
+        elif (direction == DIRECTION.LEFT): 
+            shot = Shot("bullet", 1, DIRECTION.LEFT)
+        else: ErrorInvalidValue()
         
         return shot
         
-    def checkShotCollision(self, shot_x, shot_y):
+    def checkShotCollision(self, shot_x, shot_y, shot_width, shot_height):
+        ''' TODO: TEST X AND Y MAYBE?'''
+    
         x_left = int(shot_x // 16)
         y_top = int(shot_y // 16)
-        ''' TODO: REFACTOR SHOT GFX CONSTANTS (11 and 2) '''
-        x_right = int((shot_x + 11) // 16)
-        y_bottom = int((shot_y + 2) // 16)
+        x_right = int((shot_x + shot_width-1) // 16)
+        y_bottom = int((shot_y + shot_height-1) // 16)
         
         collision_topleft = self.getCollisionType(x_left, y_top)
         collision_topright = self.getCollisionType(x_right, y_top)
         collision_bottomleft = self.getCollisionType(x_left, y_bottom)
         collision_bottomright = self.getCollisionType(x_right, y_bottom)  
 
-        priority = [self.COLLISION.ENEMY, self.COLLISION.SOLID]
+        priority = [COLLISION.ENEMY, COLLISION.SOLID]
         
-        for col in priority:
-            if collision_topleft == col:
+        for col_type in priority:
+            if collision_topleft == col_type:
                 return (collision_topleft, (x_left, y_top))
-            elif collision_topright == col:
+            elif collision_topright == col_type:
                 return (collision_topright, (x_right, y_top))
-            elif collision_bottomleft == col:
+            elif collision_bottomleft == col_type:
                 return (collision_bottomleft, (x_left, y_bottom))
-            elif collision_bottomright == col:
+            elif collision_bottomright == col_type:
                 return (collision_bottomright, (x_right, y_bottom))       
         
-        return (self.COLLISION.NONE, (-1,-1))
+        return (COLLISION.NONE, (-1,-1))
         
     '''
     Getters and Setters
     '''
 
     def setHeight(self, height):
-        if(height >= 0):
+        if isinstance(height, int) and (height >= 0):
             self.height = height
         else: ErrorInvalidValue()
 
     def setWidth(self, width):
-        if(width >= 0):
+        if isinstance(width, int) and (width >= 0):
             self.width = width
         else: ErrorInvalidValue()
 
@@ -383,41 +399,42 @@ class MapNode(object):
             self.tile = Tile()
         #alternative constructor (pos_x, pos_y, tile)
         elif len(args) == 3:
-            pos_x = args[0]
-            pos_y = args[1]
-            tile = args[2]
-
-            if not(isinstance(pos_x, int)) or not(isinstance(pos_y, int)): #or not(Tile.isTileValid(tile)):
+            if not self.validConstructorArgs(*args):
                 ErrorInvalidValue()
-            else:
-                self.pos_x = pos_x
-                self.pos_y = pos_y
-                self.tile = tile
+            
+            self.pos_x = args[0]
+            self.pos_y = args[1]
+            self.tile = args[2]
         else: ErrorInvalidConstructor()
 
     '''
     Other methods
     '''
 
+    def validConstructorArgs(self, *args):
+        pos_x = args[0]
+        pos_y = args[1]
+        tile = args[2]
+        
+        return (isinstance(pos_x, int) and isinstance(pos_y, int) and isinstance(tile, Tile) and pos_x >= 0 and pos_y >= 0)
+    
     '''
     Getters and setters
     '''
 
     def setPosX(self, pos_x):
-        if isistance(pos_x, int):
+        if isistance(pos_x, int) and pos_x >= 0:
             self.pos_x = pos_x
         else: ErrorInvalidValue()
 
     def setPosY(self, pos_y):
-        if isistance(pos_y, int):
+        if isistance(pos_y, int) and pos_y >= 0:
             self.pos_y = pos_y
         else: ErrorInvalidValue()
 
     def setTile(self, tile):
-        self.tile = tile
-        #if Tile.isTileValid(tile):
-        #    self.tile = tile
-        #else: ErrorInvalidValue()
+        if isinstance(tile, Tile):
+            self.tile = tile
 
     def getPosX(self):
         return self.pos_x
@@ -433,7 +450,7 @@ class Tile(object):
     '''
     Tile is the base class for all available tiles within the game
     It has the following arguments:
-        id: integer represents the id of the tile
+        id: string represents the id of the tile
         gfx_id: integer represents the id of the gfx to be used by the tile
     '''
 
@@ -446,57 +463,62 @@ class Tile(object):
         if len(args) == 0:
             self.id = "scenery"
             self.gfx_id = 0
-        #alternative constructor (self, id, gfx_id)
+        #alternative constructor (id, gfx_id)
         elif len(args) == 2:
-            id = args[0]
-            gfx_id = args[1]
-
-            if not(isinstance(id, str)) or not(isinstance(gfx_id, int)):
+            if not self.validConstructorArgs(*args):
                 ErrorInvalidValue()
-            else:
-                self.id = id
-                self.gfx_id = gfx_id
+                
+            self.id = args[0]
+            self.gfx_id = args[1]
         else: ErrorInvalidConstructor()
 
     '''
     Other methods
     '''
            
+    def validConstructorArgs(self, *args):
+        id = args[0]
+        gfx_id = args[1]
+        
+        return (isinstance(id, str) and isinstance(gfx_id, int) and id in TILE_IDS and gfx_id >= -1)
+           
     def getGraphic(self, tileset):   
         #if the tile id is a spawner, print a black scenery instead
-        try:
-            graphic_set = tileset[self.id]
-        except:
-            graphic_set = tileset["scenery"]
+        if self.isSpawner():
+            subtileset = tileset["scenery"]
+        else: subtileset = tileset[self.id]
 
-        graphic_set_width = graphic_set[2]
-        graphic_set_height = graphic_set[1]
-        graphic_set_image = graphic_set[0]   
+        tile_width = subtileset[2]
+        tile_height = subtileset[1]
+        subtileset_image = subtileset[0]   
 
         #if the gfx_id is -1, print black scenery instead
         if(self.gfx_id == -1):
-            return pygame.Surface((graphic_set_width * TILE_SCALE_FACTOR, graphic_set_height * TILE_SCALE_FACTOR))
+            return pygame.Surface((tile_width * TILE_SCALE_FACTOR, tile_height * TILE_SCALE_FACTOR))
 
-        selected_tile_pos = self.gfx_id * graphic_set_width
+        desired_tile_pos = self.gfx_id * tile_width
 
         #select the tile to crop (y is always 0)
-        rectangle = (selected_tile_pos, 0, graphic_set_width, graphic_set_height)
-        size_of_rectangle = (graphic_set_width * TILE_SCALE_FACTOR, graphic_set_height * TILE_SCALE_FACTOR)
-        cropped_tile = pygame.transform.scale(graphic_set_image.subsurface(rectangle), size_of_rectangle)
+        rectangle = (desired_tile_pos, 0, tile_width, tile_height)
+        size_of_rectangle = (tile_width * TILE_SCALE_FACTOR, tile_height * TILE_SCALE_FACTOR)
+        cropped_tile = pygame.transform.scale(subtileset_image.subsurface(rectangle), size_of_rectangle)
         
-        return cropped_tile        
+        return cropped_tile      
+
+    def isSpawner(self):
+        return ("spawner" in self.id)
 
     '''
     Getters and setters
     '''
 
     def setId(self, id):
-        if isinstance(id, int):
+        if isinstance(id, str) and id in TLE_IDS:
             self.id = id
         else: ErrorInvalidValue()
 
     def setGfxId(self, gfx_id):
-        if isinstance(gfx_id, int):
+        if isinstance(gfx_id, int) and gfx_id >= 0:
             self.gfx_id = gfx_id
         else: ErrorInvalidValue()
 
@@ -510,29 +532,8 @@ class Tile(object):
 class Scenery(Tile):
     '''
     Scenery represents a scenery tile in the game
-    It has no new arguments
+    It has no new arguments or methods
     '''
-
-    '''
-    Constructors
-    '''
-
-    def __init__(self, *args):
-        #default constructor
-        if len(args) == 0:
-            self.id = "scenery"
-            self.gfx_id = 0
-        #alternative constructor (self, id, gfx_id)
-        elif len(args) == 2:
-            id = args[0]
-            gfx_id = args[1]
-
-            if not(isinstance(id, str)) or not(isinstance(gfx_id, int)):
-                ErrorInvalidValue()
-            else:
-                self.id = id
-                self.gfx_id = gfx_id
-        else: ErrorInvalidConstructor()
 
 
 class Solid(Tile):
@@ -550,16 +551,13 @@ class Solid(Tile):
         if len(args) == 0:
             self.id = "solid"
             self.gfx_id = 2
-        #alternative constructor (self, id, gfx_id)
+        #alternative constructor (id, gfx_id)
         elif len(args) == 2:
-            id = args[0]
-            gfx_id = args[1]
-
-            if not(isinstance(id, str)) or not(isinstance(gfx_id, int)):
+            if not super(Solid, self).validConstructorArgs(*args):
                 ErrorInvalidValue()
-            else:
-                self.id = id
-                self.gfx_id = gfx_id
+                
+            self.id = args[0]
+            self.gfx_id = args[1]
         else: ErrorInvalidConstructor()
 
 
@@ -582,28 +580,29 @@ class Item(Tile):
             self.score = 100
         #alternative constructor (id, gfx_id, score)
         elif len(args) == 3:
-            id = args[0]
-            gfx_id = args[1]
-            score = args[2]
-
-            if not(isinstance(id, str)) or not(isinstance(gfx_id, int)) or not(isinstance(score, int) or score < 0):
+            if not self.validConstructorArgs(*args):
                 ErrorInvalidValue()
-            else:
-                self.id = id
-                self.gfx_id = gfx_id
-                self.score = score
+
+            self.id = args[0]
+            self.gfx_id = args[1]
+            self.score = args[2]
         else: ErrorInvalidConstructor()
 
     '''
     Other methods
     '''
 
+    def validConstructorArgs(self, *args):
+        score = args[2]
+        
+        return (isinstance(score, int) and score >= 0 and super(Item, self).validConstructorArgs(args[0], args[1]))
+    
     '''
     Getters and setters
     '''
 
     def setScore(self, score):
-        if isinstance(score, int) and score > 0:
+        if isinstance(score, int) and score >= 0:
             self.score = score
         else: ErrorInvalidValue()
 
@@ -618,8 +617,15 @@ class Equipment(Item):
         anim_timer: integer represents a timer for the animation of a trophy
     '''
 
-    TYPE = Enum('TYPE', 'TROPHY GUN JETPACK')
+    '''
+    Constants
+    '''
+    
     ANIM_TIMER_MAX = 30
+    
+    '''
+    Constructors
+    '''
     
     def __init__(self, *args):
         #default constructor
@@ -630,17 +636,13 @@ class Equipment(Item):
             self.anim_timer = self.ANIM_TIMER_MAX
         #alternative constructor (id, gfx_id, score)
         elif len(args) == 3:
-            id = args[0]
-            gfx_id = args[1]
-            score = args[2]
-
-            if not(isinstance(id, str)) or not(isinstance(gfx_id, int)) or not(isinstance(score, int)) or score < 0:
+            if not super(Equipment, self).validConstructorArgs(*args):
                 ErrorInvalidValue()
-            else:
-                self.id = id
-                self.gfx_id = gfx_id
-                self.score = score
-                self.anim_timer = self.ANIM_TIMER_MAX
+                
+            self.id = args[0]
+            self.gfx_id = args[1]
+            self.score = args[2]
+            self.anim_timer = self.ANIM_TIMER_MAX
         else: ErrorInvalidConstructor()
 
     '''
@@ -648,23 +650,30 @@ class Equipment(Item):
     '''
 
     def getGraphic(self, tileset):
-        self.anim_timer -= ANIMATION_VELOCITY
-        
-        if (self.anim_timer == 0):
-            self.anim_timer = self.ANIM_TIMER_MAX
-            
-            if (self.id == "trophy"):
-                if self.gfx_id == 4:
-                    self.gfx_id = 0 
-                else: self.gfx_id += 1
+        #if it's a trophy, animate
+        if self.id == "trophy":
+            self.animateItem()
 
         #call superclass method
         return super(Equipment, self).getGraphic(tileset)    
 
+    def animateItem(self):
+        self.anim_timer -= ANIMATION_VELOCITY
+        
+        #if timer == 0, update
+        if self.anim_timer == 0:
+            self.anim_timer = self.ANIM_TIMER_MAX
+
+            if self.gfx_id == 4:
+                self.gfx_id = 0 
+            else: self.gfx_id += 1
+        
     '''
     Getters and setters
+    
+    ## There are no getters and setter for anim_timer as it is used only inside the class
     '''
-
+    
 
 class InteractiveScenery(Tile):
     '''
@@ -673,8 +682,7 @@ class InteractiveScenery(Tile):
         type: enumeration indicating the type of the tile
         anim_timer = integer represents the timer of the animation
     '''
-
-    TYPE = Enum('TYPE', 'GOAL HAZARD TREE')
+    
     ANIM_TIMER_MAX = 30
 
     '''
@@ -686,52 +694,52 @@ class InteractiveScenery(Tile):
         if len(args) == 0:
             self.id = "door"
             self.gfx_id = 0
-            self.type = self.TYPE.GOAL
+            self.type = INTSCENERYTYPE.GOAL
             self.anim_timer = self.ANIM_TIMER_MAX
         #alternative constructor (id, gfx_id, type)
         elif len(args) == 3:
-            id = args[0]
-            gfx_id = args[1]
-            type = args[2]
-
-            ''' TODO: TEST INSTANCES '''
-
-            '''
-            if not(isinstance(id, str)) or not(isinstance(gfx_id, int)) or not(self.isStateValid(target_state, possible_states)) or (auto not in [0, 1]):
+            if not self.validConstructorArgs(*args):
                 ErrorInvalidValue()
-            else:
-            '''
-            self.id = id
-            self.gfx_id = gfx_id
-            self.type = type
+                
+            self.id = args[0]
+            self.gfx_id = args[1]
+            self.type = args[2]
             self.anim_timer = self.ANIM_TIMER_MAX
         else: ErrorInvalidConstructor()
 
     '''
     Other methods
     '''
+    
+    def validConstructorArgs(self, *args):
+        type = args[2]
+        
+        return (isinstance(type, INTSCENERYTYPE) and super(InteractiveScenery, self).validConstructorArgs(args[0], args[1]))
 
     def getGraphic(self, tileset):
-        self.anim_timer -= ANIMATION_VELOCITY
-        
-        if (self.anim_timer == 0):
-            self.anim_timer = self.ANIM_TIMER_MAX
-            
-            if (self.type == self.TYPE.HAZARD):
-                if self.gfx_id == 3:
-                    self.gfx_id = 0 
-                else: self.gfx_id += 1
+        if self.type == INTSCENERYTYPE.HAZARD:
+            self.animateItem()
 
         #call superclass method
         return super(InteractiveScenery, self).getGraphic(tileset)
+    
+    def animateItem(self):
+        self.anim_timer -= ANIMATION_VELOCITY
+            
+        if (self.anim_timer == 0):
+            self.anim_timer = self.ANIM_TIMER_MAX
+            if self.gfx_id == 3:
+                self.gfx_id = 0 
+            else: self.gfx_id += 1
     
     '''
     Getters and setters
     '''
 
     def setType(self, type):
-        ''' TODO: CHECK INSTANCE '''
-        self.type = type
+        if isinstance(type, INTSCENERYTYPE):
+            self.type = type
+        else: ErrorInvalidValue()
 
     def getType(self):
         return self.type
@@ -846,7 +854,7 @@ class Player(Dynamic):
             self.cur_state = self.state.BLINK
             self.velocity_y = 0                                             # The velocity and direction in the y axis (module + value)
             self.velocity_x = self.MAX_SPEED_X * self.X_SPEED_FACTOR        # The velocity in the x axis (only value)
-            self.direction_x = direction.IDLE                               # Shows the current direction of movement (-1 = left, 1 = right, 0 = none)
+            self.direction_x = DIRECTION.IDLE                               # Shows the current direction of movement (-1 = left, 1 = right, 0 = none)
             self.flip_sprite = True
             self.inventory = {"jetpack": 0, "gun": 0, "trophy": 0, "tree": 0}
             self.score = 0
@@ -897,7 +905,7 @@ class Player(Dynamic):
                     self.setCurrentState(self.state.FALL)
                     self.velocity_y = self.MAX_SPEED_Y  
         if k_leftarrow:
-            self.direction_x = direction.LEFT
+            self.direction_x = DIRECTION.LEFT
 
             if self.cur_state in [self.state.BLINK, self.state.WALK, self.state.JUMP, self.state.CLIMB, self.state.FLY]:
                 self.velocity_x = self.MAX_SPEED_X * self.X_SPEED_FACTOR
@@ -909,7 +917,7 @@ class Player(Dynamic):
                 self.setCurrentState(self.state.FALL)
                 self.velocity_y = self.MAX_SPEED_Y
         if k_rightarrow:
-            self.direction_x = direction.RIGHT
+            self.direction_x = DIRECTION.RIGHT
 
             if self.cur_state in [self.state.BLINK, self.state.WALK, self.state.JUMP, self.state.CLIMB, self.state.FLY]:
                 self.velocity_x = self.MAX_SPEED_X * self.X_SPEED_FACTOR
@@ -949,6 +957,15 @@ class Player(Dynamic):
             return 1    #treat gunfire externally (because we need the map)
         return 0
 
+    def setSpriteDirection(self):
+        if (self.direction_x == DIRECTION.RIGHT):
+            self.flip_sprite = True
+        elif (self.direction_x == DIRECTION.LEFT):
+            self.flip_sprite = False  
+            
+    def isSpriteFlipped(self):
+        return self.flip_sprite
+        
     ## LIFES
     def takeLife(self):
         self.lifes -= 1
@@ -965,7 +982,7 @@ class Player(Dynamic):
         self.gfxId = 0
         self.velocity_y = 0
         self.velocity_x = 0
-        self.direction_x = direction.IDLE 
+        self.direction_x = DIRECTION.IDLE 
         self.blinking_timer = self.BLINKING_SPEED
             
     ## TREAT JUMPING
@@ -983,7 +1000,7 @@ class Player(Dynamic):
             self.setCurrentState(self.state.WALK)
             self.velocity_x = self.MAX_SPEED_X * self.X_SPEED_FACTOR
             self.velocity_y = 0
-            self.direction_x = direction.IDLE
+            self.direction_x = DIRECTION.IDLE
             self.updateAnimation()
         # was jumping and hit ceiling
         elif self.cur_state == self.state.JUMP:
@@ -1005,7 +1022,6 @@ class Player(Dynamic):
             self.give_life()
 
         level.setNodeTile(x, y, Scenery())
-        print(self.score)
 
     ## PROCESS SCENERY THAT'S INTERACTIVE
     def processScenerySpecial(self, element_pos, level):
@@ -1013,12 +1029,12 @@ class Player(Dynamic):
         y = element_pos[1]
 
         element = level.getNode(x, y).getTile()
-        if element.getType() == element.TYPE.GOAL and self.inventory["trophy"] == 1:
+        if element.getType() == INTSCENERYTYPE.GOAL and self.inventory["trophy"] == 1:
             self.setCurrentState(self.state.ENDMAP)
-        elif element.getType() == element.TYPE.HAZARD:
+        elif element.getType() == INTSCENERYTYPE.HAZARD:
             self.setCurrentState(self.state.DIE)
             self.takeLife()
-        elif element.getType() == element.TYPE.TREE:
+        elif element.getType() == INTSCENERYTYPE.TREE:
             self.inventory["tree"] = 1
 
     ## TREAT ENEMY COLLISION
@@ -1028,36 +1044,38 @@ class Player(Dynamic):
     ## UPDATES THE PLAYER POSITION BASED ON THE STATE HE'S IN
     def updatePosition(self, player_x, player_y, level):    
         self.inventory["tree"] = 0
-        collision = level.checkPlayerCollision((player_x, player_y))
+        ''' TODO : PLAYER SIZE '''
+        collision = level.checkPlayerCollision(player_x, player_y, 20, 16)
         collision_type = collision[0]
+
         collider_pos = collision[1]
 
         # Collect an item if there is one
-        if collision_type == level.COLLISION.ITEM:
+        if collision_type == COLLISION.ITEM:
             self.collectItem(collider_pos, level)
         # Interact with scenery if one
-        elif collision_type == level.COLLISION.INTSCEN:
+        elif collision_type == COLLISION.INTSCEN:
             self.processScenerySpecial(collider_pos, level)
         # Collision with an enemy
-        elif collision_type == level.COLLISION.ENEMY:
+        elif collision_type == COLLISION.ENEMY:
             ''' TODO: KILL BOTH ENEMY AND PLAYER '''
             pass
 
         # Checks if the player walked into a pit
         if self.cur_state == self.state.WALK:
-            if not level.checkPlayerSolidCollision((player_x, player_y + 1)):
+            if not level.isPlayerCollidingWithSolid(player_x, player_y + 1):
                 self.setCurrentState(self.state.FALL)
                 self.velocity_x = self.MAX_SPEED_X
                 self.velocity_y = self.MAX_SPEED_Y
 
         ## Move X: START
         player_newx = player_x + self.velocity_x * self.direction_x.value                   # Tries to walk to the direction the player's going
-        solid_collision = level.checkPlayerSolidCollision((player_newx, player_y))
+        solid_collision = level.isPlayerCollidingWithSolid(player_newx, player_y)
 
         if solid_collision:                                                                 # If a collision occurs,
             player_newx = player_x                                                          # undo the movement
             if self.cur_state == self.state.FALL:                                           # If player's falling and released movement keys,
-                self.direction_x = direction.IDLE                                           # stop the uncontrolled fall
+                self.direction_x = DIRECTION.IDLE                                           # stop the uncontrolled fall
                 self.velocity_x = 0
         ## Move X: END
 
@@ -1065,7 +1083,7 @@ class Player(Dynamic):
         player_newy = player_y + self.velocity_y
 
         # Check for solid collisions
-        solid_collision = level.checkPlayerSolidCollision((player_newx, player_newy))
+        solid_collision = level.isPlayerCollidingWithSolid(player_newx, player_newy)
 
         if self.cur_state != self.state.DIE:
             if solid_collision:
@@ -1238,7 +1256,7 @@ class Shot(Dynamic):
         if len(args) == 0:
             self.id = "bullet"
             self.gfx_id = 0
-            self.direction = direction.RIGHT
+            self.direction = DIRECTION.RIGHT
         #alternative constructor (id, gfx_id, direction)
         elif len(args) == 3:
             '''TODO: CHECK INSTANCES '''
@@ -1252,14 +1270,14 @@ class Shot(Dynamic):
     '''
     
     def updatePosition(self, current_x, current_y, level):
-        new_x = current_x + self.direction.value * self.MAX_SPEED_X
+        new_x = current_x + self.DIRECTION.value * self.MAX_SPEED_X
         
         collision = level.checkShotCollision(current_x, current_y)
         
-        if (collision[0] == level.COLLISION.ENEMY):
+        if (collision[0] == COLLISION.ENEMY):
             ''' TODO: KILL ENEMY '''
             return -1
-        elif (collision[0] == level.COLLISION.SOLID):
+        elif (collision[0] == COLLISION.SOLID):
             return -1
             
         return new_x

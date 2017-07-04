@@ -55,11 +55,11 @@ def tileFromText(text_tile):
     if text_tile == "DO":
         return InteractiveScenery()
     elif text_tile == "FR":
-        return InteractiveScenery("fire", randint(0,3), InteractiveScenery.TYPE.HAZARD)
+        return InteractiveScenery("fire", randint(0,3), INTSCENERYTYPE.HAZARD)
     elif text_tile == "WA":
-        return InteractiveScenery("water", randint(0,3), InteractiveScenery.TYPE.HAZARD)
+        return InteractiveScenery("water", randint(0,3), INTSCENERYTYPE.HAZARD)
     elif text_tile == "TN":
-        return InteractiveScenery("tentacles", randint(0,3), InteractiveScenery.TYPE.HAZARD)
+        return InteractiveScenery("tentacles", randint(0,3), INTSCENERYTYPE.HAZARD)
     elif text_tile == "TR":
         return Equipment("trophy", 0, 1000)
     elif text_tile == "GU":
@@ -77,7 +77,7 @@ def tileFromText(text_tile):
     elif text_tile[0] == 'M':
         return Tile("moonstars", gfx_id)
     elif text_tile[0] == 'E':
-        return InteractiveScenery("tree", gfx_id, InteractiveScenery.TYPE.TREE)
+        return InteractiveScenery("tree", gfx_id, INTSCENERYTYPE.TREE)
     elif text_tile[0] == 'I':
         scores = [50, 100, 150, 200, 300, 500]
         return Item("items", gfx_id, scores[1])
@@ -210,6 +210,8 @@ def load_game_tiles():
 
         tile_name, tile_height, tile_width = graphicPropertiesFromFilename(savedfile)
 
+        TILE_IDS.append(tile_name)
+        
         tile_table[tile_name] = (image, tile_height, tile_width)
 
     return tile_table
@@ -236,7 +238,7 @@ def showInterpic(completed_levels, screen, tileset):
     player.flip_sprite = True
 
     #keep moving the player right, until it reaches the screen boundary
-    player_reached_boundary = (player_position_x >= screen.getRawWidth())
+    player_reached_boundary = (player_position_x >= screen.getUnscaledWidth())
 
     while not player_reached_boundary:
         player_position_x += player.getMaxSpeedX() * player.getXSpeedFactor()
@@ -246,7 +248,7 @@ def showInterpic(completed_levels, screen, tileset):
         #print player
         screen.printPlayer(player, player_position_x, player_position_y, tileset)
 
-        player_reached_boundary = (player_position_x >= screen.getRawWidth())
+        player_reached_boundary = (player_position_x >= screen.getUnscaledWidth())
 
         player.updateAnimation()
         pygame.display.flip()
@@ -365,8 +367,8 @@ def main():
                         game_over = True
                 
             # if the player is close enough to one of the screen boundaries, move the screen.
-            player_close_to_left_boundary = (player_position_x <= game_screen.getXPositionInPixels() + BOUNDARY_DISTANCE_TRIGGER)
-            player_close_to_right_boundary = (player_position_x >= game_screen.getXPositionInPixels() + game_screen.getRawWidth() - BOUNDARY_DISTANCE_TRIGGER)
+            player_close_to_left_boundary = (player_position_x <= game_screen.getXPositionInPixelsUnscaled() + BOUNDARY_DISTANCE_TRIGGER)
+            player_close_to_right_boundary = (player_position_x >= game_screen.getXPositionInPixelsUnscaled() + game_screen.getUnscaledWidth() - BOUNDARY_DISTANCE_TRIGGER)
             reached_level_left_boundary = (game_screen.getXPosition() <= 0)
             reached_level_right_boundary = (game_screen.getXPosition() + game_screen.getWidthInTiles() > Level.getWidth())         
 
@@ -381,10 +383,10 @@ def main():
                 game_screen.printMap(Level, tileset)
                 
                 if friendly_shot:
-                    game_screen.printTile(friendly_shot_x - game_screen.getXPositionInPixels(), friendly_shot_y, friendly_shot.getGraphic(tileset))
+                    game_screen.printTile(friendly_shot_x - game_screen.getXPositionInPixelsUnscaled(), friendly_shot_y, friendly_shot.getGraphic(tileset))
                     
-                    bullet_bypassed_screen_right_boundary = (friendly_shot_x >= game_screen.getXPositionInPixels() + game_screen.getRawWidth())
-                    bullet_bypassed_screen_left_boundary = (friendly_shot_x <= game_screen.getXPositionInPixels())
+                    bullet_bypassed_screen_right_boundary = (friendly_shot_x >= game_screen.getXPositionInPixelsUnscaled() + game_screen.getUnscaledWidth())
+                    bullet_bypassed_screen_left_boundary = (friendly_shot_x <= game_screen.getXPositionInPixelsUnscaled())
                     
                     if bullet_bypassed_screen_right_boundary or bullet_bypassed_screen_left_boundary:
                         del friendly_shot
@@ -392,10 +394,10 @@ def main():
                 
                 if GamePlayer.getCurrentState() != GamePlayer.state.DIE:
                     # print player accordingly to screen shift
-                    game_screen.printPlayer(GamePlayer, player_position_x - game_screen.getXPositionInPixels(), player_position_y, tileset)
+                    game_screen.printPlayer(GamePlayer, player_position_x - game_screen.getXPositionInPixelsUnscaled(), player_position_y, tileset)
                 else:
                     # print death puff accordingly to screen shift
-                    game_screen.printTile(player_position_x - game_screen.getXPositionInPixels(), player_position_y, DeathPuff.getGraphic(tileset))
+                    game_screen.printTile(player_position_x - game_screen.getXPositionInPixelsUnscaled(), player_position_y, DeathPuff.getGraphic(tileset))
 
             # update UI
             ''' TODO: PUT THIS INSIDE A HELPER FUNCTION? '''
