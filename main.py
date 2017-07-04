@@ -234,7 +234,7 @@ def showInterpic(completed_levels, screen, tileset):
     player_position_x = WIDTH_OF_MAP_NODE * playerPosition[0]
     player_position_y = HEIGHT_OF_MAP_NODE * playerPosition[1]
 
-    player.setCurrentState(player.state.WALK)
+    player.setCurrentState(STATE.WALK)
     player.flip_sprite = True
 
     #keep moving the player right, until it reaches the screen boundary
@@ -273,7 +273,7 @@ def main():
     game_over = False
 
     ''' TODO: TITLE SCREEN '''
-    current_level_number = 1
+    current_level_number = 5
 
     ##Available Keys
     movement_keys = [pygame.K_UP, pygame.K_LEFT, pygame.K_RIGHT, pygame.K_DOWN]
@@ -310,9 +310,9 @@ def main():
                 if event.type == pygame.QUIT:
                     ended_level = True
                 elif event.type == pygame.KEYUP:
-                    if event.key in [pygame.K_LEFT, pygame.K_RIGHT] and GamePlayer.getCurrentState() in [GamePlayer.state.WALK, GamePlayer.state.FLY, GamePlayer.state.JUMP, GamePlayer.state.CLIMB]:
+                    if event.key in [pygame.K_LEFT, pygame.K_RIGHT] and GamePlayer.getCurrentState() in [STATE.WALK, STATE.FLY, STATE.JUMP, STATE.CLIMB]:
                         GamePlayer.clearXMovement()
-                    elif event.key in [pygame.K_UP, pygame.K_DOWN] and GamePlayer.getCurrentState() in [GamePlayer.state.FLY, GamePlayer.state.CLIMB]:
+                    elif event.key in [pygame.K_UP, pygame.K_DOWN] and GamePlayer.getCurrentState() in [STATE.FLY, STATE.CLIMB]:
                         GamePlayer.setVelocityY(0)
                 elif event.type == pygame.KEYDOWN:
                     if event.key in inv_keys:
@@ -329,7 +329,7 @@ def main():
             GamePlayer.movementInput(key_map)
 
             # update the player position in the level and treat collisions
-            if GamePlayer.getCurrentState() != GamePlayer.state.DIE:
+            if GamePlayer.getCurrentState() != STATE.DESTROY:
                 (player_position_x, player_position_y) = GamePlayer.updatePosition(player_position_x, player_position_y, Level)
                 
             # update friendly shot position, if there is one
@@ -340,10 +340,10 @@ def main():
                     friendly_shot = 0
 
             # if the player ended the level, go on to the next
-            if GamePlayer.getCurrentState() == GamePlayer.state.ENDMAP:
+            if GamePlayer.getCurrentState() == STATE.ENDMAP:
                 ended_level = True
                 break;
-            elif GamePlayer.getCurrentState() == GamePlayer.state.DIE:
+            elif GamePlayer.getCurrentState() == STATE.DESTROY:
                 ''' TODO: REFACTOR '''
                 if death_timer == -1:
                     DeathPuff.setGfxId(0)
@@ -392,7 +392,7 @@ def main():
                         del friendly_shot
                         friendly_shot = 0
                 
-                if GamePlayer.getCurrentState() != GamePlayer.state.DIE:
+                if GamePlayer.getCurrentState() != STATE.DESTROY:
                     # print player accordingly to screen shift
                     game_screen.printPlayer(GamePlayer, player_position_x - game_screen.getXPositionInPixelsUnscaled(), player_position_y, tileset)
                 else:
