@@ -2,91 +2,6 @@ from classes import *
 from os import listdir
 from os.path import isfile, join
 
-
-'''
-Level construction
-'''
-
-def BuildLevel(level_number):
-    #open the level in the txt
-    textmap = open("levels/" + str(level_number) + ".txt", 'r')
-
-    #get height (must reset offset)
-    height = len(textmap.readlines())
-    textmap.seek(0)
-
-    #get width (must reset offset)
-    width = int(len(textmap.readline()) / 3)
-    textmap.seek(0)
-
-    #init class
-    Level = Map(height, width)
-
-    #for each node, set it accordingly
-    for y, line in enumerate(textmap.readlines()):
-        x = 0
-        while (x < width):
-            text_tile = line[(3*x):(3*x + 2)]
-            tile_type = tileFromText(text_tile)
-            Level.setNodeTile(x, y, tile_type)
-            x += 1
-
-    return Level
-
-def initLevel(level_number):
-    #build the level
-    Level = BuildLevel(level_number)
-
-    #init player and his positions
-    GamePlayer = Player()
-    playerPosition = Level.getPlayerSpawnerPosition(0)
-    player_position_x = WIDTH_OF_MAP_NODE * playerPosition[0]
-    player_position_y = HEIGHT_OF_MAP_NODE * playerPosition[1]
-
-    return (Level, GamePlayer, player_position_x, player_position_y)
-
-def tileFromText(text_tile):
-    #if the tile has an index, store it
-    try:
-        gfx_id = int(text_tile[1])
-    except:
-        gfx_id = 0
-
-    if text_tile == "DO":
-        return InteractiveScenery()
-    elif text_tile == "FR":
-        return InteractiveScenery("fire", randint(0,3), INTSCENERYTYPE.HAZARD)
-    elif text_tile == "WA":
-        return InteractiveScenery("water", randint(0,3), INTSCENERYTYPE.HAZARD)
-    elif text_tile == "TN":
-        return InteractiveScenery("tentacles", randint(0,3), INTSCENERYTYPE.HAZARD)
-    elif text_tile == "TR":
-        return Equipment("trophy", 0, 1000)
-    elif text_tile == "GU":
-        return Equipment("gun", 0, 0)
-    elif text_tile == "JE":
-        return Equipment("jetpack", 0, 0)
-    elif text_tile[0] == "p":
-        return PlayerSpawner("player_spawner", -1, gfx_id)
-    elif text_tile[0] == 'B':
-        return Solid("solid", gfx_id)
-    elif text_tile[0] == 'T':
-        return Solid("tunnel", gfx_id)
-    elif text_tile[0] == 'S':
-        return Tile("scenery", gfx_id)
-    elif text_tile[0] == 'M':
-        return Tile("moonstars", gfx_id)
-    elif text_tile[0] == 'E':
-        return InteractiveScenery("tree", gfx_id, INTSCENERYTYPE.TREE)
-    elif text_tile[0] == 'I':
-        scores = [50, 100, 150, 200, 300, 500]
-        return Item("items", gfx_id, scores[1])
-    elif text_tile[0] == 'P':
-        return Solid("pinkpipe", gfx_id)
-    else:
-        return Tile("scenery", 0)
-
-
 '''
 User interface (invetory, scores, etc)
 '''
@@ -209,8 +124,6 @@ def load_game_tiles():
         image = pygame.image.load("tiles/game/" + savedfile).convert_alpha()
 
         tile_name, tile_height, tile_width = graphicPropertiesFromFilename(savedfile)
-
-        TILE_IDS.append(tile_name)
         
         tile_table[tile_name] = (image, tile_height, tile_width)
 
@@ -221,7 +134,7 @@ Interpic
 '''
 
 def showInterpic(completed_levels, screen, tileset):
-    Interpic = BuildLevel("interpic")
+    Interpic = Map("interpic")
 
     clock = pygame.time.Clock()
 
@@ -229,10 +142,7 @@ def showInterpic(completed_levels, screen, tileset):
     screen.printMap(Interpic, tileset)
 
     #init player
-    player = Player()
-    playerPosition = Interpic.getPlayerSpawnerPosition(0)
-    player_absolute_x = WIDTH_OF_MAP_NODE * playerPosition[0]
-    player_absolute_y = HEIGHT_OF_MAP_NODE * playerPosition[1]
+    (player, player_absolute_x, player_absolute_y) = Interpic.initPlayer(0)
 
     player.setCurrentState(STATE.WALK)
     player.setSpriteDirection(DIRECTION.RIGHT)
@@ -286,7 +196,8 @@ def main():
         pygame.display.update()
 
         # build the level
-        (Level, GamePlayer, player_position_x, player_position_y) = initLevel(current_level_number)
+        Level = Map(current_level_number)
+        (GamePlayer, player_position_x, player_position_y) = Level.initPlayer(0)
         DeathPuff = AnimatedSprite("explosion", 0)
         death_timer = -1
         friendly_shot = 0

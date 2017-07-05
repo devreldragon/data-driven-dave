@@ -19,7 +19,7 @@ BOUNDARY_DISTANCE_TRIGGER = 25
 SCREEN_WIDTH = 320 * TILE_SCALE_FACTOR
 SCREEN_HEIGHT = 208 * TILE_SCALE_FACTOR
 
-TILE_IDS = []
+NUM_OF_LEVELS = 7
 
 class DIRECTION(Enum):
     LEFT = -1
@@ -65,6 +65,9 @@ def ErrorInvalidValue():
 
 def ErrorInvalidConstructor():
     raise ValueError("The entered constructor is not valid.")
+    
+def ErrorMethodNotImplemented():
+    raise ValueError("This method must be implemented by a child class")
 
 '''
 Classes
@@ -117,7 +120,7 @@ class Screen(object):
     def printMap(self, map, tileset):
         for y, row in enumerate(map.getNodeMatrix()):
             for x, col in enumerate(row):
-                tile = map.getNode(x,y).getTile()
+                tile = map.getNode(x,y)
                 absolute_y = y * HEIGHT_OF_MAP_NODE
                 
                 # won't print the first line, neither other tiles that aren't in the game screen (considering the current x position)
@@ -236,32 +239,43 @@ class Map(object):
         if(len(args) == 0):
             self.height = 11
             self.width = 150
-            self.node_matrix = self.buildMapMatrix()
-        #alternative constructor (height, width)
+            self.buildMapMatrix()
+        #alternative constructor 1 (level_number)
+        elif(len(args) == 1):
+            if not self.validConstructorArgs(*args):
+                ErrorInvalidValue()
+            
+            self.buildLevel(args[0])            
+        #alternative constructor 2 (height, width)
         elif(len(args) == 2):
             if not self.validConstructorArgs(*args):
                 ErrorInvalidValue()
             
             self.height = args[0]
             self.width = args[1]
-            self.node_matrix = self.buildMapMatrix()
+            self.buildMapMatrix()
         else: ErrorInvalidConstructor()
 
     def buildMapMatrix(self):
-        return [[MapNode() for i in range(self.width)] for j in range(self.height)]
+        self.node_matrix = [[Tile() for i in range(self.width)] for j in range(self.height)]
 
     def validConstructorArgs(self, *args):
-        height = args[0]
-        width = args[1]
-        
-        return (isinstance(height, int) and isinstance(width, int) and height >= 0 and width >= 0)
+        if len(args) == 1:
+            level_number = args[0]
+            
+            return (isinstance(level_number, str)) or (isinstance(level_number, int) and level_number >= 1 and level_number <= NUM_OF_LEVELS)
+        elif len(args) == 2:
+            height = args[0]
+            width = args[1]
+            
+            return (isinstance(height, int) and isinstance(width, int) and height >= 0 and width >= 0)            
         
     def validateCoordinates(self, x, y):
         return (isinstance(x, int) and isinstance(y, int) and x >= 0 and y >= 0 and x < self.width and y < self.height)
         
     def setNodeTile(self, x, y, tile):
         if self.validateCoordinates(x, y) and isinstance(tile, Tile):
-            self.node_matrix[y][x].setTile(tile)
+            self.node_matrix[y][x] = tile
         else: ErrorInvalidValue()
         
     def clearNode(self, x, y):
@@ -275,7 +289,7 @@ class Map(object):
     def getPlayerSpawnerPosition(self, spawner_id):
         for y, line in enumerate(self.node_matrix):
             for x, col in enumerate(line):
-                if self.node_matrix[y][x].getTile().getId() == "player_spawner" and self.node_matrix[y][x].getTile().getSpawnerId() == spawner_id:
+                if self.node_matrix[y][x].getId() == "player_spawner" and self.node_matrix[y][x].getSpawnerId() == spawner_id:
                     return (x, y)
         return (-1, -1)
                     
@@ -283,10 +297,10 @@ class Map(object):
         if not self.validateCoordinates(x, y):
             ErrorInvalidValue()
     
-        solid = isinstance(self.node_matrix[y][x].getTile(), Solid)
-        item = isinstance(self.node_matrix[y][x].getTile(), Item)
-        intscen = isinstance(self.node_matrix[y][x].getTile(), InteractiveScenery)
-        enemy = isinstance(self.node_matrix[y][x].getTile(), Enemy)
+        solid = isinstance(self.node_matrix[y][x], Solid)
+        item = isinstance(self.node_matrix[y][x], Item)
+        intscen = isinstance(self.node_matrix[y][x], InteractiveScenery)
+        enemy = isinstance(self.node_matrix[y][x], Enemy)
 
         if solid:
             return COLLISION.SOLID
@@ -368,6 +382,90 @@ class Map(object):
         return (COLLISION.NONE, (-1,-1))
         
     '''
+    Level construction
+    '''
+    
+    def buildLevel(self, level_number):
+        #open the level in the txt
+        textmap = open("levels/" + str(level_number) + ".txt", 'r')
+
+        #get height (must reset offset)
+        self.height = len(textmap.readlines())
+        textmap.seek(0)
+
+        #get width (must reset offset)
+        self.width = int(len(textmap.readline()) / 3)
+        textmap.seek(0)
+        
+        #allocate matrix
+        self.buildMapMatrix()
+
+        #for each node, set it accordingly
+        for y, line in enumerate(textmap.readlines()):
+            x = 0
+            while (x < self.width):
+                text_tile = line[(3*x):(3*x + 2)]
+                tile_type = self.tileFromText(text_tile)
+                self.setNodeTile(x, y, tile_type)
+                x += 1
+
+    def initPlayer(self, spawner_id):            
+        #init player and his positions
+        GamePlayer = Player()
+        playerPosition = self.getPlayerSpawnerPosition(spawner_id)
+        
+        #if the spawner isn't present, raise error
+        if playerPosition == (-1, -1):
+            ErrorSpawnerNotFound()
+        
+        player_position_x = WIDTH_OF_MAP_NODE * playerPosition[0]
+        player_position_y = HEIGHT_OF_MAP_NODE * playerPosition[1]
+
+        return (GamePlayer, player_position_x, player_position_y)
+        
+    def tileFromText(self, text_tile):
+        #if the tile has an index, store it
+        try:
+            gfx_id = int(text_tile[1])
+        except:
+            gfx_id = 0
+
+        if text_tile == "DO":
+            return InteractiveScenery()
+        elif text_tile == "FR":
+            return InteractiveScenery("fire", randint(0,3), INTSCENERYTYPE.HAZARD)
+        elif text_tile == "WA":
+            return InteractiveScenery("water", randint(0,3), INTSCENERYTYPE.HAZARD)
+        elif text_tile == "TN":
+            return InteractiveScenery("tentacles", randint(0,3), INTSCENERYTYPE.HAZARD)
+        elif text_tile == "TR":
+            return Equipment("trophy", 0, 1000)
+        elif text_tile == "GU":
+            return Equipment("gun", 0, 0)
+        elif text_tile == "JE":
+            return Equipment("jetpack", 0, 0)
+        elif text_tile[0] == "p":
+            return PlayerSpawner("player_spawner", -1, gfx_id)
+        elif text_tile[0] == 'B':
+            return Solid("solid", gfx_id)
+        elif text_tile[0] == 'T':
+            return Solid("tunnel", gfx_id)
+        elif text_tile[0] == 'S':
+            return Scenery("scenery", gfx_id)
+        elif text_tile[0] == 'M':
+            return Scenery("moonstars", gfx_id)
+        elif text_tile[0] == 'E':
+            return InteractiveScenery("tree", gfx_id, INTSCENERYTYPE.TREE)
+        elif text_tile[0] == 'I':
+            scores = [50, 100, 150, 200, 300, 500]
+            return Item("items", gfx_id, scores[1])
+        elif text_tile[0] == 'P':
+            return Solid("pinkpipe", gfx_id)
+        else:
+            return Scenery()
+
+        
+    '''
     Getters and Setters
     '''
 
@@ -390,75 +488,7 @@ class Map(object):
     def getNodeMatrix(self):
         return self.node_matrix
 
-
-class MapNode(object):
-    '''
-    MapNode represents a node that belongs to a map of the game.
-    It has the following arguments:
-        pos_x: integer stores the x position of the node.
-        pos_y: integer stores the y position of the node.
-        tile: Tile stores the current tile in this position.
-    '''
-
-    '''
-    Constructors
-    '''
-
-    def __init__(self, *args):
-        #default constructor
-        if len(args) == 0:
-            self.pos_x = 0
-            self.pos_y = 0
-            self.tile = Tile()
-        #alternative constructor (pos_x, pos_y, tile)
-        elif len(args) == 3:
-            if not self.validConstructorArgs(*args):
-                ErrorInvalidValue()
-            
-            self.pos_x = args[0]
-            self.pos_y = args[1]
-            self.tile = args[2]
-        else: ErrorInvalidConstructor()
-
-    '''
-    Other methods
-    '''
-
-    def validConstructorArgs(self, *args):
-        pos_x = args[0]
-        pos_y = args[1]
-        tile = args[2]
-        
-        return (isinstance(pos_x, int) and isinstance(pos_y, int) and isinstance(tile, Tile) and pos_x >= 0 and pos_y >= 0)
-    
-    '''
-    Getters and setters
-    '''
-
-    def setPosX(self, pos_x):
-        if isistance(pos_x, int) and pos_x >= 0:
-            self.pos_x = pos_x
-        else: ErrorInvalidValue()
-
-    def setPosY(self, pos_y):
-        if isistance(pos_y, int) and pos_y >= 0:
-            self.pos_y = pos_y
-        else: ErrorInvalidValue()
-
-    def setTile(self, tile):
-        if isinstance(tile, Tile):
-            self.tile = tile
-
-    def getPosX(self):
-        return self.pos_x
-
-    def getPosY(self):
-        return self.pos_y
-
-    def getTile(self):
-        return self.tile
-
-
+   
 class Tile(object):
     '''
     Tile is the base class for all available tiles within the game
@@ -474,27 +504,18 @@ class Tile(object):
     def __init__(self, *args):
         #default constructor
         if len(args) == 0:
-            self.id = "scenery"
-            self.gfx_id = 0
-        #alternative constructor (id, gfx_id)
-        elif len(args) == 2:
-            if not self.validConstructorArgs(*args):
-                ErrorInvalidValue()
-                
-            self.id = args[0]
-            self.gfx_id = args[1]
+            self.id = "undefined"
+            self.gfx_id = -1
         else: ErrorInvalidConstructor()
-
+        
     '''
     Other methods
     '''
            
     def validConstructorArgs(self, *args):
-        id = args[0]
-        gfx_id = args[1]
+        # This method must be implemented in the children classes
+        ErrorMethodNotImplemented()
         
-        return (isinstance(id, str) and isinstance(gfx_id, int) and id in TILE_IDS and gfx_id >= -1)
-           
     def getGraphic(self, tileset):   
         #if the tile id is a spawner, print a black scenery instead
         if self.isSpawner():
@@ -526,9 +547,7 @@ class Tile(object):
     '''
 
     def setId(self, id):
-        if isinstance(id, str) and id in TLE_IDS:
-            self.id = id
-        else: ErrorInvalidValue()
+        ErrorMethodNotImplemented()
 
     def setGfxId(self, gfx_id):
         if isinstance(gfx_id, int) and gfx_id >= -1:
@@ -544,10 +563,47 @@ class Tile(object):
 
 class Scenery(Tile):
     '''
-    Scenery represents a scenery tile in the game
-    It has no new arguments or methods
+    Scenery represents a scenery tile in the game (just background)
+    It has no new arguments
     '''
 
+    '''
+    Constructors
+    '''
+
+    def __init__(self, *args):
+        #default constructor
+        if len(args) == 0:
+            self.id = "scenery"
+            self.gfx_id = 0
+        #alternative constructor (id, gfx_id)
+        elif len(args) == 2:
+            if not self.validConstructorArgs(*args):
+                ErrorInvalidValue()
+                
+            self.id = args[0]
+            self.gfx_id = args[1]
+        else: ErrorInvalidConstructor()
+        
+    '''
+    Other methods
+    '''
+
+    def validConstructorArgs(self, *args):
+        id = args[0]
+        gfx_id = args[1]
+        
+        return (isinstance(id, str) and isinstance(gfx_id, int) and id in ["scenery", "moonstars"] and gfx_id >= -1)
+        
+    '''
+    Getters and setters
+    '''
+    
+    def setId(self, id):
+        if isinstance(id, str) and id in ["scenery", "moonstars"]:
+            self.id = id
+        else: ErrorInvalidValue()
+           
 
 class Solid(Tile):
     '''
@@ -566,12 +622,31 @@ class Solid(Tile):
             self.gfx_id = 2
         #alternative constructor (id, gfx_id)
         elif len(args) == 2:
-            if not super(Solid, self).validConstructorArgs(*args):
+            if not self.validConstructorArgs(*args):
                 ErrorInvalidValue()
                 
             self.id = args[0]
             self.gfx_id = args[1]
         else: ErrorInvalidConstructor()
+        
+    '''
+    Other methods
+    '''
+    
+    def validConstructorArgs(self, *args):
+        id = args[0]
+        gfx_id = args[1]
+        
+        return (isinstance(id, str) and isinstance(gfx_id, int) and id in ["solid", "pinkpipe", "tunnel"] and gfx_id >= -1)   
+        
+    '''
+    Getters and setters
+    '''
+    
+    def setId(self, id):
+        if isinstance(id, str) and id in ["solid", "pinkpipe", "tunnel"] :
+            self.id = id
+        else: ErrorInvalidValue()
 
 
 class Item(Tile):
@@ -606,14 +681,21 @@ class Item(Tile):
     '''
 
     def validConstructorArgs(self, *args):
+        id = args[0]
+        gfx_id = args[1]
         score = args[2]
         
-        return (isinstance(score, int) and score >= 0 and super(Item, self).validConstructorArgs(args[0], args[1]))
+        return (isinstance(score, int) and score >= 0 and isinstance(id, str) and isinstance(gfx_id, int) and id in ["items", "trophy", "jetpack", "gun"] and gfx_id >= -1)
     
     '''
     Getters and setters
     '''
-
+    
+    def setId(self, id):
+        if isinstance(id, str) and id in ["items", "trophy", "jetpack", "gun"]:
+            self.id = id
+        else: ErrorInvalidValue()    
+    
     def setScore(self, score):
         if isinstance(score, int) and score >= 0:
             self.score = score
@@ -725,9 +807,11 @@ class InteractiveScenery(Tile):
     '''
     
     def validConstructorArgs(self, *args):
+        id = args[0]
+        gfx_id = args[1]
         type = args[2]
         
-        return (isinstance(type, INTSCENERYTYPE) and super(InteractiveScenery, self).validConstructorArgs(args[0], args[1]))
+        return (isinstance(type, INTSCENERYTYPE) and isinstance(id, str) and isinstance(gfx_id, int) and id in ["tree", "door", "tentacles", "fire", "water"] and gfx_id >= -1)
 
     def getGraphic(self, tileset):
         if self.type == INTSCENERYTYPE.HAZARD:
@@ -748,6 +832,11 @@ class InteractiveScenery(Tile):
     '''
     Getters and setters
     '''
+    
+    def setId(self, id):
+        if isinstance(id, str) and id in ["tree", "door", "tentacles", "fire", "water"]:
+            self.id = id
+        else: ErrorInvalidValue()
 
     def setType(self, type):
         if isinstance(type, INTSCENERYTYPE):
@@ -800,6 +889,11 @@ class PlayerSpawner(Tile):
     '''
     Getters and setters
     '''
+    
+    def setId(self, id):
+        if isinstance(id, str) and id == "player_spawner":
+            self.id = id
+        else: ErrorInvalidValue()
        
     def getSpawnerId(self):
         return self.spawner_id
@@ -836,7 +930,7 @@ class AnimatedSprite(Tile):
             self.anim_timer = self.ANIM_TIMER_MAX
         #alternative constructor (id, gfx_id)
         elif len(args) == 2:
-            if not super(AnimatedSprite, self).validConstructorArgs(*args):
+            if not self.validConstructorArgs(*args):
                 ErrorInvalidValue()
                         
             self.id = args[0]
@@ -848,6 +942,12 @@ class AnimatedSprite(Tile):
     Other methods
     '''
 
+    def validConstructorArgs(self, *args):
+        id = args[0]
+        gfx_id = args[1]
+        
+        return (isinstance(id, str) and isinstance(gfx_id, int) and id in ["explosion"] and gfx_id >= -1)
+    
     def getGraphic(self, tileset):
         self.anim_timer -= ANIMATION_VELOCITY
         
@@ -860,7 +960,16 @@ class AnimatedSprite(Tile):
                 else: self.gfx_id += 1
 
         #call superclass method
-        return super(AnimatedSprite, self).getGraphic(tileset)           
+        return super(AnimatedSprite, self).getGraphic(tileset)
+
+    '''
+    Getters and setters
+    '''
+    
+    def setId(self, id):
+        if isinstance(id, str) and id in ["scenery, moonstars"]:
+            self.id = id
+        else: ErrorInvalidValue()        
         
         
 class Dynamic(Tile):
@@ -895,13 +1004,20 @@ class Dynamic(Tile):
     '''
     
     def validConstructorArgs(self, *args):
+        id = args[0]
+        gfx_id = args[1]
         cur_state = args[2]
         
-        return (isinstance(cur_state, STATE) and super(Dynamic, self).validConstructorArgs(args[0], args[1])) 
+        return (isinstance(cur_state, STATE) and isinstance(id, str) and isinstance(gfx_id, int) and id in ["player", "ball", "cloud", "disc", "baton", "pinkenemy", "redenemy", "spider", "ufo"] and gfx_id >= -1) 
     
     '''
     Getters and setters
     '''
+    
+    def setId(self, id):
+        if isinstance(id, str) and id in ["player", "ball", "cloud", "disc", "baton", "pinkenemy", "redenemy", "spider", "ufo"]:
+            self.id = id
+        else: ErrorInvalidValue()
 
     def setCurrentState(self, state):
         if isinstance(state, STATE):
@@ -1133,7 +1249,7 @@ class Player(Dynamic):
         x = item_pos[0]
         y = item_pos[1]
 
-        item = level.getNode(x, y).getTile()
+        item = level.getNode(x, y)
         
         #if the item is an equipment, add it to the inventory
         if isinstance(item, Equipment):
@@ -1152,7 +1268,7 @@ class Player(Dynamic):
         x = element_pos[0]
         y = element_pos[1]
 
-        element = level.getNode(x, y).getTile()
+        element = level.getNode(x, y)
         #player has trophy and reached the door
         if element.getType() == INTSCENERYTYPE.GOAL and self.inventory["trophy"] == 1:
             self.setCurrentState(STATE.ENDMAP)
@@ -1364,7 +1480,7 @@ class PlayerAnimator(object):
     '''
             
 
-class Shot(Dynamic):
+class Shot(Tile):
     '''
     Shot represents a shot in the game (going straight)
     It has the following arguments:
@@ -1400,11 +1516,13 @@ class Shot(Dynamic):
     '''
     Other methods
     '''
-    
-    def validConstructorArgs(*args):
-        direction = args[2]
         
-        return (isinstance(direction, DIRECTION) and direction in [DIRECTION.RIGHT, DIRECTION.LEFT] and super(Shot, self).validConstructorArgs(args[0], args[1]))
+    def validConstructorArgs(self, *args):
+        id = args[0]
+        gfx_id = args[1]
+        direction = args[2]
+          
+        return (isinstance(direction, DIRECTION) and direction in [DIRECTION.RIGHT, DIRECTION.LEFT] and isinstance(id, str) and isinstance(gfx_id, int) and gfx_id >= -1 and id in ["bullet", "enemybullet"])
     
     def updatePosition(self, current_x, current_y, level):
         new_x = current_x + self.direction.value * self.MAX_SPEED_X
@@ -1423,7 +1541,12 @@ class Shot(Dynamic):
     
     '''
     Getters and setters
-    '''   
+    '''
+    
+    def setId(self, id):
+        if isinstance(id, str) and id in ["bullet", "enemybullet"]:
+            self.id = id
+        else: ErrorInvalidValue()
     
     def setDirection(self, dir):
         if isinstance(dir, DIRECTION) and dir in [DIRECTION.LEFT, DIRECTION.RIGHT]:
