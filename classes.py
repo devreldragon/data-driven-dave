@@ -129,7 +129,7 @@ class Screen(object):
                     
     def printPlayer(self, player, player_x, player_y, tileset):
         player_graphic = player.getGraphic(tileset) 
-        player.setSpriteDirection()
+        player.copyDirectionToSprite()
             
         if (player.isSpriteFlipped()):
             player_graphic = pygame.transform.flip(player_graphic,1,0)
@@ -263,6 +263,9 @@ class Map(object):
         if self.validateCoordinates(x, y) and isinstance(tile, Tile):
             self.node_matrix[y][x].setTile(tile)
         else: ErrorInvalidValue()
+        
+    def clearNode(self, x, y):
+        self.setNodeTile(x, y, Scenery())
 
     def getNode(self, x, y):
         if self.validateCoordinates(x, y):
@@ -807,6 +810,58 @@ class PlayerSpawner(Tile):
         else:
             self.spawner_id = id
 
+                
+class AnimatedSprite(Tile):
+    '''
+    AnimatedSprite represents an animated sprite in the game.
+    It has the following arguments:
+        anim_timer: integer represents the animation timer of the sprite
+    '''
+
+    '''
+    Constants
+    '''    
+    
+    ANIM_TIMER_MAX = 30    
+    
+    '''
+    Constructors
+    '''
+
+    def __init__(self, *args):
+        #default constructor
+        if len(args) == 0:
+            self.id = "explosion"
+            self.gfx_id = 0
+            self.anim_timer = self.ANIM_TIMER_MAX
+        #alternative constructor (id, gfx_id)
+        elif len(args) == 2:
+            if not super(AnimatedSprite, self).validConstructorArgs(*args):
+                ErrorInvalidValue()
+                        
+            self.id = args[0]
+            self.gfx_id = args[1]
+            self.anim_timer = self.ANIM_TIMER_MAX
+        else: ErrorInvalidConstructor()
+
+    '''
+    Other methods
+    '''
+
+    def getGraphic(self, tileset):
+        self.anim_timer -= ANIMATION_VELOCITY
+        
+        if (self.anim_timer == 0):
+            self.anim_timer = self.ANIM_TIMER_MAX
+            
+            if (self.id == "explosion"):
+                if self.gfx_id == 3:
+                    self.gfx_id = 0 
+                else: self.gfx_id += 1
+
+        #call superclass method
+        return super(AnimatedSprite, self).getGraphic(tileset)           
+        
         
 class Dynamic(Tile):
     '''
@@ -861,23 +916,28 @@ class Player(Dynamic):
     '''
     Player represents the player object (not the controller) in the game
     It has the following arguments:
-        acceleration_y: acceleration in the y axis
-        acceleration_x: acceleration in the x axis
+        velocity_y : float represents the velocity and direction in y axis (module + value)
+        velocity_x : float represents the velocity in the x axis
+        direction_x : enumeration represents the direction in the x axis
+        sprite_direction : enumeration represents the direction the sprite is facing (used for the gun)
+        inventory : dictionary contains the inventory of the player
+        score : integer represents the score of the player
+        lives : integer represents the lives of the player
+        animator : PlayerAnimator contains the class used to animate the player
     '''
 
     '''
     Constants
     '''
 
-    SCALE_FACTOR = 2
-    MAX_SPEED_X = 0.4 * SCALE_FACTOR
-    MAX_SPEED_Y = 0.4 * SCALE_FACTOR
-    JUMP_SPEED = 0.8
+    MAX_SPEED_X = 0.4 * TILE_SCALE_FACTOR
+    MAX_SPEED_Y = 0.4 * TILE_SCALE_FACTOR
     X_SPEED_FACTOR = 0.75   #factor to be used when not falling (x speed only hits its maximum when falling)
+    
+    JUMP_SPEED = 0.8
     GRAVITY = 0.01          #gravity acceleration
-    ANIMATION_COUNTER_MAX = 20
+    
     MAX_LIFES = 5
-    BLINKING_SPEED = 1
 
     '''
     Constructors
@@ -892,23 +952,11 @@ class Player(Dynamic):
             self.velocity_y = 0                                             # The velocity and direction in the y axis (module + value)
             self.velocity_x = self.MAX_SPEED_X * self.X_SPEED_FACTOR        # The velocity in the x axis (only value)
             self.direction_x = DIRECTION.IDLE                               # Shows the current direction of movement (-1 = left, 1 = right, 0 = none)
-            self.flip_sprite = True
+            self.sprite_direction = DIRECTION.IDLE
             self.inventory = {"jetpack": 0, "gun": 0, "trophy": 0, "tree": 0}
             self.score = 0
-            self.lifes = 3
-
-            ##animation stuff
-            self.animation_index = 0               # Number used to index the animation list of the corresponding state
-            self.animation_counter = 0             # Counter that ticks until the next frame of animation should be displayed
-            self.blinking_timer = self.BLINKING_SPEED
-            self.animation_index_list = {STATE.WALK : [1, 2, 3, 2],
-                                            STATE.BLINK : [0, -1],
-                                            STATE.FALL : [12],
-                                            STATE.JUMP : [12],
-                                            STATE.CLIMB : [15, 16, 17],
-                                            STATE.FLY : [24, 25, 26],
-                                            STATE.DESTROY : [-1]}     # Dict of lists that specifies the index (displacement) of each animation frame based on the player tile. Indexed by the name of the STATE. (indexes are not integer because the tiles are not exactly the same size, apparently?)
-
+            self.lives = 3
+            self.animator = PlayerAnimator()
         else: ErrorInvalidConstructor()
 
     '''
@@ -918,255 +966,90 @@ class Player(Dynamic):
     def getGraphic(self, tileset):
         return Tile.getGraphic(self, tileset)
     
-    ## INPUT/KEYS TREATMENT
+    ## Input : START
     def movementInput(self, pressed_keys):
+        #ignore states that don't interact with the level
         if self.cur_state in [STATE.ENDMAP, STATE.DESTROY]:
             return 0
 
+        # readbility purposes
         k_uparrow = (pressed_keys[0])
         k_leftarrow = (pressed_keys[1])
         k_rightarrow = (pressed_keys[2])
         k_downarrow = (pressed_keys[3])
 
         if k_uparrow:
+            # climb (not climbing yet)
             if self.cur_state in [STATE.BLINK, STATE.WALK] and self.inventory["tree"] == 1:
                 self.setCurrentState(STATE.CLIMB)
                 self.velocity_y = - self.MAX_SPEED_Y
-                self.updateAnimation()
+                self.updateAnimator()
+            # jump
             elif self.cur_state in [STATE.BLINK, STATE.WALK]:
                 self.setCurrentState(STATE.JUMP)
                 self.velocity_y = - self.JUMP_SPEED
+            # climb (already climbing)
             elif self.cur_state in [STATE.FLY, STATE.CLIMB]:
                 self.velocity_y = - self.MAX_SPEED_Y
+                # fall off tree (by the top)
                 if self.cur_state == STATE.CLIMB and self.inventory["tree"] == 0:
                     self.setCurrentState(STATE.FALL)
                     self.velocity_y = self.MAX_SPEED_Y  
-        if k_leftarrow:
-            self.direction_x = DIRECTION.LEFT
+                    
+        if k_leftarrow or k_rightarrow:
+            # set the direction accordingly
+            self.direction_x = DIRECTION.LEFT if k_leftarrow else DIRECTION.RIGHT
 
+            # move
             if self.cur_state in [STATE.BLINK, STATE.WALK, STATE.JUMP, STATE.CLIMB, STATE.FLY]:
                 self.velocity_x = self.MAX_SPEED_X * self.X_SPEED_FACTOR
+            # fall (can be uncontrolled)
             elif self.cur_state == STATE.FALL:
                 self.velocity_x = self.MAX_SPEED_X #when falling, velocity increases to the max
+                
+            # set walking state if in initial state
             if self.cur_state == STATE.BLINK:
                 self.setCurrentState(STATE.WALK)
+            # fall off tree (by the sides)
             elif self.cur_state == STATE.CLIMB and self.inventory["tree"] == 0:
                 self.setCurrentState(STATE.FALL)
                 self.velocity_y = self.MAX_SPEED_Y
-        if k_rightarrow:
-            self.direction_x = DIRECTION.RIGHT
-
-            if self.cur_state in [STATE.BLINK, STATE.WALK, STATE.JUMP, STATE.CLIMB, STATE.FLY]:
-                self.velocity_x = self.MAX_SPEED_X * self.X_SPEED_FACTOR
-            elif self.cur_state == STATE.FALL:
-                self.velocity_x = self.MAX_SPEED_X #when falling, velocity increases to the max
-
-            if self.cur_state == STATE.BLINK:
-                self.setCurrentState(STATE.WALK)
-            elif self.cur_state == STATE.CLIMB and self.inventory["tree"] == 0:
-                self.setCurrentState(STATE.FALL)
-                self.velocity_y = self.MAX_SPEED_Y
+                
         if k_downarrow:
+            # only works in flying and climbing state
             if self.cur_state in [STATE.CLIMB, STATE.FLY]:
                 self.velocity_y = self.MAX_SPEED_Y
+                
+                # fall off tree (by the bottom)
                 if self.cur_state == STATE.CLIMB and self.inventory["tree"] == 0:
                     self.setCurrentState(STATE.FALL)
                     self.velocity_y = self.MAX_SPEED_Y                    
 
     def inventoryInput(self, key):
+        # ignore states that don't interact with the level
         if self.cur_state in [STATE.ENDMAP, STATE.DESTROY]:
             return -1
 
         k_ctrl = (key == 0) or (key == 1)
         k_alt = (key == 2) or (key == 3)
 
+        # start jetpack
         if k_ctrl and self.inventory["jetpack"]:
             if self.cur_state == STATE.FLY:
-                self.setCurrentState(STATE.FALL)
-                self.velocity_x = self.MAX_SPEED_X #when falling, velocity increases to the max
-                self.velocity_y = self.MAX_SPEED_Y
+                self.setFallingState()
             else:
                 self.setCurrentState(STATE.FLY)
                 self.velocity_x = 0
                 self.velocity_y = 0
-                self.updateAnimation()
+                self.updateAnimator()
+                
+        # fire gun
         if k_alt and self.inventory["gun"]:
-            return 1    #treat gunfire externally (because we need the map)
+            return 1    # treat gunfire externally (because we need the map)
         return 0
-
-    def setSpriteDirection(self):
-        if (self.direction_x == DIRECTION.RIGHT):
-            self.flip_sprite = True
-        elif (self.direction_x == DIRECTION.LEFT):
-            self.flip_sprite = False  
-            
-    def isSpriteFlipped(self):
-        return self.flip_sprite
-        
-    ## LIFES
-    def takeLife(self):
-        self.lifes -= 1
-
-    def giveLife(self):
-        if self.lifes < self.MAX_LIFES:
-            self.lifes += 1
-            
-    def resetPosAndState(self):
-        if self.lifes < 0:
-            return -1
-        
-        self.setCurrentState(STATE.BLINK)
-        self.gfxId = 0
-        self.velocity_y = 0
-        self.velocity_x = 0
-        self.direction_x = DIRECTION.IDLE 
-        self.blinking_timer = self.BLINKING_SPEED
-            
-    ## TREAT JUMPING
-    def treatJumping(self):
-        if self.cur_state == STATE.JUMP:
-            self.addVelocityY(self.GRAVITY)             # Jumping is basically a velocity spike with a gravity based decay. This is basically calculating the decay at each frame.
-            if self.velocity_y == self.MAX_SPEED_Y:
-                self.setCurrentState(STATE.FALL)
-                self.velocity_x = self.MAX_SPEED_X #when falling, velocity increases to the max
-
-    ## TREAT SOLID COLLISION IN Y AXIS
-    def treatSolidCollisionY(self, current_y, target_y):
-        # landed
-        if self.cur_state in [STATE.JUMP, STATE.FALL] and target_y > current_y:
-            self.setCurrentState(STATE.WALK)
-            self.velocity_x = self.MAX_SPEED_X * self.X_SPEED_FACTOR
-            self.velocity_y = 0
-            self.direction_x = DIRECTION.IDLE
-            self.updateAnimation()
-        # was jumping and hit ceiling
-        elif self.cur_state == STATE.JUMP:
-            self.setCurrentState(STATE.FALL)
-            self.velocity_x = self.MAX_SPEED_X  #when falling, velocity increases to the max
-            self.velocity_y = self.MAX_SPEED_Y
-
-    ## COLLECT AN ITEM OR EQUIPMENT AND SAVE SCORE
-    def collectItem(self, item_pos, level):
-        x = item_pos[0]
-        y = item_pos[1]
-
-        item = level.getNode(x, y).getTile()
-        if isinstance(item, Equipment):
-            self.inventory[item.getId()] = 1
-        self.score += item.getScore()
-
-        if isinstance(self.score/5000, int):
-            self.give_life()
-
-        level.setNodeTile(x, y, Scenery())
-
-    ## PROCESS SCENERY THAT'S INTERACTIVE
-    def processScenerySpecial(self, element_pos, level):
-        x = element_pos[0]
-        y = element_pos[1]
-
-        element = level.getNode(x, y).getTile()
-        if element.getType() == INTSCENERYTYPE.GOAL and self.inventory["trophy"] == 1:
-            self.setCurrentState(STATE.ENDMAP)
-        elif element.getType() == INTSCENERYTYPE.HAZARD:
-            self.setCurrentState(STATE.DESTROY)
-            self.takeLife()
-        elif element.getType() == INTSCENERYTYPE.TREE:
-            self.inventory["tree"] = 1
-
-    ## TREAT ENEMY COLLISION
-    def treatEnemyCollisionY(self, current_y, target_y):
-        pass
-
-    ## UPDATES THE PLAYER POSITION BASED ON THE STATE HE'S IN
-    def updatePosition(self, player_x, player_y, level):    
-        self.inventory["tree"] = 0
-        ''' TODO : PLAYER SIZE '''
-        collision = level.checkPlayerCollision(player_x, player_y, 20, 16)
-        collision_type = collision[0]
-
-        collider_pos = collision[1]
-
-        # Collect an item if there is one
-        if collision_type == COLLISION.ITEM:
-            self.collectItem(collider_pos, level)
-        # Interact with scenery if one
-        elif collision_type == COLLISION.INTSCEN:
-            self.processScenerySpecial(collider_pos, level)
-        # Collision with an enemy
-        elif collision_type == COLLISION.ENEMY:
-            ''' TODO: KILL BOTH ENEMY AND PLAYER '''
-            pass
-
-        # Checks if the player walked into a pit
-        if self.cur_state == STATE.WALK:
-            if not level.isPlayerCollidingWithSolid(player_x, player_y + 1):
-                self.setCurrentState(STATE.FALL)
-                self.velocity_x = self.MAX_SPEED_X
-                self.velocity_y = self.MAX_SPEED_Y
-
-        ## Move X: START
-        player_newx = player_x + self.velocity_x * self.direction_x.value                   # Tries to walk to the direction the player's going
-        solid_collision = level.isPlayerCollidingWithSolid(player_newx, player_y)
-
-        if solid_collision:                                                                 # If a collision occurs,
-            player_newx = player_x                                                          # undo the movement
-            if self.cur_state == STATE.FALL:                                           # If player's falling and released movement keys,
-                self.direction_x = DIRECTION.IDLE                                           # stop the uncontrolled fall
-                self.velocity_x = 0
-        ## Move X: END
-
-        ## Move Y: START
-        player_newy = player_y + self.velocity_y
-
-        # Check for solid collisions
-        solid_collision = level.isPlayerCollidingWithSolid(player_newx, player_newy)
-
-        if self.cur_state != STATE.DESTROY:
-            if solid_collision:
-                self.treatSolidCollisionY(player_y, player_newy)
-                player_newy = player_y
-
-        # If jumping, gravity is acting upon the player
-        self.treatJumping()
-        ## Move Y: END
-
-        ## Jetpack gas: START
-        if (self.cur_state == STATE.FLY) and self.inventory["jetpack"] > 0:
-            self.inventory["jetpack"] -= 0.005
-        elif (self.cur_state == STATE.FLY):
-            self.inventory["jetpack"] = 0
-            self.setCurrentState(STATE.FALL)
-            self.velocity_x = self.MAX_SPEED_X #when falling, velocity increases to the max
-            self.velocity_y = self.MAX_SPEED_Y    
-        ## Jetpack gas: END       
-        
-        ## Animation: START
-        self.blinking_timer -= 1
-        if (player_x != player_newx or player_y != player_newy) and self.cur_state != STATE.ENDMAP:          # If the player moved, updates the animation
-            self.updateAnimation()
-        elif self.cur_state == STATE.BLINK and self.blinking_timer == 0:
-            self.updateAnimation()
-            self.blinking_timer = self.BLINKING_SPEED
-        ## Animation: END
-        
-        return (player_newx, player_newy)
-
-    ## UPDATE ANIMATION
-    def updateAnimation(self):
-        # Rotate the animation counter and set the new gfx index
-        if self.animation_counter < self.ANIMATION_COUNTER_MAX:       # Only updates if it's time to update (the counter reached its maximum)
-            self.animation_counter = self.animation_counter + 1
-        else:
-            self.animation_counter = 0
-            if self.animation_index < len(self.animation_index_list[self.cur_state]):           # Rotates the number that indexes the list of frames of that STATE.
-                self.animation_index = self.animation_index + 1                                         # Basically means that the animation frames will alternate in the list's order.
-            if self.animation_index == len(self.animation_index_list[self.cur_state]):
-                self.animation_index = 0
-
-        self.gfx_id = self.animation_index_list[self.cur_state][self.animation_index]          # Did not use setter here because we are not sending integer indexes.
-
-    ## ADD A GIVEN INCREMENT TO THE VELOCITY ATTRIBUTE
+    ## Input : END
+    
+    ## Motion : START
     def addVelocityY(self, inc):
         self.velocity_y = self.velocity_y + inc
         #test limits
@@ -1175,100 +1058,311 @@ class Player(Dynamic):
 
     def clearXMovement(self):
         self.velocity_x = 0
+        self.direction_x = DIRECTION.IDLE
+        
+    def applyGravityOnJump(self):
+        # Jumping is basically a velocity spike with a gravity based decay. This is basically calculating the decay at each frame.
+        self.addVelocityY(self.GRAVITY) 
+        
+        if self.velocity_y == self.MAX_SPEED_Y:
+            self.setFallingState()      
+        
+    def setFallingState(self):
+        self.setCurrentState(STATE.FALL)
+        self.velocity_x = self.MAX_SPEED_X #when falling, velocity increases to the max
+        self.velocity_y = self.MAX_SPEED_Y    
+        
+    def setWalkingState(self):
+        self.setCurrentState(STATE.WALK)
+        self.velocity_x = self.MAX_SPEED_X * self.X_SPEED_FACTOR
+        self.velocity_y = 0
+        self.direction_x = DIRECTION.IDLE
+        self.updateAnimator()
+        
+    def movePlayerRight(self, player_x):
+        return player_x + self.MAX_SPEED_X * self.X_SPEED_FACTOR
 
+    def resetPosAndState(self):
+        if self.lives < 0:
+            return -1
+        
+        self.setCurrentState(STATE.BLINK)
+        self.gfxId = 0
+        self.velocity_y = 0
+        self.velocity_x = 0
+        self.direction_x = DIRECTION.IDLE 
+        self.animator.resetBlinker()    
+    ## Motion : END
+
+    ## Sprite : START
+    def copyDirectionToSprite(self):
+        if self.direction_x in [DIRECTION.LEFT, DIRECTION.RIGHT]:
+            self.sprite_direction = self.direction_x
+            
+    def isSpriteFlipped(self):
+        if self.sprite_direction == DIRECTION.RIGHT:
+            return True
+        else: return False
+    ## Sprite : END
+    
+    ## Inventory : START
+    def decJetpackGasoline(self):
+        self.inventory["jetpack"] -= 0.0025
+        #fix floating point problems
+        if self.inventory["jetpack"] < 0:
+            self.inventory["jetpack"] = 0  
+
+    def takeLife(self):
+        self.lives -= 1
+
+    def giveLife(self):
+        if self.lives < self.MAX_LIFES:
+            self.lives += 1
+    ## Inventory : END
+            
+    ## Collision : START
+    def processSolidCollisionY(self, current_y, target_y):
+        # landed
+        if self.cur_state in [STATE.JUMP, STATE.FALL] and target_y > current_y:
+            self.setWalkingState()
+        # was jumping and hit ceiling
+        elif self.cur_state == STATE.JUMP:
+            self.setFallingState()
+
+    def collectItem(self, item_pos, level):
+        x = item_pos[0]
+        y = item_pos[1]
+
+        item = level.getNode(x, y).getTile()
+        
+        #if the item is an equipment, add it to the inventory
+        if isinstance(item, Equipment):
+            self.inventory[item.getId()] = 1
+            
+        #increment score
+        self.score += item.getScore()
+        
+        #if the player got to a certain score, give one life to him
+        if isinstance(self.score/5000, int):
+            self.give_life()
+
+        level.clearNode(x, y)
+
+    def interactWithScenery(self, element_pos, level):
+        x = element_pos[0]
+        y = element_pos[1]
+
+        element = level.getNode(x, y).getTile()
+        #player has trophy and reached the door
+        if element.getType() == INTSCENERYTYPE.GOAL and self.inventory["trophy"] == 1:
+            self.setCurrentState(STATE.ENDMAP)
+        #player collided with a hazard
+        elif element.getType() == INTSCENERYTYPE.HAZARD:
+            self.setCurrentState(STATE.DESTROY)
+            self.takeLife()
+        #player has contact with a tree
+        elif element.getType() == INTSCENERYTYPE.TREE:
+            self.inventory["tree"] = 1
+
+    def processEnemyCollision(self, enemy_pos, level):
+        ''' TODO : ENEMY COLLISION '''
+        pass
+    
+    def processCollisionsInCurrentPosition(self, player_x, player_y, level):
+        #reset tree inventory in case player leaves tree object
+        self.inventory["tree"] = 0
+        
+        ''' TODO : PLAYER SIZE '''
+        collision = level.checkPlayerCollision(player_x, player_y, 20, 16)
+        collision_type = collision[0]
+        collider_pos = collision[1]
+
+        # Collect an item if there is one
+        if collision_type == COLLISION.ITEM:
+            self.collectItem(collider_pos, level)
+        # Interact with scenery if one
+        elif collision_type == COLLISION.INTSCEN:
+            self.interactWithScenery(collider_pos, level)
+        # Collision with an enemy
+        elif collision_type == COLLISION.ENEMY:
+            self.processEnemyCollision(collider_pos, level)       
+    ## Collision : END
+    
+    ## Update player position and process surroundings
+    def updatePosition(self, player_x, player_y, level):  
+        # First, check collisions in the current position (without moving)
+        self.processCollisionsInCurrentPosition(player_x, player_y, level)
+
+        # Checks if the player walked into a pit
+        walked_into_pit = (not level.isPlayerCollidingWithSolid(player_x, player_y + 1))
+        if self.cur_state == STATE.WALK and walked_into_pit:
+            self.setFallingState()
+
+        ## Move X: START
+        player_newx = player_x + self.velocity_x * self.direction_x.value                   # Tries to walk to the direction the player's going
+        solid_collision = level.isPlayerCollidingWithSolid(player_newx, player_y)
+
+        if solid_collision:                                                                 # If a collision occurs,
+            player_newx = player_x                                                          # undo the movement
+            if self.cur_state == STATE.FALL:                                                # If player's falling and released movement keys,
+                self.clearXMovement()                                                       # stop the uncontrolled fall
+        ## Move X: END
+
+        ## Move Y: START
+        player_newy = player_y + self.velocity_y
+
+        # Check for solid collisions
+        solid_collision = level.isPlayerCollidingWithSolid(player_newx, player_newy)
+
+        if self.cur_state != STATE.DESTROY and solid_collision:
+            self.processSolidCollisionY(player_y, player_newy)
+            player_newy = player_y
+
+        # If jumping, gravity is acting upon the player
+        if self.cur_state == STATE.JUMP:
+            self.applyGravityOnJump()
+        ## Move Y: END
+
+        ## Jetpack gas: START
+        if (self.cur_state == STATE.FLY) and self.inventory["jetpack"] > 0:
+            self.decJetpackGasoline()
+        elif (self.cur_state == STATE.FLY) and self.inventory["jetpack"] == 0:
+            self.setFallingState()
+        ## Jetpack gas: END       
+        
+        ## Process animation: START
+        if (player_x != player_newx or player_y != player_newy) and self.cur_state != STATE.ENDMAP:          # If the player moved, updates the animation
+            self.updateAnimator()
+        elif self.cur_state == STATE.BLINK:
+            self.gfx_id = self.animator.blink()
+        ## Process animation: END
+        
+        return (player_newx, player_newy)
+        
+    ## Animation : START
+    def updateAnimator(self):
+        self.gfx_id = self.animator.update(self.cur_state)
+    ## Animation : END
+    
     '''
     Getters and setters
     '''
 
+    def setCurrentState(self, newstate):
+        if isinstance(newstate, STATE):
+            self.cur_state = newstate
+            self.animator.resetAnimation()
+        else: ErrorInvalidValue()
+    
+    def setVelocityY(self, vel):
+        ''' TODO : CHECK FLOAT '''
+        if isinstance(vel, float) or True:
+            self.velocity_y = vel
+        else: ErrorInvalidValue()
+    
     def setVelocityX(self, vel):
-        '''TODO: TEST INSTANCE'''
-        self.velocity_x = vel
+        ''' TODO : CHECK FLOAT '''
+        if isinstance(vel, float) or True:
+            self.velocity_x = vel
+        else: ErrorInvalidValue()
 
     def setDirectionX(self, direction):
-        '''TODO: TEST INSTANCE'''
-        self.direction_x = direction
-
-    def setVelocityY(self, vel):
-        '''TODO: TEST INSTANCE'''
-        self.velocity_y = vel
-
-    def setCurrentState(self, newstate):
-        '''TODO: TEST INSTANCE?'''
-        self.cur_state = newstate
-        self.animation_index = 0
-        self.animation_counter = 0
-
-    def getDirectionX(self):
-        return self.direction_x
+        if isinstance(direction, DIRECTION):
+            self.direction_x = direction
+        else: ErrorInvalidValue()
+        
+    def setSpriteDirection(self, direction):
+        if isinstance(direction, DIRECTION):
+            self.sprite_direction = direction
+        else: ErrorInvalidValue()
 
     def getVelocityY(self):
-        return self.velocity_y
+        return self.velocity_y        
 
     def getVelocityX(self):
         return self.velocity_x
-
-    def getGravity(self):
-        return self.GRAVITY
-
-    def getMaxSpeedX(self):
-        return self.MAX_SPEED_X
-
-    def getMaxSpeedY(self):
-        return self.MAX_SPEED_Y
-
-    def getXSpeedFactor(self):
-        return self.X_SPEED_FACTOR
+        
+    def getDirectionX(self):
+        return self.direction_x
+        
+    def getSpriteDirection(self):
+        return self.sprite_direction
 
 
-class AnimatedSprite(Dynamic):
+class PlayerAnimator(object):
     '''
-    AnimatedSprite represents an animated sprite in the game.
+    PlayerAnimator is a class used to implement the animation of the player
     It has the following arguments:
-        anim_timer: integer represents the animation timer of the sprite
+        animation_index : integer used to index the animation list of the corresponding state
+        animation_counter : integer counter that ticks until the next frame of animation should be displayed
+        blinking_timer : integer counter that represents the frequency of the blinking of the player
+        animation_index_list : Dict of lists that specifies the index (displacement) of each animation frame based on the player tile. Indexed by the name of the STATE.
     '''
-
+    
     '''
     Constants
-    '''    
+    '''
     
-    ANIM_TIMER_MAX = 30    
+    ANIMATION_COUNTER_MAX = 20
+    BLINKING_SPEED = 2
     
     '''
     Constructors
     '''
-
+    
     def __init__(self, *args):
-        #default constructor
         if len(args) == 0:
-            self.id = "undefined"
-            self.gfx_id = -1
-            self.anim_timer = self.ANIM_TIMER_MAX
-        #alternative constructor (id, gfx_id)
-        elif len(args) == 2:
-            '''TODO: CHECK INSTANCES '''
-            self.id = args[0]
-            self.gfx_id = args[1]
-            self.anim_timer = self.ANIM_TIMER_MAX
+            self.animation_index = 0
+            self.animation_counter = 0
+            self.blinking_timer = self.BLINKING_SPEED
+            self.animation_index_list = {STATE.WALK : [1, 2, 3, 2],
+                                            STATE.BLINK : [0, -1],
+                                            STATE.FALL : [12],
+                                            STATE.JUMP : [12],
+                                            STATE.CLIMB : [15, 16, 17],
+                                            STATE.FLY : [24, 25, 26],
+                                            STATE.DESTROY : [-1]}
         else: ErrorInvalidConstructor()
 
     '''
     Other methods
     '''
+    
+    def resetAnimation(self):
+        self.animation_index = 0
+        self.animation_counter = 0
+    
+    def update(self, current_state):
+        # Rotate the animation counter and set the new gfx index
+        if self.animation_counter < self.ANIMATION_COUNTER_MAX:       # Only updates if it's time to update (the counter reached its maximum)
+            self.animation_counter = self.animation_counter + 1
+        else:
+            self.animation_counter = 0
+            if self.animation_index < len(self.animation_index_list[current_state]):           # Rotates the number that indexes the list of frames of that STATE.
+                self.animation_index = self.animation_index + 1                                         # Basically means that the animation frames will alternate in the list's order.
+            if self.animation_index == len(self.animation_index_list[current_state]):
+                self.animation_index = 0
 
-    def getGraphic(self, tileset):
-        self.anim_timer -= ANIMATION_VELOCITY
+        result_gfx = self.animation_index_list[current_state][self.animation_index]
+        return result_gfx
         
-        if (self.anim_timer == 0):
-            self.anim_timer = self.ANIM_TIMER_MAX
+    def blink(self):
+        self.blinking_timer -= 1
+
+        if self.blinking_timer == 0:
+            self.resetBlinker()
             
-            if (self.id == "explosion"):
-                if self.gfx_id == 3:
-                    self.gfx_id = 0 
-                else: self.gfx_id += 1
-
-        #call superclass method
-        return super(AnimatedSprite, self).getGraphic(tileset)
-        
+        return self.update(STATE.BLINK)
+    
+    def resetBlinker(self):
+        self.blinking_timer = self.BLINKING_SPEED
+    
+    '''
+    Getters and setters
+    
+    No getters and setters are used as the class values are used only internally
+    '''
+            
 
 class Shot(Dynamic):
     '''
@@ -1295,7 +1389,9 @@ class Shot(Dynamic):
             self.direction = DIRECTION.RIGHT
         #alternative constructor (id, gfx_id, direction)
         elif len(args) == 3:
-            '''TODO: CHECK INSTANCES '''
+            if not self.validConstructorArgs(*args):
+                ErrorInvalidValue()           
+            
             self.id = args[0]
             self.gfx_id = args[1]
             self.direction = args[2]
@@ -1305,15 +1401,22 @@ class Shot(Dynamic):
     Other methods
     '''
     
+    def validConstructorArgs(*args):
+        direction = args[2]
+        
+        return (isinstance(direction, DIRECTION) and direction in [DIRECTION.RIGHT, DIRECTION.LEFT] and super(Shot, self).validConstructorArgs(args[0], args[1]))
+    
     def updatePosition(self, current_x, current_y, level):
         new_x = current_x + self.direction.value * self.MAX_SPEED_X
         
         collision = level.checkShotCollision(current_x, current_y)
+        collision_type = collision[0]
+        collider_pos = collision[1]
         
-        if (collision[0] == COLLISION.ENEMY):
+        if (collision_type == COLLISION.ENEMY):
             ''' TODO: KILL ENEMY '''
             return -1
-        elif (collision[0] == COLLISION.SOLID):
+        elif (collision_type == COLLISION.SOLID):
             return -1
             
         return new_x
@@ -1323,8 +1426,9 @@ class Shot(Dynamic):
     '''   
     
     def setDirection(self, dir):
-        ''' TODO: CHECK INSTANCE '''
-        self.dir = dir
+        if isinstance(dir, DIRECTION) and dir in [DIRECTION.LEFT, DIRECTION.RIGHT]:
+            self.dir = dir
+        else: ErrorInvalidValue()
         
     def getDirection(self):
         return self.dir
@@ -1351,16 +1455,15 @@ class Enemy(Dynamic):
         if len(args) == 0:
             self.id = "spider"
             self.gfx_id = 0
-            self.state = "normal"
-            self.state_list = ["normal", "die"]
+            self.cur_state = STATE.IDLE
             self.shot_frequency = 2
             self.shot_chance = 0.3
             self.speed = 1
             self.movement_type = 1
-        #alternative constructor (id, gfx_id, state, state_list, shot_freq, shot_chance, speed, mov_type)
-        elif len(args) == 8:
+        #alternative constructor (id, gfx_id, cur_state, shot_freq, shot_chance, speed, mov_type)
+        elif len(args) == 7:
             id, gfx_id, state, state_list, shot_freq, shot_chance, speed, mov_type = args
-            '''TODO: IMPLEMENT THIS (I'M TOO LAZY NOW)'''
+            ''' TODO : IMPLEMENT THIS '''
         else: ErrorInvalidConstructor()
 
     '''
@@ -1370,5 +1473,3 @@ class Enemy(Dynamic):
     '''
     Getters and setters
     '''
-
-    '''TODO: IMPLEMENT THIS (I'M TOO LAZY NOW)'''

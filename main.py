@@ -110,7 +110,7 @@ def print_ui_initial(ui_tileset,game_display,player,level_number):
 
     #daves text
     game_display.blit(cropBlockFromGraphic(ui_tileset["davestext"], 0, 50,11), (210*TILE_SCALE_FACTOR,0))
-    for index in range(player.lifes):
+    for index in range(player.lives):
         game_display.blit(cropBlockFromGraphic(ui_tileset["daveicon"], 0, 14,12), (270*TILE_SCALE_FACTOR+index*14*TILE_SCALE_FACTOR,0))
 
 def update_ui_score(ui_tileset,game_display,score):
@@ -231,26 +231,26 @@ def showInterpic(completed_levels, screen, tileset):
     #init player
     player = Player()
     playerPosition = Interpic.getPlayerSpawnerPosition(0)
-    player_position_x = WIDTH_OF_MAP_NODE * playerPosition[0]
-    player_position_y = HEIGHT_OF_MAP_NODE * playerPosition[1]
+    player_absolute_x = WIDTH_OF_MAP_NODE * playerPosition[0]
+    player_absolute_y = HEIGHT_OF_MAP_NODE * playerPosition[1]
 
     player.setCurrentState(STATE.WALK)
-    player.flip_sprite = True
+    player.setSpriteDirection(DIRECTION.RIGHT)
 
     #keep moving the player right, until it reaches the screen boundary
-    player_reached_boundary = (player_position_x >= screen.getUnscaledWidth())
+    player_reached_boundary = (player_absolute_x >= screen.getUnscaledWidth())
 
     while not player_reached_boundary:
-        player_position_x += player.getMaxSpeedX() * player.getXSpeedFactor()
+        player_absolute_x = player.movePlayerRight(player_absolute_x)
 
         #print map
         screen.printMap(Interpic, tileset)
         #print player
-        screen.printPlayer(player, player_position_x, player_position_y, tileset)
+        screen.printPlayer(player, player_absolute_x, player_absolute_y, tileset)
 
-        player_reached_boundary = (player_position_x >= screen.getUnscaledWidth())
+        player_reached_boundary = (player_absolute_x >= screen.getUnscaledWidth())
 
-        player.updateAnimation()
+        player.updateAnimator()
         pygame.display.flip()
         clock.tick(200)
 
@@ -273,7 +273,7 @@ def main():
     game_over = False
 
     ''' TODO: TITLE SCREEN '''
-    current_level_number = 5
+    current_level_number = 7
 
     ##Available Keys
     movement_keys = [pygame.K_UP, pygame.K_LEFT, pygame.K_RIGHT, pygame.K_DOWN]
@@ -317,7 +317,7 @@ def main():
                 elif event.type == pygame.KEYDOWN:
                     if event.key in inv_keys:
                         if GamePlayer.inventoryInput(inv_keys.index(event.key)) and not friendly_shot:
-                            friendly_shot = Level.spawnFriendlyFire(GamePlayer.getDirectionX())
+                            friendly_shot = Level.spawnFriendlyFire(GamePlayer.getSpriteDirection())
                             friendly_shot_x, friendly_shot_y = player_position_x + GamePlayer.getDirectionX().value * WIDTH_OF_MAP_NODE, player_position_y
 
             # get keys (movement)
