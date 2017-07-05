@@ -133,16 +133,39 @@ def load_game_tiles():
 Interpic
 '''
 
+def showTitleScreen(screen, tileset):
+    started_game = False
+    titlepic_level = Map(1)
+    clock = pygame.time.Clock()
+    
+    while not started_game:
+        pygame.display.update()
+        
+        screen.setXPosition(14, titlepic_level.getWidth())
+        screen.printMap(titlepic_level, tileset)
+        screen.printTitlepicBorder(tileset)
+        
+        for event in pygame.event.get():
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
+                started_game = True  
+            elif event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                return 0
+
+        pygame.display.flip()
+        clock.tick(200)
+        
+    return 1
+
 def showInterpic(completed_levels, screen, tileset):
     Interpic = Map("interpic")
 
     clock = pygame.time.Clock()
 
-    screen.setXPosition(0)    
+    screen.setXPosition(0, Interpic.getWidth())    
     screen.printMap(Interpic, tileset)
 
     #init player
-    (player, player_absolute_x, player_absolute_y) = Interpic.initPlayer(0)
+    (player, player_absolute_x, player_absolute_y) = Interpic.initPlayer(0, 0, 0)
 
     player.setCurrentState(STATE.WALK)
     player.setSpriteDirection(DIRECTION.RIGHT)
@@ -151,6 +174,11 @@ def showInterpic(completed_levels, screen, tileset):
     player_reached_boundary = (player_absolute_x >= screen.getUnscaledWidth())
 
     while not player_reached_boundary:
+  
+        for event in pygame.event.get():
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                return True
+                
         player_absolute_x = player.movePlayerRight(player_absolute_x)
 
         #print map
@@ -163,9 +191,20 @@ def showInterpic(completed_levels, screen, tileset):
         player.updateAnimator()
         pygame.display.flip()
         clock.tick(200)
+        
+    return False
 
+def showScores(screen, tileset):
+    pass
+    
+def savePlayerScore(player_score, screen, tileset):
+    pass
+        
+def showCreditsScreen(screen, tileset):
+    pass
+        
 '''
-Pygame inits
+Main
 '''
 
 def main():
@@ -177,165 +216,186 @@ def main():
     ''' TODO: UNIFY '''
     tileset = load_game_tiles()
     ui_tileset = load_ui_tiles()
+    
+    game_open = True
+    
+    while game_open:
+        ##Show title screen
+        option = showTitleScreen(game_screen, tileset)
+      
+        #if player presses escape, close game
+        if option == 0:
+            break;
+      
+        ##Init game
+        ended_game = False
+        
+        ##Init a player so we can get initial scores and lives
+        ''' TODO: REFACTOR THIS ? '''
+        GamePlayer = Player()
+      
+        ##Init level and spawner
+        current_level_number = 1
+        current_spawner_id = 0
 
-    ##Init game
-    ended_game = False
-    game_over = False
+        ##Available Keys
+        movement_keys = [pygame.K_UP, pygame.K_LEFT, pygame.K_RIGHT, pygame.K_DOWN]
+        inv_keys = [pygame.K_LCTRL, pygame.K_RCTRL, pygame.K_LALT, pygame.K_RALT]
 
-    ''' TODO: TITLE SCREEN '''
-    current_level_number = 7
+        ##Game processing
+        while not ended_game:
+            # init clock and display
+            clock = pygame.time.Clock()
+            pygame.display.update()
 
-    ##Available Keys
-    movement_keys = [pygame.K_UP, pygame.K_LEFT, pygame.K_RIGHT, pygame.K_DOWN]
-    inv_keys = [pygame.K_LCTRL, pygame.K_RCTRL, pygame.K_LALT, pygame.K_RALT]
+            # build the level and init screen and player positions
+            Level = Map(current_level_number)
+            (GamePlayer, player_position_x, player_position_y) = Level.initPlayer(current_spawner_id, GamePlayer.getScore(), GamePlayer.getLives())
+            game_screen.setXPosition(Level.getPlayerSpawnerPosition(current_spawner_id)[0] - 10, Level.getWidth())
+            
+            # init other sprites
+            death_timer = -1
+            friendly_shot = 0
 
-    ##Game processing
-    while not ended_game and not game_over:
-        # init stuff
-        clock = pygame.time.Clock()
-        pygame.display.update()
+            # UI Inits
+            print_ui_initial(ui_tileset, game_screen.getDisplay(), GamePlayer, 1)
+            score_ui = 0 #initial score, everytime it changes, we update the ui
+            trophy_ui = False #initial score, everytime it changes, we update the ui
 
-        # build the level
-        Level = Map(current_level_number)
-        (GamePlayer, player_position_x, player_position_y) = Level.initPlayer(0)
-        DeathPuff = AnimatedSprite("explosion", 0)
-        death_timer = -1
-        friendly_shot = 0
+            ''' TODO: THIS SHOULD BE INSIDE THE NEXT LOOP? '''
+            update_ui_gun(ui_tileset, game_screen.display)
+            update_ui_jetpack(ui_tileset, game_screen.display)
 
-        # UI Inits
-        print_ui_initial(ui_tileset, game_screen.display, GamePlayer, 1)
-        score_ui = 0 #initial score, everytime it changes, we update the ui
-        trophy_ui = False #initial score, everytime it changes, we update the ui
+            # level processing controller
+            ended_level = False
 
-        ''' TODO: THIS SHOULD BE INSIDE THE NEXT LOOP? '''
-        update_ui_gun(ui_tileset, game_screen.display)
-        update_ui_jetpack(ui_tileset, game_screen.display)
+            ## Level processing
+            while not ended_level:
+            
+                # get keys (inventory)
+                for event in pygame.event.get():
+                    if event.type == pygame.KEYUP:
+                        if event.key in [pygame.K_LEFT, pygame.K_RIGHT] and GamePlayer.getCurrentState() in [STATE.WALK, STATE.FLY, STATE.JUMP, STATE.CLIMB]:
+                            GamePlayer.clearXMovement()
+                        elif event.key in [pygame.K_UP, pygame.K_DOWN] and GamePlayer.getCurrentState() in [STATE.FLY, STATE.CLIMB]:
+                            GamePlayer.setVelocityY(0)
+                    elif event.type == pygame.KEYDOWN:
+                        if event.key == pygame.K_ESCAPE:
+                            game_open = False
+                            ended_level = True
+                            ended_game = True
+                        elif event.key in inv_keys:
+                            if GamePlayer.inventoryInput(inv_keys.index(event.key)) and not friendly_shot:
+                                friendly_shot = Level.spawnFriendlyFire(GamePlayer.getSpriteDirection())
+                                friendly_shot_x, friendly_shot_y = player_position_x + GamePlayer.getDirectionX().value * WIDTH_OF_MAP_NODE, player_position_y
 
-        # level processing controller
-        ended_level = False
+                # get keys (movement)
+                pressed_keys = pygame.key.get_pressed()
+                key_map = [0,0,0,0]
+                for i, key in enumerate(movement_keys):
+                    if pressed_keys[key]:
+                        key_map[i] = 1
+                GamePlayer.movementInput(key_map)
 
-        ## Level processing
-        while not ended_level:
-            # get keys (invetory)
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    ended_level = True
-                elif event.type == pygame.KEYUP:
-                    if event.key in [pygame.K_LEFT, pygame.K_RIGHT] and GamePlayer.getCurrentState() in [STATE.WALK, STATE.FLY, STATE.JUMP, STATE.CLIMB]:
-                        GamePlayer.clearXMovement()
-                    elif event.key in [pygame.K_UP, pygame.K_DOWN] and GamePlayer.getCurrentState() in [STATE.FLY, STATE.CLIMB]:
-                        GamePlayer.setVelocityY(0)
-                elif event.type == pygame.KEYDOWN:
-                    if event.key in inv_keys:
-                        if GamePlayer.inventoryInput(inv_keys.index(event.key)) and not friendly_shot:
-                            friendly_shot = Level.spawnFriendlyFire(GamePlayer.getSpriteDirection())
-                            friendly_shot_x, friendly_shot_y = player_position_x + GamePlayer.getDirectionX().value * WIDTH_OF_MAP_NODE, player_position_y
-
-            # get keys (movement)
-            pressed_keys = pygame.key.get_pressed()
-            key_map = [0,0,0,0]
-            for i, key in enumerate(movement_keys):
-                if pressed_keys[key]:
-                    key_map[i] = 1
-            GamePlayer.movementInput(key_map)
-
-            # update the player position in the level and treat collisions
-            if GamePlayer.getCurrentState() != STATE.DESTROY:
-                (player_position_x, player_position_y) = GamePlayer.updatePosition(player_position_x, player_position_y, Level)
-                
-            # update friendly shot position, if there is one
-            if friendly_shot:
-                friendly_shot_x = friendly_shot.updatePosition(friendly_shot_x, friendly_shot_y, Level)
-                if (friendly_shot_x == -1):
-                    del friendly_shot
-                    friendly_shot = 0
-
-            # if the player ended the level, go on to the next
-            if GamePlayer.getCurrentState() == STATE.ENDMAP:
-                ended_level = True
-                break;
-            elif GamePlayer.getCurrentState() == STATE.DESTROY:
-                ''' TODO: REFACTOR '''
-                if death_timer == -1:
-                    DeathPuff.setGfxId(0)
-                    GamePlayer.takeLife()
-                    death_timer = 120
-                
-                player_position_y += 0.25
-                death_timer -= 1
-                
-                if death_timer == 0:
-                    death_timer = -1
-                    game_screen.setXPosition(0)
-                    DeathPuff.setGfxId(-1)
+                # update the player position in the level and treat collisions
+                if GamePlayer.getCurrentState() != STATE.DESTROY:
+                    (player_position_x, player_position_y) = GamePlayer.updatePosition(player_position_x, player_position_y, Level)
                     
-                    if (GamePlayer.resetPosAndState() != -1):
-                        (player_position_x, player_position_y) = Level.getPlayerSpawnerPosition(0)
-                        player_position_x *= WIDTH_OF_MAP_NODE
-                        player_position_y *= HEIGHT_OF_MAP_NODE
-                    else:
-                        ended_level = True
-                        game_over = True
-                
-            # if the player is close enough to one of the screen boundaries, move the screen.
-            player_close_to_left_boundary = (player_position_x <= game_screen.getXPositionInPixelsUnscaled() + BOUNDARY_DISTANCE_TRIGGER)
-            player_close_to_right_boundary = (player_position_x >= game_screen.getXPositionInPixelsUnscaled() + game_screen.getUnscaledWidth() - BOUNDARY_DISTANCE_TRIGGER)
-            reached_level_left_boundary = (game_screen.getXPosition() <= 0)
-            reached_level_right_boundary = (game_screen.getXPosition() + game_screen.getWidthInTiles() > Level.getWidth())         
-
-            # move screen left
-            if player_close_to_left_boundary and not reached_level_left_boundary:
-                game_screen.moveScreenX(Level, -15, tileset)
-            # move screen right
-            elif player_close_to_right_boundary and not reached_level_right_boundary:
-                game_screen.moveScreenX(Level, 15, tileset)
-            # not moving (just update the screen)
-            else:
-                game_screen.printMap(Level, tileset)
-                
+                # update friendly shot position, if there is one
                 if friendly_shot:
-                    game_screen.printTile(friendly_shot_x - game_screen.getXPositionInPixelsUnscaled(), friendly_shot_y, friendly_shot.getGraphic(tileset))
-                    
-                    bullet_bypassed_screen_right_boundary = (friendly_shot_x >= game_screen.getXPositionInPixelsUnscaled() + game_screen.getUnscaledWidth())
-                    bullet_bypassed_screen_left_boundary = (friendly_shot_x <= game_screen.getXPositionInPixelsUnscaled())
-                    
-                    if bullet_bypassed_screen_right_boundary or bullet_bypassed_screen_left_boundary:
+                    friendly_shot_x = friendly_shot.updatePosition(friendly_shot_x, friendly_shot_y, Level)
+                    if (friendly_shot_x == -1):
                         del friendly_shot
                         friendly_shot = 0
-                
-                if GamePlayer.getCurrentState() != STATE.DESTROY:
-                    # print player accordingly to screen shift
-                    game_screen.printPlayer(GamePlayer, player_position_x - game_screen.getXPositionInPixelsUnscaled(), player_position_y, tileset)
+
+                # if the player ended the level, go on to the next
+                if GamePlayer.getCurrentState() == STATE.ENDMAP:
+                    ended_level = True
+                    break;
+                # if the player died, spawn death puff and respawn player (if he has enough lives)
+                elif GamePlayer.getCurrentState() == STATE.DESTROY:
+                    ''' TODO: REFACTOR '''
+                    if death_timer == -1:
+                        GamePlayer.takeLife()
+                        DeathPuff = AnimatedSprite("explosion", 0)
+                        death_timer = 120
+                    
+                    player_position_y += 0.25
+                    death_timer -= 1
+                    
+                    if death_timer == 0:
+                        death_timer = -1
+                        game_screen.setXPosition(0, Level.getWidth())
+                        del DeathPuff
+                        
+                        if (GamePlayer.resetPosAndState() != -1):
+                            (player_position_x, player_position_y) = Level.getPlayerSpawnerPosition(0)
+                            player_position_x *= WIDTH_OF_MAP_NODE
+                            player_position_y *= HEIGHT_OF_MAP_NODE
+                        else:
+                            ended_level = True
+                            ended_game = True
+                    
+                # if the player is close enough to one of the screen boundaries, move the screen.
+                player_close_to_left_boundary = (player_position_x <= game_screen.getXPositionInPixelsUnscaled() + BOUNDARY_DISTANCE_TRIGGER)
+                player_close_to_right_boundary = (player_position_x >= game_screen.getXPositionInPixelsUnscaled() + game_screen.getUnscaledWidth() - BOUNDARY_DISTANCE_TRIGGER)
+                reached_level_left_boundary = (game_screen.getXPosition() <= 0)
+                reached_level_right_boundary = (game_screen.getXPosition() + game_screen.getWidthInTiles() > Level.getWidth())         
+
+                # move screen left
+                if player_close_to_left_boundary and not reached_level_left_boundary:
+                    game_screen.moveScreenX(Level, -15, tileset)
+                # move screen right
+                elif player_close_to_right_boundary and not reached_level_right_boundary:
+                    game_screen.moveScreenX(Level, 15, tileset)
+                # not moving (just update the screen)
                 else:
-                    # print death puff accordingly to screen shift
-                    game_screen.printTile(player_position_x - game_screen.getXPositionInPixelsUnscaled(), player_position_y, DeathPuff.getGraphic(tileset))
+                    game_screen.printMap(Level, tileset)
+                    
+                    if friendly_shot:
+                        game_screen.printTile(friendly_shot_x - game_screen.getXPositionInPixelsUnscaled(), friendly_shot_y, friendly_shot.getGraphic(tileset))
+                        
+                        bullet_bypassed_screen_right_boundary = (friendly_shot_x >= game_screen.getXPositionInPixelsUnscaled() + game_screen.getUnscaledWidth())
+                        bullet_bypassed_screen_left_boundary = (friendly_shot_x <= game_screen.getXPositionInPixelsUnscaled())
+                        
+                        if bullet_bypassed_screen_right_boundary or bullet_bypassed_screen_left_boundary:
+                            del friendly_shot
+                            friendly_shot = 0
+                    
+                    if GamePlayer.getCurrentState() != STATE.DESTROY:
+                        # print player accordingly to screen shift
+                        game_screen.printPlayer(GamePlayer, player_position_x - game_screen.getXPositionInPixelsUnscaled(), player_position_y, tileset)
+                    elif not ended_game:
+                        # print death puff accordingly to screen shift
+                        game_screen.printTile(player_position_x - game_screen.getXPositionInPixelsUnscaled(), player_position_y, DeathPuff.getGraphic(tileset))
 
-            # update UI
-            ''' TODO: PUT THIS INSIDE A HELPER FUNCTION? '''
-            if score_ui != GamePlayer.score:
-                update_ui_score(ui_tileset,game_screen.display,GamePlayer.score)
-                score_ui = GamePlayer.score
-            if not trophy_ui and GamePlayer.inventory["trophy"] == 1:
-                update_ui_trophy(ui_tileset,game_screen.display)
-                trophy_ui = True
+                # update UI
+                ''' TODO: PUT THIS INSIDE A HELPER FUNCTION? '''
+                if score_ui != GamePlayer.score:
+                    update_ui_score(ui_tileset,game_screen.display,GamePlayer.score)
+                    score_ui = GamePlayer.score
+                if not trophy_ui and GamePlayer.inventory["trophy"] == 1:
+                    update_ui_trophy(ui_tileset,game_screen.display)
+                    trophy_ui = True
+                    
+                pygame.display.flip()
+                pygame.event.pump()
+                clock.tick(200)
+
+            # Onto the next level
+            current_level_number += 1
+
+            if current_level_number > NUM_OF_LEVELS and ended_level and not ended_game:
+                showCreditsScreen(game_screen, tileset)
+                ended_game = True
+            elif ended_level and not ended_game:
+                option = showInterpic(current_level_number, game_screen, tileset)
+                ended_game = option
+                game_open = not option
                 
-            pygame.display.flip()
-            pygame.event.pump()
-            clock.tick(200)
-
-        # Onto the next level
-        current_level_number += 1
-
-        if current_level_number > 10 and ended_level:
-            ''' TODO: CREDITS SCREEN '''
-            ended_game = True
-        elif ended_level and not game_over:
-            showInterpic(current_level_number, game_screen, tileset)
-        elif game_over:
-            ''' TODO: GAME OVER SCREEN '''
-            ended_game = True
-            pass
-            
+        savePlayerScore(GamePlayer.getScore(), game_screen, tileset)
+        showScores(game_screen, tileset)
+                
     pygame.quit()
     quit()
 

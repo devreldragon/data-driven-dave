@@ -67,7 +67,10 @@ def ErrorInvalidConstructor():
     raise ValueError("The entered constructor is not valid.")
     
 def ErrorMethodNotImplemented():
-    raise ValueError("This method must be implemented by a child class")
+    raise ValueError("This method must be implemented by a child class.")
+    
+def ErrorSpawnerNotFound():
+    raise ValueError("Specified spawner was not found.")
 
 '''
 Classes
@@ -139,6 +142,14 @@ class Screen(object):
                 
         self.printTile(player_x, player_y, player_graphic)
                     
+    def printTitlepicBorder(self, tileset):
+        for x in range(0, 20):
+            for y in range(0, 11):
+                if (y < 4) or (x < 5) or (x > 14):
+                    absolute_x = x * WIDTH_OF_MAP_NODE
+                    absolute_y = y * HEIGHT_OF_MAP_NODE
+                    self.printTile(absolute_x, absolute_y, Scenery().getGraphic(tileset))
+                    
     def moveScreenX(self, map, amount, tileset):
         screen_shift = 0
         reached_level_left_boundary = (self.x_pos <= 0)
@@ -205,11 +216,15 @@ class Screen(object):
         else:
             self.height = height;
             
-    def setXPosition(self, x_position):
-        if not isinstance(x_position, int) and x_position < 0:
+    def setXPosition(self, x_position, level_width):
+        if not isinstance(x_position, int):
             ErrorInvalidValue()
+        elif x_position < 0:
+            self.x_pos = 0;
+        elif x_position > level_width - self.getWidthInTiles():
+            self.x_pos = level_width - self.getWidthInTiles()
         else:
-            self.x_pos = x_position;
+            self.x_pos = x_position
             
     '''
     TODO: Does this work? Do we need it?
@@ -291,7 +306,7 @@ class Map(object):
             for x, col in enumerate(line):
                 if self.node_matrix[y][x].getId() == "player_spawner" and self.node_matrix[y][x].getSpawnerId() == spawner_id:
                     return (x, y)
-        return (-1, -1)
+        ErrorSpawnerNotFound()
                     
     def getCollisionType(self, x, y):
         if not self.validateCoordinates(x, y):
@@ -409,7 +424,7 @@ class Map(object):
                 self.setNodeTile(x, y, tile_type)
                 x += 1
 
-    def initPlayer(self, spawner_id):            
+    def initPlayer(self, spawner_id, player_score, player_lives):            
         #init player and his positions
         GamePlayer = Player()
         playerPosition = self.getPlayerSpawnerPosition(spawner_id)
@@ -421,6 +436,9 @@ class Map(object):
         player_position_x = WIDTH_OF_MAP_NODE * playerPosition[0]
         player_position_y = HEIGHT_OF_MAP_NODE * playerPosition[1]
 
+        GamePlayer.setScore(player_score)
+        GamePlayer.setLives(player_lives)
+        
         return (GamePlayer, player_position_x, player_position_y)
         
     def tileFromText(self, text_tile):
@@ -1053,7 +1071,7 @@ class Player(Dynamic):
     JUMP_SPEED = 0.8
     GRAVITY = 0.01          #gravity acceleration
     
-    MAX_LIFES = 5
+    MAX_LIVES = 5
 
     '''
     Constructors
@@ -1232,7 +1250,7 @@ class Player(Dynamic):
         self.lives -= 1
 
     def giveLife(self):
-        if self.lives < self.MAX_LIFES:
+        if self.lives < self.MAX_LIVES:
             self.lives += 1
     ## Inventory : END
             
@@ -1392,6 +1410,16 @@ class Player(Dynamic):
             self.sprite_direction = direction
         else: ErrorInvalidValue()
 
+    def setScore(self, score):
+        if isinstance(score, int) and score >= 0:
+            self.score = score
+        else: ErrorInvalidValue()
+        
+    def setLives(self, lives):
+        if isinstance(lives, int) and lives >= 0 and lives <= self.MAX_LIVES:
+            self.lives = lives
+        else: ErrorInvalidValue()
+        
     def getVelocityY(self):
         return self.velocity_y        
 
@@ -1404,7 +1432,13 @@ class Player(Dynamic):
     def getSpriteDirection(self):
         return self.sprite_direction
 
+    def getScore(self):
+        return self.score
+        
+    def getLives(self):
+        return self.lives
 
+        
 class PlayerAnimator(object):
     '''
     PlayerAnimator is a class used to implement the animation of the player
