@@ -112,12 +112,12 @@ class Screen(object):
     def isXInScreen(self, x):
         return (x >= self.x_pos) and (x < self.x_pos + self.getWidthInTiles())
 
-    def printTile(self, x, y, tile_graphic):
+    def printTile(self, x, y, tile_graphic, game_tile=True):
         scaled_x = x * TILE_SCALE_FACTOR
         scaled_y = y * TILE_SCALE_FACTOR    
     
-        # print the tile only if it's out of the UI
-        if (y > self.GAME_SCREEN_START) and (y < self.GAME_SCREEN_END):
+        # print the tile only if it's out of the UI or if it's a UI tile
+        if (y > self.GAME_SCREEN_START) and (y < self.GAME_SCREEN_END) or not game_tile:
             self.display.blit(tile_graphic, (scaled_x, scaled_y))
 
     def cropBlockFromGraphic(self,image, index, size_x, size_y, num_of_blocks=1):
@@ -132,8 +132,8 @@ class Screen(object):
             
     def printOverlay(self, ui_tileset):
         for x in range(10): #bottom overlay starts at y=166px
-            self.display.blit(self.cropBlockFromGraphic(ui_tileset["topoverlay"], 0, 32 ,4),(x*32*TILE_SCALE_FACTOR,12*TILE_SCALE_FACTOR))
-            self.display.blit(self.cropBlockFromGraphic(ui_tileset["bottomoverlay"], 0, 32 ,18),(x*32*TILE_SCALE_FACTOR,166*TILE_SCALE_FACTOR))
+            self.display.blit(self.cropBlockFromGraphic(ui_tileset["topoverlay"][0], 0, 32 ,4),(x*32*TILE_SCALE_FACTOR,12*TILE_SCALE_FACTOR))
+            self.display.blit(self.cropBlockFromGraphic(ui_tileset["bottomoverlay"][0], 0, 32 ,18),(x*32*TILE_SCALE_FACTOR,166*TILE_SCALE_FACTOR))
 
     def printMap(self, map, tileset):
         for y, row in enumerate(map.getNodeMatrix()):
@@ -594,8 +594,8 @@ class Tile(object):
 
     def getGfxId(self):
         return self.gfx_id
-
-
+        
+        
 class Scenery(Tile):
     '''
     Scenery represents a scenery tile in the game (just background)
@@ -628,14 +628,14 @@ class Scenery(Tile):
         id = args[0]
         gfx_id = args[1]
         
-        return (isinstance(id, str) and isinstance(gfx_id, int) and id in ["scenery", "moonstars"] and gfx_id >= -1)
+        return (isinstance(id, str) and isinstance(gfx_id, int) and gfx_id >= -1)
         
     '''
     Getters and setters
     '''
     
     def setId(self, id):
-        if isinstance(id, str) and id in ["scenery", "moonstars"]:
+        if isinstance(id, str):
             self.id = id
         else: ErrorInvalidValue()
            
@@ -940,9 +940,9 @@ class PlayerSpawner(Tile):
             self.spawner_id = id
 
                 
-class AnimatedSprite(Tile):
+class AnimatedTile(Tile):
     '''
-    AnimatedSprite represents an animated sprite in the game.
+    AnimatedTile represents an animated tile in the game.
     It has the following arguments:
         anim_timer: integer represents the animation timer of the sprite
     '''
@@ -981,7 +981,7 @@ class AnimatedSprite(Tile):
         id = args[0]
         gfx_id = args[1]
         
-        return (isinstance(id, str) and isinstance(gfx_id, int) and id in ["explosion"] and gfx_id >= -1)
+        return (isinstance(id, str) and isinstance(gfx_id, int) and gfx_id >= -1)
     
     def getGraphic(self, tileset):
         self.anim_timer -= ANIMATION_VELOCITY
@@ -989,20 +989,22 @@ class AnimatedSprite(Tile):
         if (self.anim_timer == 0):
             self.anim_timer = self.ANIM_TIMER_MAX
             
-            if (self.id == "explosion"):
-                if self.gfx_id == 3:
-                    self.gfx_id = 0 
-                else: self.gfx_id += 1
+            tile_frames = tileset[self.id]
+            number_of_tile_frames = int(tile_frames[0].get_rect().size[0]/tile_frames[2])
+            
+            if self.gfx_id == number_of_tile_frames-1:
+                self.gfx_id = 0 
+            else: self.gfx_id += 1
 
         #call superclass method
-        return super(AnimatedSprite, self).getGraphic(tileset)
+        return super(AnimatedTile, self).getGraphic(tileset)
 
     '''
     Getters and setters
     '''
     
     def setId(self, id):
-        if isinstance(id, str) and id in ["scenery, moonstars"]:
+        if isinstance(id, str):
             self.id = id
         else: ErrorInvalidValue()        
         

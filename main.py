@@ -13,68 +13,51 @@ def print_ui_initial(ui_tileset,game_display,player,level_number):
     #print("Printing initial UI")
 
     #score text
-    game_display.blit(cropBlockFromGraphic(ui_tileset["scoretext"], 0, 54,11), (0,0))
+    game_display.blit(cropBlockFromGraphic(ui_tileset["scoretext"][0], 0, 54,11), (0,0))
     leadingzeroes_score = str(player.score).zfill(5)
     for index in range(5):
         current_number = int(leadingzeroes_score[index] )
-        game_display.blit(cropBlockFromGraphic(ui_tileset["numbers"], current_number, 8,11, 10), (60*TILE_SCALE_FACTOR+8*index*TILE_SCALE_FACTOR,0))
+        game_display.blit(cropBlockFromGraphic(ui_tileset["numbers"][0], current_number, 8,11, 10), (60*TILE_SCALE_FACTOR+8*index*TILE_SCALE_FACTOR,0))
 
     #level text
-    game_display.blit(cropBlockFromGraphic(ui_tileset["leveltext"], 0, 45,11), (120*TILE_SCALE_FACTOR,0))
+    game_display.blit(cropBlockFromGraphic(ui_tileset["leveltext"][0], 0, 45,11), (120*TILE_SCALE_FACTOR,0))
     leadingzeroes_level = str(level_number).zfill(2)
     for index in range(2):
         current_level = int(leadingzeroes_level[index] )
-        game_display.blit(cropBlockFromGraphic(ui_tileset["numbers"], current_level, 8,11, 10), (170*TILE_SCALE_FACTOR+8*index*TILE_SCALE_FACTOR,0))
+        game_display.blit(cropBlockFromGraphic(ui_tileset["numbers"][0], current_level, 8,11, 10), (170*TILE_SCALE_FACTOR+8*index*TILE_SCALE_FACTOR,0))
 
     #daves text
-    game_display.blit(cropBlockFromGraphic(ui_tileset["davestext"], 0, 50,11), (210*TILE_SCALE_FACTOR,0))
+    game_display.blit(cropBlockFromGraphic(ui_tileset["davestext"][0], 0, 50,11), (210*TILE_SCALE_FACTOR,0))
     for index in range(player.lives):
-        game_display.blit(cropBlockFromGraphic(ui_tileset["daveicon"], 0, 14,12), (270*TILE_SCALE_FACTOR+index*14*TILE_SCALE_FACTOR,0))
+        game_display.blit(cropBlockFromGraphic(ui_tileset["daveicon"][0], 0, 14,12), (270*TILE_SCALE_FACTOR+index*14*TILE_SCALE_FACTOR,0))
 
 def update_ui_score(ui_tileset,game_display,score):
     #print("Updating UI")
     #score text
-    game_display.blit(cropBlockFromGraphic(ui_tileset["scoretext"], 0, 54,11), (0,0))
+    game_display.blit(cropBlockFromGraphic(ui_tileset["scoretext"][0], 0, 54,11), (0,0))
     leadingzeroes_score = str(score).zfill(5)
     for index in range(5):
         current_number = int(leadingzeroes_score[index] )
-        game_display.blit(cropBlockFromGraphic(ui_tileset["numbers"], current_number, 8,11,10), (60*TILE_SCALE_FACTOR+8*index*TILE_SCALE_FACTOR,0)) #X offset+each number offset
+        game_display.blit(cropBlockFromGraphic(ui_tileset["numbers"][0], current_number, 8,11,10), (60*TILE_SCALE_FACTOR+8*index*TILE_SCALE_FACTOR,0)) #X offset+each number offset
 
 def update_ui_trophy(ui_tileset,game_display):
-    game_display.blit(cropBlockFromGraphic(ui_tileset["gothrudoortext"], 0, 172,14), (70*TILE_SCALE_FACTOR,184*TILE_SCALE_FACTOR))
+    game_display.blit(cropBlockFromGraphic(ui_tileset["gothrudoortext"][0], 0, 172,14), (70*TILE_SCALE_FACTOR,184*TILE_SCALE_FACTOR))
 
 def update_ui_gun(ui_tileset,game_display):
-    game_display.blit(cropBlockFromGraphic(ui_tileset["gunicon"], 0, 16,11), (285*TILE_SCALE_FACTOR,170*TILE_SCALE_FACTOR))
-    game_display.blit(cropBlockFromGraphic(ui_tileset["guntext"], 0, 27,11), (240*TILE_SCALE_FACTOR,170*TILE_SCALE_FACTOR))
+    game_display.blit(cropBlockFromGraphic(ui_tileset["gunicon"][0], 0, 16,11), (285*TILE_SCALE_FACTOR,170*TILE_SCALE_FACTOR))
+    game_display.blit(cropBlockFromGraphic(ui_tileset["guntext"][0], 0, 27,11), (240*TILE_SCALE_FACTOR,170*TILE_SCALE_FACTOR))
 
 def update_ui_jetpack(ui_tileset,game_display, jetpackquantity):
-    game_display.blit(cropBlockFromGraphic(ui_tileset["jetpacktext"], 0, 62,11), (0,170*TILE_SCALE_FACTOR))
-    game_display.blit(cropBlockFromGraphic(ui_tileset["jetpackmeter"], 0, 128,12), (70*TILE_SCALE_FACTOR,170*TILE_SCALE_FACTOR))
+    game_display.blit(cropBlockFromGraphic(ui_tileset["jetpacktext"][0], 0, 62,11), (0,170*TILE_SCALE_FACTOR))
+    game_display.blit(cropBlockFromGraphic(ui_tileset["jetpackmeter"][0], 0, 128,12), (70*TILE_SCALE_FACTOR,170*TILE_SCALE_FACTOR))
     for index in range(math.floor(jetpackquantity*61)):
-        game_display.blit(cropBlockFromGraphic(ui_tileset["jetpackbar"], 0, 2,6), ((73+2*index)*TILE_SCALE_FACTOR,173*TILE_SCALE_FACTOR))
+        game_display.blit(cropBlockFromGraphic(ui_tileset["jetpackbar"][0], 0, 2,6), ((73+2*index)*TILE_SCALE_FACTOR,173*TILE_SCALE_FACTOR))
 
 def clear_bottom_ui(ui_tileset,game_display):
-    game_display.blit(cropBlockFromGraphic(ui_tileset["blacktile"], 0, 320,50), (0,170*TILE_SCALE_FACTOR))
+    game_display.blit(cropBlockFromGraphic(ui_tileset["blacktile"][0], 0, 320,50), (0,170*TILE_SCALE_FACTOR))
         
 def clear_top_ui(ui_tileset,game_display):
-    game_display.blit(cropBlockFromGraphic(ui_tileset["blacktile"], 0, 320,50), (0,0))
-        
-'''TODO: UNIFY THIS FUNCTION WITH load_tiles'''
-## returns dictionary
-def load_ui_tiles():
-    tilefiles = [file for file in listdir("tiles/ui/") if isfile(join("tiles/ui/", file))] #load all the image files within the directory
-
-    tile_table = {} #init dictionary
-
-    for savedfile in tilefiles:
-        image = pygame.image.load("tiles/ui/" + savedfile).convert_alpha()
-        ''' TODO: CHECK IF THESE PARAMETERS HAVE ANY USE '''
-        image_width, image_height = image.get_size()
-
-        ''' TODO: REVIEW THIS '''
-        tile_table[graphicPropertiesFromFilename(savedfile)[0]] = image
-    #print(tile_table)
-    return tile_table
+    game_display.blit(cropBlockFromGraphic(ui_tileset["blacktile"][0], 0, 320,50), (0,0))
 
 '''
 Tile and gfxs
@@ -127,27 +110,40 @@ def graphicPropertiesFromFilename(filename):
 ''' TODO: UNIFY THIS FUNCTION WITH load_ui_tiles '''
 ## returns dictionary
 def load_game_tiles():
-    tilefiles = [file for file in listdir("tiles/game/") if isfile(join("tiles/game/", file))] #load all the image files within the directory
+    game_tiles = [file for file in listdir("tiles/game/") if isfile(join("tiles/game/", file))] #load all the image files within the directory
+    ui_tiles = [file for file in listdir("tiles/ui/") if isfile(join("tiles/ui/", file))]
 
-    tile_table = {} #init dictionary
-
-    for savedfile in tilefiles:
+    game_tile_dict = {} #init dictionary
+    ui_tile_dict = {}
+    
+    #save game tiles
+    for savedfile in game_tiles:
         image = pygame.image.load("tiles/game/" + savedfile).convert_alpha()
 
         tile_name, tile_height, tile_width = graphicPropertiesFromFilename(savedfile)
-        
-        tile_table[tile_name] = (image, tile_height, tile_width)
 
-    return tile_table
+        game_tile_dict[tile_name] = (image, tile_height, tile_width)
+
+    #save ui tiles
+    for savedfile in ui_tiles:
+        image = pygame.image.load("tiles/ui/" + savedfile).convert_alpha()
+
+        tile_name, tile_height, tile_width = graphicPropertiesFromFilename(savedfile)
+
+        ui_tile_dict[tile_name] = (image, tile_height, tile_width)        
+        
+    return game_tile_dict, ui_tile_dict
 
 '''
 Interpic
 '''
 
-def showTitleScreen(screen, tileset):
+def showTitleScreen(screen, tileset, ui_tiles):
     started_game = False
     titlepic_level = Map(1)
     clock = pygame.time.Clock()
+    dave_logo = AnimatedTile("davelogo", 0)
+    overlay = Scenery("blacktile", 0)
     
     while not started_game:
         pygame.display.update()
@@ -155,6 +151,8 @@ def showTitleScreen(screen, tileset):
         screen.setXPosition(14, titlepic_level.getWidth())
         screen.printMap(titlepic_level, tileset)
         screen.printTitlepicBorder(tileset)
+        screen.printTile(104, 0, dave_logo.getGraphic(ui_tiles), False)   
+        screen.printTile(0, 166, overlay.getGraphic(ui_tiles), False)
         
         for event in pygame.event.get():
             if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
@@ -164,6 +162,9 @@ def showTitleScreen(screen, tileset):
 
         pygame.display.flip()
         clock.tick(200)
+        
+    #clear top on exiting
+    screen.printTile(0, 0, overlay.getGraphic(ui_tiles), False)
         
     return 1
 
@@ -227,14 +228,13 @@ def main():
     
     ##Init tiles
     ''' TODO: UNIFY '''
-    tileset = load_game_tiles()
-    ui_tileset = load_ui_tiles()
+    tileset, ui_tileset = load_game_tiles()
     
     game_open = True
     
     while game_open:
         ##Show title screen
-        option = showTitleScreen(game_screen, tileset)
+        option = showTitleScreen(game_screen, tileset, ui_tileset)
       
         #if player presses escape, close game
         if option == 0:
@@ -329,7 +329,7 @@ def main():
                         GamePlayer.takeLife()
                         clear_top_ui(ui_tileset,game_screen.getDisplay())
                         print_ui_initial(ui_tileset, game_screen.getDisplay(), GamePlayer, 1)
-                        DeathPuff = AnimatedSprite("explosion", 0)
+                        DeathPuff = AnimatedTile("explosion", 0)
                         death_timer = 120
                     
                     player_position_y += 0.25
