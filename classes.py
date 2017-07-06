@@ -17,15 +17,15 @@ BOTTOM_OVERLAY_POS = 166
 
 ANIMATION_VELOCITY = 2
 
-BOUNDARY_DISTANCE_TRIGGER = 25
+BOUNDARY_DISTANCE_TRIGGER = 32
 
 SCREEN_WIDTH = 320 * TILE_SCALE_FACTOR
 SCREEN_HEIGHT = 200 * TILE_SCALE_FACTOR
 
-NUM_OF_LEVELS = 7
+NUM_OF_LEVELS = 8
 
 GAME_FONT = "Comic Sans MS"
-GAME_FONT_SIZE = 30
+GAME_FONT_SIZE = 10 * TILE_SCALE_FACTOR
 
 class DIRECTION(Enum):
     LEFT = -1
@@ -124,10 +124,8 @@ class Screen(object):
     def printTile(self, x, y, tile_graphic, game_tile=True):
         scaled_x = x * TILE_SCALE_FACTOR
         scaled_y = y * TILE_SCALE_FACTOR    
-    
-        # print the tile only if it's out of the UI or if it's a UI tile
-        if (y > self.GAME_SCREEN_START) and (y < self.GAME_SCREEN_END) or not game_tile:
-            self.display.blit(tile_graphic, (scaled_x, scaled_y))
+
+        self.display.blit(tile_graphic, (scaled_x, scaled_y))
  
     def printMap(self, map, tileset):
         for y, row in enumerate(map.getNodeMatrix()):
@@ -135,13 +133,17 @@ class Screen(object):
                 tile = map.getNode(x,y)
                 absolute_y = y * HEIGHT_OF_MAP_NODE
                 
-                # won't print the first line, neither other tiles that aren't in the game screen (considering the current x position)
-                if self.isXInScreen(x) and (absolute_y > self.GAME_SCREEN_START) and (absolute_y < self.GAME_SCREEN_END):
+                # won't print other tiles that aren't in the game screen (considering the current x position)
+                if self.isXInScreen(x):
                     adjusted_x = x - self.x_pos                                     #print the tile accordingly to the screen shift
                     absolute_x = adjusted_x * WIDTH_OF_MAP_NODE                     #store the x pos in pixels
                     tile_graphic = tile.getGraphic(tileset)                         #get the tile graphic
                     self.printTile(absolute_x, absolute_y, tile_graphic)
 
+    def printOverlays(self, top_overlay, bottom_overlay, ui_tileset):
+        self.printTile(0, TOP_OVERLAY_POS, top_overlay.getGraphic(ui_tileset), False)
+        self.printTile(0, BOTTOM_OVERLAY_POS, bottom_overlay.getGraphic(ui_tileset), False)
+                    
     def printText(self, text, x, y):
         scaled_x = x * TILE_SCALE_FACTOR
         scaled_y = y * TILE_SCALE_FACTOR
@@ -165,7 +167,7 @@ class Screen(object):
                     absolute_y = y * HEIGHT_OF_MAP_NODE
                     self.printTile(absolute_x, absolute_y, Scenery().getGraphic(tileset))
                     
-    def moveScreenX(self, map, amount, tileset):
+    def moveScreenX(self, map, amount, tileset, top_overlay, bottom_overlay, ui_tileset):
         screen_shift = 0
         reached_level_left_boundary = (self.x_pos <= 0)
         reached_level_right_boundary = (self.x_pos + self.getWidthInTiles() >= map.getWidth())
@@ -173,6 +175,8 @@ class Screen(object):
         #going left
         while (screen_shift > amount) and not reached_level_left_boundary:
             self.printMap(map, tileset)
+            self.printOverlays(top_overlay, bottom_overlay, ui_tileset)
+            
             pygame.display.flip()
 
             screen_shift -= self.SCREEN_SHIFTING_VELOCITY
@@ -182,6 +186,7 @@ class Screen(object):
         #going right
         while (screen_shift < amount) and not reached_level_right_boundary:
             self.printMap(map, tileset)
+            self.printOverlays(top_overlay, bottom_overlay, ui_tileset)
             pygame.display.flip()
             
             screen_shift += self.SCREEN_SHIFTING_VELOCITY
@@ -324,8 +329,9 @@ class Map(object):
         ErrorSpawnerNotFound()
                     
     def getCollisionType(self, x, y):
+        #out of the map
         if not self.validateCoordinates(x, y):
-            ErrorInvalidValue()
+            return COLLISION.NONE
     
         solid = isinstance(self.node_matrix[y][x], Solid)
         item = isinstance(self.node_matrix[y][x], Item)
@@ -345,8 +351,6 @@ class Map(object):
 
     def checkPlayerCollision(self, player_x, player_y, player_width, player_height, solid_only=False):
         TOLERANCE_VALUE = 3 #the dave can walk a little bit "into" the blocks
-        
-        ''' TODO: TEST X AND Y MAYBE? '''
         
         x_left = int((player_x + TOLERANCE_VALUE) // WIDTH_OF_MAP_NODE)
         y_top = int(player_y // HEIGHT_OF_MAP_NODE)
@@ -384,9 +388,7 @@ class Map(object):
         
         return shot
         
-    def checkShotCollision(self, shot_x, shot_y, shot_width=12, shot_height=3):
-        ''' TODO: TEST X AND Y MAYBE?'''
-    
+    def checkShotCollision(self, shot_x, shot_y, shot_width=12, shot_height=3):    
         x_left = int(shot_x // 16)
         y_top = int(shot_y // 16)
         x_right = int((shot_x + shot_width-1) // 16)
@@ -561,7 +563,7 @@ class Tile(object):
 
         #if the gfx_id is -1, print black scenery instead
         if(self.gfx_id == -1):
-            return pygame.Surface((tile_width * TILE_SCALE_FACTOR, tile_height * TILE_SCALE_FACTOR))
+            return pygame.Surface((16 * TILE_SCALE_FACTOR, 16 * TILE_SCALE_FACTOR))
 
         desired_tile_pos = self.gfx_id * tile_width
 
@@ -1142,10 +1144,9 @@ class Player(Dynamic):
             # climb (already climbing)
             elif self.cur_state in [STATE.FLY, STATE.CLIMB]:
                 self.velocity_y = - self.MAX_SPEED_Y
-                # fall off tree (by the top)
+                # jump off tree (by the top)
                 if self.cur_state == STATE.CLIMB and self.inventory["tree"] == 0:
-                    self.setCurrentState(STATE.FALL)
-                    self.velocity_y = self.MAX_SPEED_Y  
+                    self.setCurrentState(STATE.JUMP)
                     
         if k_leftarrow or k_rightarrow:
             # set the direction accordingly
@@ -1343,7 +1344,7 @@ class Player(Dynamic):
     def updatePosition(self, player_x, player_y, level):  
         # First, check collisions in the current position (without moving)
         self.processCollisionsInCurrentPosition(player_x, player_y, level)
-
+        
         # Checks if the player walked into a pit
         walked_into_pit = (not level.isPlayerCollidingWithSolid(player_x, player_y + 1))
         if self.cur_state == STATE.WALK and walked_into_pit:

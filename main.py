@@ -212,7 +212,6 @@ def showInterpic(completed_levels, screen, tileset, ui_tileset):
     player_reached_boundary = (player_absolute_x >= screen.getUnscaledWidth())
 
     while not player_reached_boundary:
-  
         for event in pygame.event.get():
             if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                 return True
@@ -227,8 +226,7 @@ def showInterpic(completed_levels, screen, tileset, ui_tileset):
         else:
             screen.printText(intertext, screen.getUnscaledWidth()/2 - intertext_width/(2*TILE_SCALE_FACTOR), 50)
         #print overlays
-        screen.printTile(0, TOP_OVERLAY_POS, top_overlay.getGraphic(ui_tileset), False)
-        screen.printTile(0, BOTTOM_OVERLAY_POS, bottom_overlay.getGraphic(ui_tileset), False)
+        screen.printOverlays(top_overlay, bottom_overlay, ui_tileset)
         #print player
         screen.printPlayer(player, player_absolute_x, player_absolute_y, tileset)
 
@@ -282,7 +280,7 @@ def main():
       
         ##Init level and spawner
         current_level_number = 1
-        current_spawner_id = 0
+        current_spawner_id = 1
 
         ##Available Keys
         movement_keys = [pygame.K_UP, pygame.K_LEFT, pygame.K_RIGHT, pygame.K_DOWN]
@@ -344,6 +342,10 @@ def main():
                 if GamePlayer.getCurrentState() != STATE.DESTROY:
                     (player_position_x, player_position_y) = GamePlayer.updatePosition(player_position_x, player_position_y, Level)
                     
+                # if the player is out of the screen bottom boundary (fell), send him to the top
+                if player_position_y >= game_screen.getUnscaledHeight():
+                    player_position_y = 0
+                    
                 # update friendly shot position, if there is one
                 if friendly_shot:
                     friendly_shot_x = friendly_shot.updatePosition(friendly_shot_x, friendly_shot_y, Level)
@@ -370,11 +372,11 @@ def main():
                     
                     if death_timer == 0:
                         death_timer = -1
-                        game_screen.setXPosition(0, Level.getWidth())
+                        game_screen.setXPosition(Level.getPlayerSpawnerPosition(current_spawner_id)[0] - 10, Level.getWidth())
                         del DeathPuff
                         
                         if (GamePlayer.resetPosAndState() != -1):
-                            (player_position_x, player_position_y) = Level.getPlayerSpawnerPosition(0)
+                            (player_position_x, player_position_y) = Level.getPlayerSpawnerPosition(current_spawner_id)
                             player_position_x *= WIDTH_OF_MAP_NODE
                             player_position_y *= HEIGHT_OF_MAP_NODE
                         else:
@@ -389,10 +391,10 @@ def main():
 
                 # move screen left
                 if player_close_to_left_boundary and not reached_level_left_boundary:
-                    game_screen.moveScreenX(Level, -15, tileset)
+                    game_screen.moveScreenX(Level, -15, tileset, top_overlay, bottom_overlay, ui_tileset)
                 # move screen right
                 elif player_close_to_right_boundary and not reached_level_right_boundary:
-                    game_screen.moveScreenX(Level, 15, tileset)
+                    game_screen.moveScreenX(Level, 15, tileset, top_overlay, bottom_overlay, ui_tileset)
                 # not moving (just update the screen)
                 else:
                     game_screen.printMap(Level, tileset)
@@ -415,8 +417,11 @@ def main():
                         game_screen.printTile(player_position_x - game_screen.getXPositionInPixelsUnscaled(), player_position_y, DeathPuff.getGraphic(tileset))
 
                 # update UI
-                game_screen.printTile(0, TOP_OVERLAY_POS, top_overlay.getGraphic(ui_tileset), False)
-                game_screen.printTile(0, BOTTOM_OVERLAY_POS, bottom_overlay.getGraphic(ui_tileset), False)
+                game_screen.printOverlays(top_overlay, bottom_overlay, ui_tileset)
+                ''' TODO : FIX THIS FUNCTION '''
+                #clear_top_ui(ui_tileset,game_screen.getDisplay())
+                clear_bottom_ui(ui_tileset,game_screen.getDisplay())
+                print_ui_initial(ui_tileset, game_screen.getDisplay(), GamePlayer, 1)
                 
                 if not ended_level:
                     if GamePlayer.inventory["gun"] == 1:
@@ -430,8 +435,7 @@ def main():
                 
                 if score_ui != GamePlayer.score:
                     update_ui_score(ui_tileset,game_screen.display,GamePlayer.score)
-                    score_ui = GamePlayer.score
-                
+                    score_ui = GamePlayer.score                
                     
                 pygame.display.flip()
                 pygame.event.pump() 
@@ -439,6 +443,7 @@ def main():
 
             # Onto the next level
             current_level_number += 1
+            current_spawner_id = 0
 
             if current_level_number > NUM_OF_LEVELS and ended_level and not ended_game:
                 showCreditsScreen(game_screen, tileset)
