@@ -1,6 +1,9 @@
+import math
+
 from classes import *
 from os import listdir
 from os.path import isfile, join
+
 
 '''
 User interface (invetory, scores, etc)
@@ -38,16 +41,24 @@ def update_ui_score(ui_tileset,game_display,score):
         game_display.blit(cropBlockFromGraphic(ui_tileset["numbers"], current_number, 8,11,10), (60*TILE_SCALE_FACTOR+8*index*TILE_SCALE_FACTOR,0)) #X offset+each number offset
 
 def update_ui_trophy(ui_tileset,game_display):
-    game_display.blit(cropBlockFromGraphic(ui_tileset["gothrudoortext"], 0, 172,14), (70*TILE_SCALE_FACTOR,192*TILE_SCALE_FACTOR))
+    game_display.blit(cropBlockFromGraphic(ui_tileset["gothrudoortext"], 0, 172,14), (70*TILE_SCALE_FACTOR,184*TILE_SCALE_FACTOR))
 
 def update_ui_gun(ui_tileset,game_display):
-    game_display.blit(cropBlockFromGraphic(ui_tileset["gunicon"], 0, 16,11), (285*TILE_SCALE_FACTOR,176*TILE_SCALE_FACTOR))
-    game_display.blit(cropBlockFromGraphic(ui_tileset["guntext"], 0, 27,11), (240*TILE_SCALE_FACTOR,176*TILE_SCALE_FACTOR))
+    game_display.blit(cropBlockFromGraphic(ui_tileset["gunicon"], 0, 16,11), (285*TILE_SCALE_FACTOR,170*TILE_SCALE_FACTOR))
+    game_display.blit(cropBlockFromGraphic(ui_tileset["guntext"], 0, 27,11), (240*TILE_SCALE_FACTOR,170*TILE_SCALE_FACTOR))
 
-def update_ui_jetpack(ui_tileset,game_display):
-    game_display.blit(cropBlockFromGraphic(ui_tileset["jetpacktext"], 0, 62,11), (0,176*TILE_SCALE_FACTOR))
-    game_display.blit(cropBlockFromGraphic(ui_tileset["jetpackmeter"], 0, 128,12), (70*TILE_SCALE_FACTOR,176*TILE_SCALE_FACTOR))
+def update_ui_jetpack(ui_tileset,game_display, jetpackquantity):
+    game_display.blit(cropBlockFromGraphic(ui_tileset["jetpacktext"], 0, 62,11), (0,170*TILE_SCALE_FACTOR))
+    game_display.blit(cropBlockFromGraphic(ui_tileset["jetpackmeter"], 0, 128,12), (70*TILE_SCALE_FACTOR,170*TILE_SCALE_FACTOR))
+    for index in range(math.floor(jetpackquantity*61)):
+        game_display.blit(cropBlockFromGraphic(ui_tileset["jetpackbar"], 0, 2,6), ((73+2*index)*TILE_SCALE_FACTOR,173*TILE_SCALE_FACTOR))
 
+def clear_bottom_ui(ui_tileset,game_display):
+    game_display.blit(cropBlockFromGraphic(ui_tileset["blacktile"], 0, 320,50), (0,170*TILE_SCALE_FACTOR))
+        
+def clear_top_ui(ui_tileset,game_display):
+    game_display.blit(cropBlockFromGraphic(ui_tileset["blacktile"], 0, 320,50), (0,0))
+        
 '''TODO: UNIFY THIS FUNCTION WITH load_tiles'''
 ## returns dictionary
 def load_ui_tiles():
@@ -156,14 +167,15 @@ def showTitleScreen(screen, tileset):
         
     return 1
 
-def showInterpic(completed_levels, screen, tileset):
+def showInterpic(completed_levels, screen, tileset, ui_tileset):
     Interpic = Map("interpic")
 
     clock = pygame.time.Clock()
 
     screen.setXPosition(0, Interpic.getWidth())    
     screen.printMap(Interpic, tileset)
-
+    clear_bottom_ui(ui_tileset, screen.display)
+    
     #init player
     (player, player_absolute_x, player_absolute_y) = Interpic.initPlayer(0, 0, 0)
 
@@ -183,6 +195,7 @@ def showInterpic(completed_levels, screen, tileset):
 
         #print map
         screen.printMap(Interpic, tileset)
+        screen.printOverlay(ui_tileset)
         #print player
         screen.printPlayer(player, player_absolute_x, player_absolute_y, tileset)
 
@@ -260,11 +273,8 @@ def main():
             # UI Inits
             print_ui_initial(ui_tileset, game_screen.getDisplay(), GamePlayer, 1)
             score_ui = 0 #initial score, everytime it changes, we update the ui
-            trophy_ui = False #initial score, everytime it changes, we update the ui
-
-            ''' TODO: THIS SHOULD BE INSIDE THE NEXT LOOP? '''
-            update_ui_gun(ui_tileset, game_screen.display)
-            update_ui_jetpack(ui_tileset, game_screen.display)
+            trophy_ui = False 
+            jetpack_ui = False 
 
             # level processing controller
             ended_level = False
@@ -317,6 +327,8 @@ def main():
                     ''' TODO: REFACTOR '''
                     if death_timer == -1:
                         GamePlayer.takeLife()
+                        clear_top_ui(ui_tileset,game_screen.getDisplay())
+                        print_ui_initial(ui_tileset, game_screen.getDisplay(), GamePlayer, 1)
                         DeathPuff = AnimatedSprite("explosion", 0)
                         death_timer = 120
                     
@@ -371,15 +383,25 @@ def main():
 
                 # update UI
                 ''' TODO: PUT THIS INSIDE A HELPER FUNCTION? '''
+                game_screen.printOverlay(ui_tileset)
+                
+                if not ended_level:
+                    if GamePlayer.inventory["gun"] == 1:
+                        update_ui_gun(ui_tileset, game_screen.display)
+                    if GamePlayer.inventory["jetpack"] == 1 or jetpack_ui :
+                        update_ui_jetpack(ui_tileset, game_screen.display, GamePlayer.inventory["jetpack"])
+                        jetpack_ui = True
+                    if not trophy_ui and GamePlayer.inventory["trophy"] == 1:
+                        update_ui_trophy(ui_tileset,game_screen.display)
+                        trophy_ui = True
+                
                 if score_ui != GamePlayer.score:
                     update_ui_score(ui_tileset,game_screen.display,GamePlayer.score)
                     score_ui = GamePlayer.score
-                if not trophy_ui and GamePlayer.inventory["trophy"] == 1:
-                    update_ui_trophy(ui_tileset,game_screen.display)
-                    trophy_ui = True
+                
                     
                 pygame.display.flip()
-                pygame.event.pump()
+                pygame.event.pump() 
                 clock.tick(200)
 
             # Onto the next level
@@ -389,7 +411,7 @@ def main():
                 showCreditsScreen(game_screen, tileset)
                 ended_game = True
             elif ended_level and not ended_game:
-                option = showInterpic(current_level_number, game_screen, tileset)
+                option = showInterpic(current_level_number, game_screen, tileset, ui_tileset)
                 ended_game = option
                 game_open = not option
                 
