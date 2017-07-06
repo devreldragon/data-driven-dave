@@ -145,6 +145,18 @@ def showTitleScreen(screen, tileset, ui_tiles):
     dave_logo = AnimatedTile("davelogo", 0)
     overlay = Scenery("blacktile", 0)
     
+    #clear screen on entering
+    screen.clearScreen()
+    
+    #init font
+    davefont = pygame.font.SysFont(GAME_FONT, GAME_FONT_SIZE)
+    creator_text = davefont.render("MADE BY ARTHUR, CATTANI AND MURILO", 1, (255, 255, 255))
+    creator_text_width = creator_text.get_rect().width
+    instr1_text = davefont.render("PRESS SPACE TO START", 1, (255, 255, 255))
+    instr1_text_width = instr1_text.get_rect().width
+    instr2_text = davefont.render("PRESSING ESC AT ANY MOMENT EXITS", 1, (255, 255, 255))
+    instr2_text_width = instr2_text.get_rect().width
+    
     while not started_game:
         pygame.display.update()
         
@@ -152,7 +164,11 @@ def showTitleScreen(screen, tileset, ui_tiles):
         screen.printMap(titlepic_level, tileset)
         screen.printTitlepicBorder(tileset)
         screen.printTile(104, 0, dave_logo.getGraphic(ui_tiles), False)   
-        screen.printTile(0, 166, overlay.getGraphic(ui_tiles), False)
+        screen.printTile(0, BOTTOM_OVERLAY_POS, overlay.getGraphic(ui_tiles), False)
+        
+        screen.printText(creator_text, screen.getUnscaledWidth()/2 - creator_text_width/(2*TILE_SCALE_FACTOR), 47)
+        screen.printText(instr1_text, screen.getUnscaledWidth()/2 - instr1_text_width/(2*TILE_SCALE_FACTOR), BOTTOM_OVERLAY_POS)
+        screen.printText(instr2_text, screen.getUnscaledWidth()/2 - instr2_text_width/(2*TILE_SCALE_FACTOR), BOTTOM_OVERLAY_POS+12)
         
         for event in pygame.event.get():
             if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
@@ -163,8 +179,8 @@ def showTitleScreen(screen, tileset, ui_tiles):
         pygame.display.flip()
         clock.tick(200)
         
-    #clear top on exiting
-    screen.printTile(0, 0, overlay.getGraphic(ui_tiles), False)
+    #clear screen on exiting
+    screen.clearScreen()
         
     return 1
 
@@ -176,10 +192,19 @@ def showInterpic(completed_levels, screen, tileset, ui_tileset):
     screen.setXPosition(0, Interpic.getWidth())    
     screen.printMap(Interpic, tileset)
     clear_bottom_ui(ui_tileset, screen.display)
+    top_overlay = Scenery("topoverlay", 0)
+    bottom_overlay = Scenery("bottomoverlay", 0)
     
     #init player
     (player, player_absolute_x, player_absolute_y) = Interpic.initPlayer(0, 0, 0)
 
+    #init font
+    davefont = pygame.font.SysFont(GAME_FONT, GAME_FONT_SIZE)
+    intertext = davefont.render("GOOD WORK! ONLY " + str(NUM_OF_LEVELS - completed_levels) + " MORE TO GO!", 1, (255, 255, 255))
+    intertext_width = intertext.get_rect().width
+    last_level_text = davefont.render("THIS IS THE LAST LEVEL", 1, (255, 255, 255))
+    last_level_text_width = last_level_text.get_rect().width
+    
     player.setCurrentState(STATE.WALK)
     player.setSpriteDirection(DIRECTION.RIGHT)
 
@@ -196,7 +221,14 @@ def showInterpic(completed_levels, screen, tileset, ui_tileset):
 
         #print map
         screen.printMap(Interpic, tileset)
-        screen.printOverlay(ui_tileset)
+        #print text
+        if completed_levels == NUM_OF_LEVELS-1:
+            screen.printText(last_level_text, screen.getUnscaledWidth()/2 - last_level_text_width/(2*TILE_SCALE_FACTOR), 50)
+        else:
+            screen.printText(intertext, screen.getUnscaledWidth()/2 - intertext_width/(2*TILE_SCALE_FACTOR), 50)
+        #print overlays
+        screen.printTile(0, TOP_OVERLAY_POS, top_overlay.getGraphic(ui_tileset), False)
+        screen.printTile(0, BOTTOM_OVERLAY_POS, bottom_overlay.getGraphic(ui_tileset), False)
         #print player
         screen.printPlayer(player, player_absolute_x, player_absolute_y, tileset)
 
@@ -227,8 +259,9 @@ def main():
     game_screen = Screen(SCREEN_WIDTH, SCREEN_HEIGHT)
     
     ##Init tiles
-    ''' TODO: UNIFY '''
     tileset, ui_tileset = load_game_tiles()
+    top_overlay = Scenery("topoverlay", 0)
+    bottom_overlay = Scenery("bottomoverlay", 0)
     
     game_open = True
     
@@ -382,8 +415,8 @@ def main():
                         game_screen.printTile(player_position_x - game_screen.getXPositionInPixelsUnscaled(), player_position_y, DeathPuff.getGraphic(tileset))
 
                 # update UI
-                ''' TODO: PUT THIS INSIDE A HELPER FUNCTION? '''
-                game_screen.printOverlay(ui_tileset)
+                game_screen.printTile(0, TOP_OVERLAY_POS, top_overlay.getGraphic(ui_tileset), False)
+                game_screen.printTile(0, BOTTOM_OVERLAY_POS, bottom_overlay.getGraphic(ui_tileset), False)
                 
                 if not ended_level:
                     if GamePlayer.inventory["gun"] == 1:

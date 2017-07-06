@@ -9,9 +9,12 @@ import pygame
 Constants and enumerations
 '''
 
-TILE_SCALE_FACTOR = 2
+TILE_SCALE_FACTOR = 3
 WIDTH_OF_MAP_NODE = 16
 HEIGHT_OF_MAP_NODE = 16
+TOP_OVERLAY_POS = 12
+BOTTOM_OVERLAY_POS = 166
+
 ANIMATION_VELOCITY = 2
 
 BOUNDARY_DISTANCE_TRIGGER = 25
@@ -20,6 +23,9 @@ SCREEN_WIDTH = 320 * TILE_SCALE_FACTOR
 SCREEN_HEIGHT = 200 * TILE_SCALE_FACTOR
 
 NUM_OF_LEVELS = 7
+
+GAME_FONT = "Comic Sans MS"
+GAME_FONT_SIZE = 30
 
 class DIRECTION(Enum):
     LEFT = -1
@@ -109,6 +115,9 @@ class Screen(object):
     Other methods
     '''
         
+    def clearScreen(self):
+        self.display.fill((0,0,0))
+        
     def isXInScreen(self, x):
         return (x >= self.x_pos) and (x < self.x_pos + self.getWidthInTiles())
 
@@ -119,22 +128,7 @@ class Screen(object):
         # print the tile only if it's out of the UI or if it's a UI tile
         if (y > self.GAME_SCREEN_START) and (y < self.GAME_SCREEN_END) or not game_tile:
             self.display.blit(tile_graphic, (scaled_x, scaled_y))
-
-    def cropBlockFromGraphic(self,image, index, size_x, size_y, num_of_blocks=1):
-        x_index = index % num_of_blocks
-        x_index_pixel = x_index * size_x
-
-        #select the tile to crop (y is always 0)
-        rectangle = (x_index_pixel, 0, size_x, size_y)
-        size_of_rectangle = (size_x * TILE_SCALE_FACTOR, size_y * TILE_SCALE_FACTOR)
-        cropped_tile = pygame.transform.scale(image.subsurface(rectangle), size_of_rectangle)
-        return cropped_tile        
-            
-    def printOverlay(self, ui_tileset):
-        for x in range(10): #bottom overlay starts at y=166px
-            self.display.blit(self.cropBlockFromGraphic(ui_tileset["topoverlay"][0], 0, 32 ,4),(x*32*TILE_SCALE_FACTOR,12*TILE_SCALE_FACTOR))
-            self.display.blit(self.cropBlockFromGraphic(ui_tileset["bottomoverlay"][0], 0, 32 ,18),(x*32*TILE_SCALE_FACTOR,166*TILE_SCALE_FACTOR))
-
+ 
     def printMap(self, map, tileset):
         for y, row in enumerate(map.getNodeMatrix()):
             for x, col in enumerate(row):
@@ -148,7 +142,11 @@ class Screen(object):
                     tile_graphic = tile.getGraphic(tileset)                         #get the tile graphic
                     self.printTile(absolute_x, absolute_y, tile_graphic)
 
-            
+    def printText(self, text, x, y):
+        scaled_x = x * TILE_SCALE_FACTOR
+        scaled_y = y * TILE_SCALE_FACTOR
+        
+        self.display.blit(text, (scaled_x, scaled_y))
         
     def printPlayer(self, player, player_x, player_y, tileset):
         player_graphic = player.getGraphic(tileset) 
@@ -1083,8 +1081,8 @@ class Player(Dynamic):
     Constants
     '''
 
-    MAX_SPEED_X = 0.4 * TILE_SCALE_FACTOR
-    MAX_SPEED_Y = 0.4 * TILE_SCALE_FACTOR
+    MAX_SPEED_X = 0.6 
+    MAX_SPEED_Y = 0.6
     X_SPEED_FACTOR = 0.75   #factor to be used when not falling (x speed only hits its maximum when falling)
     
     JUMP_SPEED = 0.8
