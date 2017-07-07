@@ -147,10 +147,12 @@ def showInterpic(completed_levels, screen, GamePlayer, tileset, ui_tileset):
 
     #init font
     davefont = pygame.font.SysFont(GAME_FONT, GAME_FONT_SIZE)
-    intertext = davefont.render("GOOD WORK! ONLY " + str(NUM_OF_LEVELS - completed_levels) + " MORE TO GO!", 1, (255, 255, 255))
+    intertext = davefont.render("GOOD WORK! ONLY " + str(NUM_OF_LEVELS - completed_levels + 1) + " MORE TO GO!", 1, (255, 255, 255))
     intertext_width = intertext.get_rect().width
-    last_level_text = davefont.render("THIS IS THE LAST LEVEL", 1, (255, 255, 255))
+    last_level_text = davefont.render("THIS IS THE LAST LEVEL!!!", 1, (255, 255, 255))
     last_level_text_width = last_level_text.get_rect().width
+    finish_text = davefont.render("YES! YOU FINISHED THE GAME!!", 1, (255, 255, 255))
+    finish_text_width = finish_text.get_rect().width
     
     player.setCurrentState(STATE.WALK)
     player.setSpriteDirection(DIRECTION.RIGHT)
@@ -170,7 +172,9 @@ def showInterpic(completed_levels, screen, GamePlayer, tileset, ui_tileset):
         #print text
         screen.printUi(ui_tileset, GamePlayer, completed_levels-1)
         #print text
-        if completed_levels == NUM_OF_LEVELS-1:
+        if completed_levels == NUM_OF_LEVELS+1:
+            screen.printText(finish_text, screen.getUnscaledWidth()/2 - finish_text_width/(2*TILE_SCALE_FACTOR), 50)
+        elif completed_levels == NUM_OF_LEVELS:
             screen.printText(last_level_text, screen.getUnscaledWidth()/2 - last_level_text_width/(2*TILE_SCALE_FACTOR), 50)
         else:
             screen.printText(intertext, screen.getUnscaledWidth()/2 - intertext_width/(2*TILE_SCALE_FACTOR), 50)
@@ -228,7 +232,7 @@ def main():
         GamePlayer = Player()
       
         ##Init level and spawner
-        current_level_number = 1
+        current_level_number = 8
         current_spawner_id = 0
 
         ##Available Keys

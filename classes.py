@@ -22,7 +22,7 @@ BOUNDARY_DISTANCE_TRIGGER = 32
 SCREEN_WIDTH = 320 * TILE_SCALE_FACTOR
 SCREEN_HEIGHT = 200 * TILE_SCALE_FACTOR
 
-NUM_OF_LEVELS = 8
+NUM_OF_LEVELS = 10
 
 GAME_FONT = "Comic Sans MS"
 GAME_FONT_SIZE = 10 * TILE_SCALE_FACTOR
@@ -308,15 +308,6 @@ class Screen(object):
             self.x_pos = level_width - self.getWidthInTiles()
         else:
             self.x_pos = x_position
-            
-    '''
-    TODO: Does this work? Do we need it?
-    def setDisplay(self, new_display):
-        if not isinstance(new_display, pygame.display):
-            ErrorInvalidValue()
-        else:
-            self.display = new_display
-            '''
 
             
 class Map(object):
@@ -1358,7 +1349,7 @@ class Player(Dynamic):
         self.score += item.getScore()
         
         #if the player got to a certain score, give one life to him
-        if isinstance(self.score/5000, int):
+        if self.score % 5000 == 0:
             self.give_life()
 
         level.clearNode(x, y)
