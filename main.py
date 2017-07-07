@@ -5,59 +5,6 @@ from os import listdir
 from os.path import isfile, join
 
 
-'''
-User interface (invetory, scores, etc)
-'''
-
-def print_ui_initial(ui_tileset,game_display,player,level_number):
-    #print("Printing initial UI")
-
-    #score text
-    game_display.blit(cropBlockFromGraphic(ui_tileset["scoretext"][0], 0, 54,11), (0,0))
-    leadingzeroes_score = str(player.score).zfill(5)
-    for index in range(5):
-        current_number = int(leadingzeroes_score[index] )
-        game_display.blit(cropBlockFromGraphic(ui_tileset["numbers"][0], current_number, 8,11, 10), (60*TILE_SCALE_FACTOR+8*index*TILE_SCALE_FACTOR,0))
-
-    #level text
-    game_display.blit(cropBlockFromGraphic(ui_tileset["leveltext"][0], 0, 45,11), (120*TILE_SCALE_FACTOR,0))
-    leadingzeroes_level = str(level_number).zfill(2)
-    for index in range(2):
-        current_level = int(leadingzeroes_level[index] )
-        game_display.blit(cropBlockFromGraphic(ui_tileset["numbers"][0], current_level, 8,11, 10), (170*TILE_SCALE_FACTOR+8*index*TILE_SCALE_FACTOR,0))
-
-    #daves text
-    game_display.blit(cropBlockFromGraphic(ui_tileset["davestext"][0], 0, 50,11), (210*TILE_SCALE_FACTOR,0))
-    for index in range(player.lives):
-        game_display.blit(cropBlockFromGraphic(ui_tileset["daveicon"][0], 0, 14,12), (270*TILE_SCALE_FACTOR+index*14*TILE_SCALE_FACTOR,0))
-
-def update_ui_score(ui_tileset,game_display,score):
-    #print("Updating UI")
-    #score text
-    game_display.blit(cropBlockFromGraphic(ui_tileset["scoretext"][0], 0, 54,11), (0,0))
-    leadingzeroes_score = str(score).zfill(5)
-    for index in range(5):
-        current_number = int(leadingzeroes_score[index] )
-        game_display.blit(cropBlockFromGraphic(ui_tileset["numbers"][0], current_number, 8,11,10), (60*TILE_SCALE_FACTOR+8*index*TILE_SCALE_FACTOR,0)) #X offset+each number offset
-
-def update_ui_trophy(ui_tileset,game_display):
-    game_display.blit(cropBlockFromGraphic(ui_tileset["gothrudoortext"][0], 0, 172,14), (70*TILE_SCALE_FACTOR,184*TILE_SCALE_FACTOR))
-
-def update_ui_gun(ui_tileset,game_display):
-    game_display.blit(cropBlockFromGraphic(ui_tileset["gunicon"][0], 0, 16,11), (285*TILE_SCALE_FACTOR,170*TILE_SCALE_FACTOR))
-    game_display.blit(cropBlockFromGraphic(ui_tileset["guntext"][0], 0, 27,11), (240*TILE_SCALE_FACTOR,170*TILE_SCALE_FACTOR))
-
-def update_ui_jetpack(ui_tileset,game_display, jetpackquantity):
-    game_display.blit(cropBlockFromGraphic(ui_tileset["jetpacktext"][0], 0, 62,11), (0,170*TILE_SCALE_FACTOR))
-    game_display.blit(cropBlockFromGraphic(ui_tileset["jetpackmeter"][0], 0, 128,12), (70*TILE_SCALE_FACTOR,170*TILE_SCALE_FACTOR))
-    for index in range(math.floor(jetpackquantity*61)):
-        game_display.blit(cropBlockFromGraphic(ui_tileset["jetpackbar"][0], 0, 2,6), ((73+2*index)*TILE_SCALE_FACTOR,173*TILE_SCALE_FACTOR))
-
-def clear_bottom_ui(ui_tileset,game_display):
-    game_display.blit(cropBlockFromGraphic(ui_tileset["blacktile"][0], 0, 320,50), (0,170*TILE_SCALE_FACTOR))
-        
-def clear_top_ui(ui_tileset,game_display):
-    game_display.blit(cropBlockFromGraphic(ui_tileset["blacktile"][0], 0, 320,50), (0,0))
 
 '''
 Tile and gfxs
@@ -184,14 +131,14 @@ def showTitleScreen(screen, tileset, ui_tiles):
         
     return 1
 
-def showInterpic(completed_levels, screen, tileset, ui_tileset):
+def showInterpic(completed_levels, screen, GamePlayer, tileset, ui_tileset):
     Interpic = Map("interpic")
 
     clock = pygame.time.Clock()
 
     screen.setXPosition(0, Interpic.getWidth())    
     screen.printMap(Interpic, tileset)
-    clear_bottom_ui(ui_tileset, screen.display)
+    screen.clearBottomUi(ui_tileset)
     top_overlay = Scenery("topoverlay", 0)
     bottom_overlay = Scenery("bottomoverlay", 0)
     
@@ -220,6 +167,8 @@ def showInterpic(completed_levels, screen, tileset, ui_tileset):
 
         #print map
         screen.printMap(Interpic, tileset)
+        #print text
+        screen.printUi(ui_tileset, GamePlayer, completed_levels-1)
         #print text
         if completed_levels == NUM_OF_LEVELS-1:
             screen.printText(last_level_text, screen.getUnscaledWidth()/2 - last_level_text_width/(2*TILE_SCALE_FACTOR), 50)
@@ -280,7 +229,7 @@ def main():
       
         ##Init level and spawner
         current_level_number = 1
-        current_spawner_id = 1
+        current_spawner_id = 0
 
         ##Available Keys
         movement_keys = [pygame.K_UP, pygame.K_LEFT, pygame.K_RIGHT, pygame.K_DOWN]
@@ -302,9 +251,7 @@ def main():
             friendly_shot = 0
 
             # UI Inits
-            print_ui_initial(ui_tileset, game_screen.getDisplay(), GamePlayer, 1)
             score_ui = 0 #initial score, everytime it changes, we update the ui
-            trophy_ui = False 
             jetpack_ui = False 
 
             # level processing controller
@@ -362,8 +309,6 @@ def main():
                     ''' TODO: REFACTOR '''
                     if death_timer == -1:
                         GamePlayer.takeLife()
-                        clear_top_ui(ui_tileset,game_screen.getDisplay())
-                        print_ui_initial(ui_tileset, game_screen.getDisplay(), GamePlayer, 1)
                         DeathPuff = AnimatedTile("explosion", 0)
                         death_timer = 120
                     
@@ -418,23 +363,20 @@ def main():
 
                 # update UI
                 game_screen.printOverlays(top_overlay, bottom_overlay, ui_tileset)
-                ''' TODO : FIX THIS FUNCTION '''
-                #clear_top_ui(ui_tileset,game_screen.getDisplay())
-                clear_bottom_ui(ui_tileset,game_screen.getDisplay())
-                print_ui_initial(ui_tileset, game_screen.getDisplay(), GamePlayer, 1)
+                game_screen.printUi(ui_tileset, GamePlayer, current_level_number)
                 
                 if not ended_level:
                     if GamePlayer.inventory["gun"] == 1:
-                        update_ui_gun(ui_tileset, game_screen.display)
+                        updateUiGun(ui_tileset)
                     if GamePlayer.inventory["jetpack"] == 1 or jetpack_ui :
-                        update_ui_jetpack(ui_tileset, game_screen.display, GamePlayer.inventory["jetpack"])
+                        game_screen.updateUiJetpack(ui_tileset, GamePlayer.inventory["jetpack"])
                         jetpack_ui = True
-                    if not trophy_ui and GamePlayer.inventory["trophy"] == 1:
-                        update_ui_trophy(ui_tileset,game_screen.display)
-                        trophy_ui = True
+                    if GamePlayer.inventory["trophy"] == 1:
+                        game_screen.updateUiTrophy(ui_tileset)
+                        
                 
                 if score_ui != GamePlayer.score:
-                    update_ui_score(ui_tileset,game_screen.display,GamePlayer.score)
+                    game_screen.updateUiScore(ui_tileset,GamePlayer.score)
                     score_ui = GamePlayer.score                
                     
                 pygame.display.flip()
@@ -444,12 +386,12 @@ def main():
             # Onto the next level
             current_level_number += 1
             current_spawner_id = 0
-
+            
             if current_level_number > NUM_OF_LEVELS and ended_level and not ended_game:
                 showCreditsScreen(game_screen, tileset)
                 ended_game = True
             elif ended_level and not ended_game:
-                option = showInterpic(current_level_number, game_screen, tileset, ui_tileset)
+                option = showInterpic(current_level_number, game_screen, GamePlayer, tileset, ui_tileset)
                 ended_game = option
                 game_open = not option
                 

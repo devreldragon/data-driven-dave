@@ -140,16 +140,6 @@ class Screen(object):
                     tile_graphic = tile.getGraphic(tileset)                         #get the tile graphic
                     self.printTile(absolute_x, absolute_y, tile_graphic)
 
-    def printOverlays(self, top_overlay, bottom_overlay, ui_tileset):
-        self.printTile(0, TOP_OVERLAY_POS, top_overlay.getGraphic(ui_tileset), False)
-        self.printTile(0, BOTTOM_OVERLAY_POS, bottom_overlay.getGraphic(ui_tileset), False)
-                    
-    def printText(self, text, x, y):
-        scaled_x = x * TILE_SCALE_FACTOR
-        scaled_y = y * TILE_SCALE_FACTOR
-        
-        self.display.blit(text, (scaled_x, scaled_y))
-        
     def printPlayer(self, player, player_x, player_y, tileset):
         player_graphic = player.getGraphic(tileset) 
         player.copyDirectionToSprite()
@@ -192,6 +182,79 @@ class Screen(object):
             screen_shift += self.SCREEN_SHIFTING_VELOCITY
             self.x_pos += self.SCREEN_SHIFTING_VELOCITY 
             reached_level_right_boundary = (self.x_pos + self.getWidthInTiles() >= map.getWidth())      
+          
+    '''
+    UI Methods
+    ''' 
+    def cropBlockFromGraphic(self, image, index, size_x, size_y, num_of_blocks=1):
+        x_index = index % num_of_blocks
+        x_index_pixel = x_index * size_x
+
+        #select the tile to crop (y is always 0)
+        rectangle = (x_index_pixel, 0, size_x, size_y)
+        size_of_rectangle = (size_x * TILE_SCALE_FACTOR, size_y * TILE_SCALE_FACTOR)
+        cropped_tile = pygame.transform.scale(image.subsurface(rectangle), size_of_rectangle)
+        return cropped_tile    
+        
+    def printOverlays(self, top_overlay, bottom_overlay, ui_tileset):
+        self.printTile(0, TOP_OVERLAY_POS, top_overlay.getGraphic(ui_tileset), False)
+        self.printTile(0, BOTTOM_OVERLAY_POS, bottom_overlay.getGraphic(ui_tileset), False)
+                    
+    def printText(self, text, x, y):
+        scaled_x = x * TILE_SCALE_FACTOR
+        scaled_y = y * TILE_SCALE_FACTOR
+        
+        self.display.blit(text, (scaled_x, scaled_y))
+     
+    def printUi(self, ui_tileset, player,level_number):
+        #print("Printing initial UI")
+
+        #score text
+        self.display.blit(self.cropBlockFromGraphic(ui_tileset["scoretext"][0], 0, 54,11), (0,0))
+        leadingzeroes_score = str(player.score).zfill(5)
+        for index in range(5):
+            current_number = int(leadingzeroes_score[index] )
+            self.display.blit(self.cropBlockFromGraphic(ui_tileset["numbers"][0], current_number, 8,11, 10), (60*TILE_SCALE_FACTOR+8*index*TILE_SCALE_FACTOR,0))
+
+        #level text
+        self.display.blit(self.cropBlockFromGraphic(ui_tileset["leveltext"][0], 0, 45,11), (120*TILE_SCALE_FACTOR,0))
+        leadingzeroes_level = str(level_number).zfill(2)
+        for index in range(2):
+            current_level = int(leadingzeroes_level[index] )
+            self.display.blit(self.cropBlockFromGraphic(ui_tileset["numbers"][0], current_level, 8,11, 10), (170*TILE_SCALE_FACTOR+8*index*TILE_SCALE_FACTOR,0))
+
+        #daves text
+        self.display.blit(self.cropBlockFromGraphic(ui_tileset["davestext"][0], 0, 50,11), (210*TILE_SCALE_FACTOR,0))
+        for index in range(player.lives):
+            self.display.blit(self.cropBlockFromGraphic(ui_tileset["daveicon"][0], 0, 14,12), (270*TILE_SCALE_FACTOR+index*14*TILE_SCALE_FACTOR,0))
+
+    def updateUiScore(self, ui_tileset,score):
+        #print("Updating UI")
+        #score text
+        self.display.blit(self.cropBlockFromGraphic(ui_tileset["scoretext"][0], 0, 54,11), (0,0))
+        leadingzeroes_score = str(score).zfill(5)
+        for index in range(5):
+            current_number = int(leadingzeroes_score[index] )
+            self.display.blit(self.cropBlockFromGraphic(ui_tileset["numbers"][0], current_number, 8,11,10), (60*TILE_SCALE_FACTOR+8*index*TILE_SCALE_FACTOR,0)) #X offset+each number offset
+
+    def updateUiTrophy(self, ui_tileset):
+        self.display.blit(self.cropBlockFromGraphic(ui_tileset["gothrudoortext"][0], 0, 172,14), (70*TILE_SCALE_FACTOR,184*TILE_SCALE_FACTOR))
+
+    def updateUiGun(self, ui_tileset):
+        self.display.blit(self.cropBlockFromGraphic(ui_tileset["gunicon"][0], 0, 16,11), (285*TILE_SCALE_FACTOR,170*TILE_SCALE_FACTOR))
+        self.display.blit(self.cropBlockFromGraphic(ui_tileset["guntext"][0], 0, 27,11), (240*TILE_SCALE_FACTOR,170*TILE_SCALE_FACTOR))
+
+    def updateUiJetpack(self, ui_tileset, jetpackquantity):
+        self.display.blit(self.cropBlockFromGraphic(ui_tileset["jetpacktext"][0], 0, 62,11), (0,170*TILE_SCALE_FACTOR))
+        self.display.blit(self.cropBlockFromGraphic(ui_tileset["jetpackmeter"][0], 0, 128,12), (70*TILE_SCALE_FACTOR,170*TILE_SCALE_FACTOR))
+        for index in range(floor(jetpackquantity*61)):
+            self.display.blit(self.cropBlockFromGraphic(ui_tileset["jetpackbar"][0], 0, 2,6), ((73+2*index)*TILE_SCALE_FACTOR,173*TILE_SCALE_FACTOR))
+
+    def clearBottomUi(self, ui_tileset):
+        self.display.blit(self.cropBlockFromGraphic(ui_tileset["blacktile"][0], 0, 320,50), (0,170*TILE_SCALE_FACTOR))
+       
+            
+            
             
     '''
     Getters and setters
@@ -1311,7 +1374,6 @@ class Player(Dynamic):
         #player collided with a hazard
         elif element.getType() == INTSCENERYTYPE.HAZARD:
             self.setCurrentState(STATE.DESTROY)
-            self.takeLife()
         #player has contact with a tree
         elif element.getType() == INTSCENERYTYPE.TREE:
             self.inventory["tree"] = 1
