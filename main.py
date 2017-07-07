@@ -4,8 +4,6 @@ from classes import *
 from os import listdir
 from os.path import isfile, join
 
-
-
 '''
 Tile and gfxs
 '''
@@ -33,17 +31,6 @@ def splitStringIntoLettersAndNumbers(string):
 
     return split_string
 
-## crop a set of tiles, getting the block in index X
-def cropBlockFromGraphic(image, index, size_x, size_y, num_of_blocks=1):
-    x_index = index % num_of_blocks
-    x_index_pixel = x_index * size_x
-
-    #select the tile to crop (y is always 0)
-    rectangle = (x_index_pixel, 0, size_x, size_y)
-    size_of_rectangle = (size_x * TILE_SCALE_FACTOR, size_y * TILE_SCALE_FACTOR)
-    cropped_tile = pygame.transform.scale(image.subsurface(rectangle), size_of_rectangle)
-    return cropped_tile
-
 ## get name and size properties from filename
 def graphicPropertiesFromFilename(filename):
     split_filename = splitStringIntoLettersAndNumbers(filename)
@@ -54,7 +41,6 @@ def graphicPropertiesFromFilename(filename):
 
     return (name, height, width)
 
-''' TODO: UNIFY THIS FUNCTION WITH load_ui_tiles '''
 ## returns dictionary
 def load_game_tiles():
     game_tiles = [file for file in listdir("tiles/game/") if isfile(join("tiles/game/", file))] #load all the image files within the directory
@@ -97,8 +83,10 @@ def showTitleScreen(screen, tileset, ui_tiles):
     
     #init font
     davefont = pygame.font.SysFont(GAME_FONT, GAME_FONT_SIZE)
-    creator_text = davefont.render("MADE BY ARTHUR, CATTANI AND MURILO", 1, (255, 255, 255))
+    creator_text = davefont.render("RECREATED BY ARTHUR, CATTANI AND MURILO", 1, (255, 255, 255))
     creator_text_width = creator_text.get_rect().width
+    professor_text = davefont.render("PROFESSOR LEANDRO K. WIVES", 1, (255, 255, 255))
+    professor_text_width = professor_text.get_rect().width
     instr1_text = davefont.render("PRESS SPACE TO START", 1, (255, 255, 255))
     instr1_text_width = instr1_text.get_rect().width
     instr2_text = davefont.render("PRESSING ESC AT ANY MOMENT EXITS", 1, (255, 255, 255))
@@ -110,12 +98,13 @@ def showTitleScreen(screen, tileset, ui_tiles):
         screen.setXPosition(14, titlepic_level.getWidth())
         screen.printMap(titlepic_level, tileset)
         screen.printTitlepicBorder(tileset)
-        screen.printTile(104, 0, dave_logo.getGraphic(ui_tiles), False)   
-        screen.printTile(0, BOTTOM_OVERLAY_POS, overlay.getGraphic(ui_tiles), False)
+        screen.printTile(104, 0, dave_logo.getGraphic(ui_tiles))   
+        screen.printTile(0, BOTTOM_OVERLAY_POS, overlay.getGraphic(ui_tiles))
         
         screen.printText(creator_text, screen.getUnscaledWidth()/2 - creator_text_width/(2*TILE_SCALE_FACTOR), 47)
-        screen.printText(instr1_text, screen.getUnscaledWidth()/2 - instr1_text_width/(2*TILE_SCALE_FACTOR), BOTTOM_OVERLAY_POS)
-        screen.printText(instr2_text, screen.getUnscaledWidth()/2 - instr2_text_width/(2*TILE_SCALE_FACTOR), BOTTOM_OVERLAY_POS+12)
+        screen.printText(professor_text, screen.getUnscaledWidth()/2 - professor_text_width/(2*TILE_SCALE_FACTOR), 55)
+        screen.printText(instr1_text, screen.getUnscaledWidth()/2 - instr1_text_width/(2*TILE_SCALE_FACTOR), BOTTOM_OVERLAY_POS+2)
+        screen.printText(instr2_text, screen.getUnscaledWidth()/2 - instr2_text_width/(2*TILE_SCALE_FACTOR), BOTTOM_OVERLAY_POS+11)
         
         for event in pygame.event.get():
             if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
@@ -169,17 +158,18 @@ def showInterpic(completed_levels, screen, GamePlayer, tileset, ui_tileset):
 
         #print map
         screen.printMap(Interpic, tileset)
+        #print overlays
+        screen.printOverlays(ui_tileset)
         #print text
         screen.printUi(ui_tileset, GamePlayer, completed_levels-1)
         #print text
         if completed_levels == NUM_OF_LEVELS+1:
-            screen.printText(finish_text, screen.getUnscaledWidth()/2 - finish_text_width/(2*TILE_SCALE_FACTOR), 50)
+            screen.printText(finish_text, screen.getUnscaledWidth()/2 - finish_text_width/(2*TILE_SCALE_FACTOR), 54)
         elif completed_levels == NUM_OF_LEVELS:
-            screen.printText(last_level_text, screen.getUnscaledWidth()/2 - last_level_text_width/(2*TILE_SCALE_FACTOR), 50)
+            screen.printText(last_level_text, screen.getUnscaledWidth()/2 - last_level_text_width/(2*TILE_SCALE_FACTOR), 54)
         else:
-            screen.printText(intertext, screen.getUnscaledWidth()/2 - intertext_width/(2*TILE_SCALE_FACTOR), 50)
-        #print overlays
-        screen.printOverlays(top_overlay, bottom_overlay, ui_tileset)
+            screen.printText(intertext, screen.getUnscaledWidth()/2 - intertext_width/(2*TILE_SCALE_FACTOR), 54)
+        
         #print player
         screen.printPlayer(player, player_absolute_x, player_absolute_y, tileset)
 
@@ -211,9 +201,6 @@ def main():
     
     ##Init tiles
     tileset, ui_tileset = load_game_tiles()
-    top_overlay = Scenery("topoverlay", 0)
-    bottom_overlay = Scenery("bottomoverlay", 0)
-    
     game_open = True
     
     while game_open:
@@ -232,7 +219,7 @@ def main():
         GamePlayer = Player()
       
         ##Init level and spawner
-        current_level_number = 8
+        current_level_number = 1
         current_spawner_id = 0
 
         ##Available Keys
@@ -340,10 +327,10 @@ def main():
 
                 # move screen left
                 if player_close_to_left_boundary and not reached_level_left_boundary:
-                    game_screen.moveScreenX(Level, -15, tileset, top_overlay, bottom_overlay, ui_tileset)
+                    game_screen.moveScreenX(Level, -15, tileset, ui_tileset, GamePlayer, current_level_number)
                 # move screen right
                 elif player_close_to_right_boundary and not reached_level_right_boundary:
-                    game_screen.moveScreenX(Level, 15, tileset, top_overlay, bottom_overlay, ui_tileset)
+                    game_screen.moveScreenX(Level, 15, tileset, ui_tileset, GamePlayer, current_level_number)
                 # not moving (just update the screen)
                 else:
                     game_screen.printMap(Level, tileset)
@@ -366,12 +353,12 @@ def main():
                         game_screen.printTile(player_position_x - game_screen.getXPositionInPixelsUnscaled(), player_position_y, DeathPuff.getGraphic(tileset))
 
                 # update UI
-                game_screen.printOverlays(top_overlay, bottom_overlay, ui_tileset)
+                game_screen.printOverlays(ui_tileset)
                 game_screen.printUi(ui_tileset, GamePlayer, current_level_number)
                 
                 if not ended_level:
                     if GamePlayer.inventory["gun"] == 1:
-                        updateUiGun(ui_tileset)
+                        game_screen.updateUiGun(ui_tileset)
                     if GamePlayer.inventory["jetpack"] == 1 or jetpack_ui :
                         game_screen.updateUiJetpack(ui_tileset, GamePlayer.inventory["jetpack"])
                         jetpack_ui = True
@@ -380,7 +367,7 @@ def main():
                         
                 
                 if score_ui != GamePlayer.score:
-                    game_screen.updateUiScore(ui_tileset,GamePlayer.score)
+                    game_screen.updateUiScore(GamePlayer.score, ui_tileset)
                     score_ui = GamePlayer.score                
                     
                 pygame.display.flip()

@@ -24,8 +24,8 @@ SCREEN_HEIGHT = 200 * TILE_SCALE_FACTOR
 
 NUM_OF_LEVELS = 10
 
-GAME_FONT = "Comic Sans MS"
-GAME_FONT_SIZE = 10 * TILE_SCALE_FACTOR
+GAME_FONT = "Consolas"
+GAME_FONT_SIZE = 8 * TILE_SCALE_FACTOR
 
 class DIRECTION(Enum):
     LEFT = -1
@@ -55,12 +55,6 @@ class STATE(Enum):
     CLIMB = 4
     BLINK = 5
     DESTROY = 6 
-    
-''' TODO : CHECK IF THIS IS NECESSARY '''
-class EQUIPTYPE(Enum):
-    TROPHY = 0
-    GUN = 1
-    JETPACK = 2
     
 '''
 Errors
@@ -121,7 +115,7 @@ class Screen(object):
     def isXInScreen(self, x):
         return (x >= self.x_pos) and (x < self.x_pos + self.getWidthInTiles())
 
-    def printTile(self, x, y, tile_graphic, game_tile=True):
+    def printTile(self, x, y, tile_graphic):
         scaled_x = x * TILE_SCALE_FACTOR
         scaled_y = y * TILE_SCALE_FACTOR    
 
@@ -157,7 +151,7 @@ class Screen(object):
                     absolute_y = y * HEIGHT_OF_MAP_NODE
                     self.printTile(absolute_x, absolute_y, Scenery().getGraphic(tileset))
                     
-    def moveScreenX(self, map, amount, tileset, top_overlay, bottom_overlay, ui_tileset):
+    def moveScreenX(self, map, amount, tileset, ui_tileset, player, level_number):
         screen_shift = 0
         reached_level_left_boundary = (self.x_pos <= 0)
         reached_level_right_boundary = (self.x_pos + self.getWidthInTiles() >= map.getWidth())
@@ -165,7 +159,8 @@ class Screen(object):
         #going left
         while (screen_shift > amount) and not reached_level_left_boundary:
             self.printMap(map, tileset)
-            self.printOverlays(top_overlay, bottom_overlay, ui_tileset)
+            self.printOverlays(ui_tileset)
+            self.printUi(ui_tileset, player, level_number)
             
             pygame.display.flip()
 
@@ -176,7 +171,9 @@ class Screen(object):
         #going right
         while (screen_shift < amount) and not reached_level_right_boundary:
             self.printMap(map, tileset)
-            self.printOverlays(top_overlay, bottom_overlay, ui_tileset)
+            self.printOverlays(ui_tileset)
+            self.printUi(ui_tileset, player, level_number)
+            
             pygame.display.flip()
             
             screen_shift += self.SCREEN_SHIFTING_VELOCITY
@@ -185,20 +182,13 @@ class Screen(object):
           
     '''
     UI Methods
-    ''' 
-    def cropBlockFromGraphic(self, image, index, size_x, size_y, num_of_blocks=1):
-        x_index = index % num_of_blocks
-        x_index_pixel = x_index * size_x
-
-        #select the tile to crop (y is always 0)
-        rectangle = (x_index_pixel, 0, size_x, size_y)
-        size_of_rectangle = (size_x * TILE_SCALE_FACTOR, size_y * TILE_SCALE_FACTOR)
-        cropped_tile = pygame.transform.scale(image.subsurface(rectangle), size_of_rectangle)
-        return cropped_tile    
+    '''
         
-    def printOverlays(self, top_overlay, bottom_overlay, ui_tileset):
-        self.printTile(0, TOP_OVERLAY_POS, top_overlay.getGraphic(ui_tileset), False)
-        self.printTile(0, BOTTOM_OVERLAY_POS, bottom_overlay.getGraphic(ui_tileset), False)
+    def printOverlays(self, ui_tileset):
+        top_overlay = Scenery("topoverlay", 0)
+        bottom_overlay = Scenery("bottomoverlay", 0)
+        self.printTile(0, 0, top_overlay.getGraphic(ui_tileset))
+        self.printTile(0, BOTTOM_OVERLAY_POS, bottom_overlay.getGraphic(ui_tileset))
                     
     def printText(self, text, x, y):
         scaled_x = x * TILE_SCALE_FACTOR
@@ -206,54 +196,69 @@ class Screen(object):
         
         self.display.blit(text, (scaled_x, scaled_y))
      
-    def printUi(self, ui_tileset, player,level_number):
-        #print("Printing initial UI")
+    def printUi(self, ui_tileset, player, level_number):
+        self.updateUiScore(player.getScore(), ui_tileset)
+        self.updateUiLevel(level_number, ui_tileset)
+        self.updateUiDaves(player.getLives(), ui_tileset)
 
+    def updateUiScore(self, score, ui_tileset):
         #score text
-        self.display.blit(self.cropBlockFromGraphic(ui_tileset["scoretext"][0], 0, 54,11), (0,0))
-        leadingzeroes_score = str(player.score).zfill(5)
-        for index in range(5):
-            current_number = int(leadingzeroes_score[index] )
-            self.display.blit(self.cropBlockFromGraphic(ui_tileset["numbers"][0], current_number, 8,11, 10), (60*TILE_SCALE_FACTOR+8*index*TILE_SCALE_FACTOR,0))
-
-        #level text
-        self.display.blit(self.cropBlockFromGraphic(ui_tileset["leveltext"][0], 0, 45,11), (120*TILE_SCALE_FACTOR,0))
-        leadingzeroes_level = str(level_number).zfill(2)
-        for index in range(2):
-            current_level = int(leadingzeroes_level[index] )
-            self.display.blit(self.cropBlockFromGraphic(ui_tileset["numbers"][0], current_level, 8,11, 10), (170*TILE_SCALE_FACTOR+8*index*TILE_SCALE_FACTOR,0))
-
-        #daves text
-        self.display.blit(self.cropBlockFromGraphic(ui_tileset["davestext"][0], 0, 50,11), (210*TILE_SCALE_FACTOR,0))
-        for index in range(player.lives):
-            self.display.blit(self.cropBlockFromGraphic(ui_tileset["daveicon"][0], 0, 14,12), (270*TILE_SCALE_FACTOR+index*14*TILE_SCALE_FACTOR,0))
-
-    def updateUiScore(self, ui_tileset,score):
-        #print("Updating UI")
-        #score text
-        self.display.blit(self.cropBlockFromGraphic(ui_tileset["scoretext"][0], 0, 54,11), (0,0))
+        score_text = Scenery("scoretext", 0)
+        self.printTile(0, 0, score_text.getGraphic(ui_tileset))
+        
+        #score amount
+        numbers = Scenery("numbers", 0)
         leadingzeroes_score = str(score).zfill(5)
-        for index in range(5):
-            current_number = int(leadingzeroes_score[index] )
-            self.display.blit(self.cropBlockFromGraphic(ui_tileset["numbers"][0], current_number, 8,11,10), (60*TILE_SCALE_FACTOR+8*index*TILE_SCALE_FACTOR,0)) #X offset+each number offset
+        for digit in range(5):
+            numbers.setGfxId(int(leadingzeroes_score[digit]))            
+            self.printTile(60 + 8 * digit, 0, numbers.getGraphic(ui_tileset))
 
+    def updateUiLevel(self, level_number, ui_tileset):
+        #level text
+        level_text = Scenery("leveltext", 0)
+        self.printTile(120, 0, level_text.getGraphic(ui_tileset))
+        
+        #level number
+        numbers = Scenery("numbers", 0)
+        leadingzeroes_level = str(level_number).zfill(2)
+        for digit in range(2):
+            numbers.setGfxId(int(leadingzeroes_level[digit]))
+            self.printTile(170 + 8 * digit, 0, numbers.getGraphic(ui_tileset))
+            
+    def updateUiDaves(self, life_amount, ui_tileset):
+        #daves text
+        daves_text = Scenery("davestext", 0)
+        self.printTile(210, 0, daves_text.getGraphic(ui_tileset))
+        
+        #life amount
+        dave_icon = Scenery("daveicon", 0)
+        for index in range(life_amount):
+            self.printTile(270 + 14 * index, 0, dave_icon.getGraphic(ui_tileset))
+            
     def updateUiTrophy(self, ui_tileset):
-        self.display.blit(self.cropBlockFromGraphic(ui_tileset["gothrudoortext"][0], 0, 172,14), (70*TILE_SCALE_FACTOR,184*TILE_SCALE_FACTOR))
+        text = Scenery("gothrudoortext", 0)
+        self.printTile(70, 184, text.getGraphic(ui_tileset))
 
     def updateUiGun(self, ui_tileset):
-        self.display.blit(self.cropBlockFromGraphic(ui_tileset["gunicon"][0], 0, 16,11), (285*TILE_SCALE_FACTOR,170*TILE_SCALE_FACTOR))
-        self.display.blit(self.cropBlockFromGraphic(ui_tileset["guntext"][0], 0, 27,11), (240*TILE_SCALE_FACTOR,170*TILE_SCALE_FACTOR))
+        gun_icon = Scenery("gunicon", 0)
+        gun_text = Scenery("guntext", 0)
+        self.printTile(285, 170, gun_icon.getGraphic(ui_tileset))
+        self.printTile(240, 170, gun_text.getGraphic(ui_tileset))
 
-    def updateUiJetpack(self, ui_tileset, jetpackquantity):
-        self.display.blit(self.cropBlockFromGraphic(ui_tileset["jetpacktext"][0], 0, 62,11), (0,170*TILE_SCALE_FACTOR))
-        self.display.blit(self.cropBlockFromGraphic(ui_tileset["jetpackmeter"][0], 0, 128,12), (70*TILE_SCALE_FACTOR,170*TILE_SCALE_FACTOR))
-        for index in range(floor(jetpackquantity*61)):
-            self.display.blit(self.cropBlockFromGraphic(ui_tileset["jetpackbar"][0], 0, 2,6), ((73+2*index)*TILE_SCALE_FACTOR,173*TILE_SCALE_FACTOR))
-
-    def clearBottomUi(self, ui_tileset):
-        self.display.blit(self.cropBlockFromGraphic(ui_tileset["blacktile"][0], 0, 320,50), (0,170*TILE_SCALE_FACTOR))
-       
+    def updateUiJetpack(self, ui_tileset, gas_amount):
+        jetpack_text = Scenery("jetpacktext", 0)
+        jetpack_meter = Scenery("jetpackmeter", 0)
+        jetpack_bar = Scenery("jetpackbar", 0)
+        
+        self.printTile(0, 170, jetpack_text.getGraphic(ui_tileset))
+        self.printTile(70, 170, jetpack_meter.getGraphic(ui_tileset))
+        
+        for index in range(floor(gas_amount * 61)):
+            self.printTile(73 + 2 * index, 173, jetpack_bar.getGraphic(ui_tileset))
             
+    def clearBottomUi(self, ui_tileset):
+        black_tile = Scenery("blacktile", 0)
+        self.printTile(0, 170, black_tile.getGraphic(ui_tileset))            
             
             
     '''
@@ -1313,7 +1318,7 @@ class Player(Dynamic):
     
     ## Inventory : START
     def decJetpackGasoline(self):
-        self.inventory["jetpack"] -= 0.0025
+        self.inventory["jetpack"] -= 0.001
         #fix floating point problems
         if self.inventory["jetpack"] < 0:
             self.inventory["jetpack"] = 0  
@@ -1350,7 +1355,7 @@ class Player(Dynamic):
         
         #if the player got to a certain score, give one life to him
         if self.score % 5000 == 0:
-            self.give_life()
+            self.giveLife()
 
         level.clearNode(x, y)
 
