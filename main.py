@@ -14,7 +14,6 @@ def splitStringIntoLettersAndNumbers(string):
     sub_string = ""
     index = 0
 
-    ''' TODO: REFACTOR? '''
     while index < len(string):
         if string[index].isalpha():
             while index < len(string) and string[index].isalpha():
@@ -72,110 +71,103 @@ Interpic
 '''
 
 def showTitleScreen(screen, tileset, ui_tiles):
+    clock = pygame.time.Clock()
+    
+    # init graphics
     started_game = False
     titlepic_level = Map(1)
-    clock = pygame.time.Clock()
     dave_logo = AnimatedTile("davelogo", 0)
     overlay = Scenery("blacktile", 0)
     
-    #clear screen on entering
+    # clear screen on entering
     screen.clearScreen()
     
-    #init font
-    davefont = pygame.font.SysFont(GAME_FONT, GAME_FONT_SIZE)
-    creator_text = davefont.render("RECREATED BY ARTHUR, CATTANI AND MURILO", 1, (255, 255, 255))
-    creator_text_width = creator_text.get_rect().width
-    professor_text = davefont.render("PROFESSOR LEANDRO K. WIVES", 1, (255, 255, 255))
-    professor_text_width = professor_text.get_rect().width
-    instr1_text = davefont.render("PRESS SPACE TO START", 1, (255, 255, 255))
-    instr1_text_width = instr1_text.get_rect().width
-    instr2_text = davefont.render("PRESSING ESC AT ANY MOMENT EXITS", 1, (255, 255, 255))
-    instr2_text_width = instr2_text.get_rect().width
+    # messages
+    creator_text = "RECREATED BY ARTHUR, CATTANI AND MURILO"
+    professor_text = "PROFESSOR LEANDRO K. WIVES"
+    instr1_text = "PRESS SPACE TO START"
+    instr2_text = "PRESSING ESC AT ANY MOMENT EXITS"
     
     while not started_game:
         pygame.display.update()
         
+        # print level and tiles
         screen.setXPosition(14, titlepic_level.getWidth())
         screen.printMap(titlepic_level, tileset)
         screen.printTitlepicBorder(tileset)
         screen.printTile(104, 0, dave_logo.getGraphic(ui_tiles))   
         screen.printTile(0, BOTTOM_OVERLAY_POS, overlay.getGraphic(ui_tiles))
         
-        screen.printText(creator_text, screen.getUnscaledWidth()/2 - creator_text_width/(2*TILE_SCALE_FACTOR), 47)
-        screen.printText(professor_text, screen.getUnscaledWidth()/2 - professor_text_width/(2*TILE_SCALE_FACTOR), 55)
-        screen.printText(instr1_text, screen.getUnscaledWidth()/2 - instr1_text_width/(2*TILE_SCALE_FACTOR), BOTTOM_OVERLAY_POS+2)
-        screen.printText(instr2_text, screen.getUnscaledWidth()/2 - instr2_text_width/(2*TILE_SCALE_FACTOR), BOTTOM_OVERLAY_POS+11)
+        # print text in center
+        screen.printTextAlignedInCenter(creator_text, 47)
+        screen.printTextAlignedInCenter(professor_text, 55)
+        screen.printTextAlignedInCenter(instr1_text, BOTTOM_OVERLAY_POS + 2)
+        screen.printTextAlignedInCenter(instr2_text, BOTTOM_OVERLAY_POS + 11)
         
+        # if player pressed escape, exit game; space, start game
         for event in pygame.event.get():
             if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
                 started_game = True  
             elif event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-                return 0
+                return True    # return 0 so we know player pressed escape
 
         pygame.display.flip()
         clock.tick(200)
         
-    #clear screen on exiting
+    # clear screen on exiting
     screen.clearScreen()
         
-    return 1
+    return False
 
 def showInterpic(completed_levels, screen, GamePlayer, tileset, ui_tileset):
-    Interpic = Map("interpic")
-
     clock = pygame.time.Clock()
-
-    screen.setXPosition(0, Interpic.getWidth())    
-    screen.printMap(Interpic, tileset)
+    
+    # init graphics
+    interpic_level = Map("interpic")
+    screen.setXPosition(0, interpic_level.getWidth())    
+    screen.printMap(interpic_level, tileset)
     screen.clearBottomUi(ui_tileset)
-    top_overlay = Scenery("topoverlay", 0)
-    bottom_overlay = Scenery("bottomoverlay", 0)
     
-    #init player
-    (player, player_absolute_x, player_absolute_y) = Interpic.initPlayer(0, 0, 0)
+    # init player
+    (player_absolute_x, player_absolute_y) = interpic_level.initPlayerPositions(0, GamePlayer)
+    GamePlayer.setCurrentState(STATE.WALK)
+    GamePlayer.setDirectionX(DIRECTION.RIGHT)
+    GamePlayer.setSpriteDirection(DIRECTION.RIGHT)
 
-    #init font
-    davefont = pygame.font.SysFont(GAME_FONT, GAME_FONT_SIZE)
-    intertext = davefont.render("GOOD WORK! ONLY " + str(NUM_OF_LEVELS - completed_levels + 1) + " MORE TO GO!", 1, (255, 255, 255))
-    intertext_width = intertext.get_rect().width
-    last_level_text = davefont.render("THIS IS THE LAST LEVEL!!!", 1, (255, 255, 255))
-    last_level_text_width = last_level_text.get_rect().width
-    finish_text = davefont.render("YES! YOU FINISHED THE GAME!!", 1, (255, 255, 255))
-    finish_text_width = finish_text.get_rect().width
+    # init messages
+    intertext = "GOOD WORK! ONLY " + str(NUM_OF_LEVELS - completed_levels + 1) + " MORE TO GO!"
+    last_level_text = "THIS IS THE LAST LEVEL!!!"
+    finish_text = "YES! YOU FINISHED THE GAME!!"
     
-    player.setCurrentState(STATE.WALK)
-    player.setSpriteDirection(DIRECTION.RIGHT)
-
-    #keep moving the player right, until it reaches the screen boundary
+    # keep moving the player right, until it reaches the screen boundary
     player_reached_boundary = (player_absolute_x >= screen.getUnscaledWidth())
 
     while not player_reached_boundary:
+        # if player pressed escape, quit game
         for event in pygame.event.get():
             if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-                return True
+                return True # return so we treat exiting externally
                 
-        player_absolute_x = player.movePlayerRight(player_absolute_x)
-
-        #print map
-        screen.printMap(Interpic, tileset)
-        #print overlays
-        screen.printOverlays(ui_tileset)
-        #print text
-        screen.printUi(ui_tileset, GamePlayer, completed_levels-1)
-        #print text
-        if completed_levels == NUM_OF_LEVELS+1:
-            screen.printText(finish_text, screen.getUnscaledWidth()/2 - finish_text_width/(2*TILE_SCALE_FACTOR), 54)
-        elif completed_levels == NUM_OF_LEVELS:
-            screen.printText(last_level_text, screen.getUnscaledWidth()/2 - last_level_text_width/(2*TILE_SCALE_FACTOR), 54)
-        else:
-            screen.printText(intertext, screen.getUnscaledWidth()/2 - intertext_width/(2*TILE_SCALE_FACTOR), 54)
+        # update player pos and animation
+        player_absolute_x = GamePlayer.movePlayerRight(player_absolute_x)
+        GamePlayer.updateAnimator()
         
-        #print player
-        screen.printPlayer(player, player_absolute_x, player_absolute_y, tileset)
+        # update screen
+        screen.printMap(interpic_level, tileset)
+        screen.printOverlays(ui_tileset)
+        screen.printUi(ui_tileset, GamePlayer, completed_levels-1)
+        screen.printPlayer(GamePlayer, player_absolute_x, player_absolute_y, tileset)
+        
+        # print text accordingly to the number of completed levels
+        if completed_levels == NUM_OF_LEVELS + 1:
+            screen.printTextAlignedInCenter(finish_text, 54)
+        elif completed_levels == NUM_OF_LEVELS:
+            screen.printTextAlignedInCenter(last_level_text, 54)
+        else:
+            screen.printTextAlignedInCenter(intertext, 54)
 
         player_reached_boundary = (player_absolute_x >= screen.getUnscaledWidth())
-
-        player.updateAnimator()
+        
         pygame.display.flip()
         clock.tick(200)
         
@@ -189,7 +181,11 @@ def savePlayerScore(player_score, screen, tileset):
         
 def showCreditsScreen(screen, tileset):
     pass
-        
+   
+'''
+Game processing stuff
+'''
+       
 '''
 Main
 '''
@@ -206,16 +202,11 @@ def main():
     while game_open:
         ##Show title screen
         option = showTitleScreen(game_screen, tileset, ui_tileset)
-      
+     
         #if player presses escape, close game
-        if option == 0:
-            break;
-      
-        ##Init game
-        ended_game = False
+        game_open = not option
         
-        ##Init a player so we can get initial scores and lives
-        ''' TODO: REFACTOR THIS ? '''
+        ##Init a player
         GamePlayer = Player()
       
         ##Init level and spawner
@@ -227,6 +218,8 @@ def main():
         inv_keys = [pygame.K_LCTRL, pygame.K_RCTRL, pygame.K_LALT, pygame.K_RALT]
 
         ##Game processing
+        ended_game = False
+
         while not ended_game:
             # init clock and display
             clock = pygame.time.Clock()
@@ -234,16 +227,18 @@ def main():
 
             # build the level and init screen and player positions
             Level = Map(current_level_number)
-            (GamePlayer, player_position_x, player_position_y) = Level.initPlayer(current_spawner_id, GamePlayer.getScore(), GamePlayer.getLives())
-            game_screen.setXPosition(Level.getPlayerSpawnerPosition(current_spawner_id)[0] - 10, Level.getWidth())
+            (player_position_x, player_position_y) = Level.initPlayerPositions(current_spawner_id, GamePlayer)
+            
+            spawner_pos_x = Level.getPlayerSpawnerPosition(current_spawner_id)[0]
+            game_screen.setXPosition(spawner_pos_x - 10, Level.getWidth())
+
+            # UI Inits
+            score_ui = 0 #initial score. Everytime it changes, we update the ui
+            jetpack_ui = False
             
             # init other sprites
             death_timer = -1
             friendly_shot = 0
-
-            # UI Inits
-            score_ui = 0 #initial score, everytime it changes, we update the ui
-            jetpack_ui = False 
 
             # level processing controller
             ended_level = False
@@ -253,16 +248,22 @@ def main():
             
                 # get keys (inventory)
                 for event in pygame.event.get():
+                    # stop moving
                     if event.type == pygame.KEYUP:
+                        # horizontally
                         if event.key in [pygame.K_LEFT, pygame.K_RIGHT] and GamePlayer.getCurrentState() in [STATE.WALK, STATE.FLY, STATE.JUMP, STATE.CLIMB]:
                             GamePlayer.clearXMovement()
+                        # vertically
                         elif event.key in [pygame.K_UP, pygame.K_DOWN] and GamePlayer.getCurrentState() in [STATE.FLY, STATE.CLIMB]:
                             GamePlayer.setVelocityY(0)
+                    # hit a key
                     elif event.type == pygame.KEYDOWN:
+                        # quit game
                         if event.key == pygame.K_ESCAPE:
                             game_open = False
                             ended_level = True
                             ended_game = True
+                        # use something from the inventory
                         elif event.key in inv_keys:
                             if GamePlayer.inventoryInput(inv_keys.index(event.key)) and not friendly_shot:
                                 friendly_shot = Level.spawnFriendlyFire(GamePlayer.getSpriteDirection())
@@ -278,11 +279,7 @@ def main():
 
                 # update the player position in the level and treat collisions
                 if GamePlayer.getCurrentState() != STATE.DESTROY:
-                    (player_position_x, player_position_y) = GamePlayer.updatePosition(player_position_x, player_position_y, Level)
-                    
-                # if the player is out of the screen bottom boundary (fell), send him to the top
-                if player_position_y >= game_screen.getUnscaledHeight():
-                    player_position_y = 0
+                    (player_position_x, player_position_y) = GamePlayer.updatePosition(player_position_x, player_position_y, Level, game_screen.getUnscaledHeight())
                     
                 # update friendly shot position, if there is one
                 if friendly_shot:

@@ -24,9 +24,6 @@ SCREEN_HEIGHT = 200 * TILE_SCALE_FACTOR
 
 NUM_OF_LEVELS = 10
 
-GAME_FONT = "Consolas"
-GAME_FONT_SIZE = 8 * TILE_SCALE_FACTOR
-
 class DIRECTION(Enum):
     LEFT = -1
     IDLE = 0
@@ -83,6 +80,7 @@ class Screen(object):
         width: integer represents the width of the screen in pixels
         height: integer represents the height of the screen in pixels
         x_pos: integer represents the X position of the screen inside the map (in tiles)
+        font: pygame.font is the font used in the game
         display: pygame.display contains the display used in pygame to display the screen
     '''
     
@@ -102,6 +100,7 @@ class Screen(object):
         self.width = width
         self.height = height
         self.x_pos = 0      
+        self.font = pygame.font.SysFont("Consolas", 8 * TILE_SCALE_FACTOR)
         self.display = pygame.display.set_mode((width, height))
         self.display.fill((0, 0, 0))  
         
@@ -191,10 +190,21 @@ class Screen(object):
         self.printTile(0, BOTTOM_OVERLAY_POS, bottom_overlay.getGraphic(ui_tileset))
                     
     def printText(self, text, x, y):
+        graphic_text = self.font.render(text, 1, (255, 255, 255))
+
         scaled_x = x * TILE_SCALE_FACTOR
         scaled_y = y * TILE_SCALE_FACTOR
         
-        self.display.blit(text, (scaled_x, scaled_y))
+        self.display.blit(graphic_text, (scaled_x, scaled_y))
+        
+    def printTextAlignedInCenter(self, text, y):
+        graphic_text = self.font.render(text, 1, (255, 255, 255))
+        graphic_text_width = graphic_text.get_rect().width
+        
+        scaled_x = self.width/2 - graphic_text_width/2
+        scaled_y = y * TILE_SCALE_FACTOR
+        
+        self.display.blit(graphic_text, (scaled_x, scaled_y))      
      
     def printUi(self, ui_tileset, player, level_number):
         self.updateUiScore(player.getScore(), ui_tileset)
@@ -259,7 +269,7 @@ class Screen(object):
     def clearBottomUi(self, ui_tileset):
         black_tile = Scenery("blacktile", 0)
         self.printTile(0, 170, black_tile.getGraphic(ui_tileset))            
-            
+        
             
     '''
     Getters and setters
@@ -434,7 +444,6 @@ class Map(object):
         
         return (COLLISION.NONE, (-1, -1))
 
-    ''' TODO : PLAYER SIZE '''
     def isPlayerCollidingWithSolid(self, player_x, player_y, player_width=20, player_height=16):
         return (self.checkPlayerCollision(player_x, player_y, player_width, player_height, True)[0] == COLLISION.SOLID)
 
@@ -500,9 +509,9 @@ class Map(object):
                 self.setNodeTile(x, y, tile_type)
                 x += 1
 
-    def initPlayer(self, spawner_id, player_score, player_lives):            
-        #init player and his positions
-        GamePlayer = Player()
+    def initPlayerPositions(self, spawner_id, player): 
+        player.setCurrentState(STATE.BLINK)
+        player.setDirectionX(DIRECTION.IDLE)
         playerPosition = self.getPlayerSpawnerPosition(spawner_id)
         
         #if the spawner isn't present, raise error
@@ -511,11 +520,8 @@ class Map(object):
         
         player_position_x = WIDTH_OF_MAP_NODE * playerPosition[0]
         player_position_y = HEIGHT_OF_MAP_NODE * playerPosition[1]
-
-        GamePlayer.setScore(player_score)
-        GamePlayer.setLives(player_lives)
         
-        return (GamePlayer, player_position_x, player_position_y)
+        return (player_position_x, player_position_y)
         
     def tileFromText(self, text_tile):
         #if the tile has an index, store it
@@ -1399,7 +1405,7 @@ class Player(Dynamic):
     ## Collision : END
     
     ## Update player position and process surroundings
-    def updatePosition(self, player_x, player_y, level):  
+    def updatePosition(self, player_x, player_y, level, screen_max_height):  
         # First, check collisions in the current position (without moving)
         self.processCollisionsInCurrentPosition(player_x, player_y, level)
         
@@ -1431,6 +1437,9 @@ class Player(Dynamic):
         # If jumping, gravity is acting upon the player
         if self.cur_state == STATE.JUMP:
             self.applyGravityOnJump()
+            
+        if player_newy >= screen_max_height:
+            player_newy = 0
         ## Move Y: END
 
         ## Jetpack gas: START
