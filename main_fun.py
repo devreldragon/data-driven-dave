@@ -8,64 +8,69 @@ from os.path import isfile, join
 Tile and gfxs
 '''
 
-## split a string separating numbers from letters
+## separate a string into letters and numbers
+def listEmpty(list):
+	return (list == [] or list == "")
+
+def popLast(list):
+	return [] if listEmpty(list[1:]) else [list[0]] + popLast(list[1:])
+	
+def getLastFromNonEmptyList(list):
+	return list[0] if listEmpty(list[1:]) else getLastFromNonEmptyList(list[1:])
+	
+def getLastFromList(list):
+	return "" if listEmpty(list) else getLastFromNonEmptyList(list)
+	
+def appendInLastAux(list_of_strings, new_list_of_strings, element):
+	return popLast(new_list_of_strings) + [getLastFromList(new_list_of_strings) + element] if listEmpty(list_of_strings) else appendInLastAux(list_of_strings[1:], new_list_of_strings + [list_of_strings[0]], element)
+
+def appendInLast(list_of_strings, element):
+	return appendInLastAux(list_of_strings, [], element)
+	
+def separateString(string, resulting_strings):
+	return resulting_strings if listEmpty(string) else (separateString(string[1:], appendInLast(resulting_strings, string[0])) if ((string[0].isdigit() and getLastFromList(getLastFromList(resulting_strings)).isdigit()) or (string[0].isalpha() and getLastFromList(getLastFromList(resulting_strings)).isalpha())) else separateString(string[1:], resulting_strings + [string[0]]))
+
 def splitStringIntoLettersAndNumbers(string):
-    split_string = []
-    sub_string = ""
-    index = 0
-
-    while index < len(string):
-        if string[index].isalpha():
-            while index < len(string) and string[index].isalpha():
-                sub_string += string[index]
-                index += 1
-        elif string[index].isdigit():
-             while index < len(string) and string[index].isdigit():
-                sub_string += string[index]
-                index += 1
-        else:
-            index += 1
-        split_string.append(sub_string)
-        sub_string = ""
-
-    return split_string
-
+	return separateString(string, [])
 
 ## get name and size properties from filename
 def graphicPropertiesFromFilename(filename):
-    split_filename = splitStringIntoLettersAndNumbers(filename)
+	return (splitStringIntoLettersAndNumbers(filename)[0], int(splitStringIntoLettersAndNumbers(filename)[3]), int(splitStringIntoLettersAndNumbers(filename)[1]))
 
-    name = split_filename[0]
-    height = int(split_filename[3])
-    width = int(split_filename[1])
-
-    return (name, height, width)
-
-## returns dictionary
-def load_game_tiles():
-    game_tiles = [file for file in listdir("tiles/game/") if isfile(join("tiles/game/", file))] #load all the image files within the directory
-    ui_tiles = [file for file in listdir("tiles/ui/") if isfile(join("tiles/ui/", file))]
-
-    game_tile_dict = {} #init dictionary
-    ui_tile_dict = {}
-    
-    #save game tiles
-    for savedfile in game_tiles:
-        image = pygame.image.load("tiles/game/" + savedfile).convert_alpha()
-
-        tile_name, tile_height, tile_width = graphicPropertiesFromFilename(savedfile)
-
-        game_tile_dict[tile_name] = (image, tile_height, tile_width)
-
-    #save ui tiles
-    for savedfile in ui_tiles:
-        image = pygame.image.load("tiles/ui/" + savedfile).convert_alpha()
-
-        tile_name, tile_height, tile_width = graphicPropertiesFromFilename(savedfile)
-
-        ui_tile_dict[tile_name] = (image, tile_height, tile_width)        
-        
-    return game_tile_dict, ui_tile_dict
+## load all game tiles
+def pygame_image_load(tilepath):
+	return pygame.image.load(tilepath).convert_alpha()
+	
+# must be procedural
+''' TODO: TRY TO CONVERT THIS TO FUNCTIONAL '''
+def convert_tuples_to_dict(list_of_tuples):
+	dict = {}
+	for tuple in list_of_tuples:
+		dict[tuple[0]] = tuple[1:]
+	return dict
+	
+''' TODO: REFACTOR CONSIDERING THE STRING OF THE PATH '''
+	
+def list_game_tiles():
+	return listdir("tiles/game/")
+	
+def save_game_tile(tile):
+	return (graphicPropertiesFromFilename(tile)[0], pygame_image_load("tiles/game/" + tile), graphicPropertiesFromFilename(tile)[1], graphicPropertiesFromFilename(tile)[2])
+	
+def save_all_game_tiles():
+	return map(save_game_tile, list_game_tiles())
+	
+def list_ui_tiles():
+	return listdir("tiles/ui/")
+	
+def save_ui_tile(tile):
+	return (graphicPropertiesFromFilename(tile)[0], pygame_image_load("tiles/ui/" + tile), graphicPropertiesFromFilename(tile)[1], graphicPropertiesFromFilename(tile)[2])
+	
+def save_all_ui_tiles():
+	return map(save_ui_tile, list_ui_tiles())
+	
+def load_all_tiles():
+	return convert_tuples_to_dict(save_all_game_tiles()), convert_tuples_to_dict(save_all_ui_tiles())
 
 '''
 Interpic
@@ -197,7 +202,7 @@ def main():
     game_screen = Screen(SCREEN_WIDTH, SCREEN_HEIGHT)
     
     ##Init tiles
-    tileset, ui_tileset = load_game_tiles()
+    tileset, ui_tileset = load_all_tiles()
     game_open = True
     
     while game_open:
