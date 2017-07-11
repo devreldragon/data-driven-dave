@@ -1325,7 +1325,7 @@ class Player(Dynamic):
     ## Inventory : START
     def decJetpackGasoline(self):
         self.inventory["jetpack"] -= 0.001
-        #fix floating point problems
+        #fixes floating point problems
         if self.inventory["jetpack"] < 0:
             self.inventory["jetpack"] = 0  
 
@@ -1335,6 +1335,12 @@ class Player(Dynamic):
     def giveLife(self):
         if self.lives < self.MAX_LIVES:
             self.lives += 1
+            
+    def clearInventory(self):
+        self.inventory["trophy"] = 0
+        self.inventory["gun"] = 0
+        self.inventory["jetpack"] = 0
+        
     ## Inventory : END
             
     ## Collision : START
@@ -1388,7 +1394,6 @@ class Player(Dynamic):
         #reset tree inventory in case player leaves tree object
         self.inventory["tree"] = 0
         
-        ''' TODO : PLAYER SIZE '''
         collision = level.checkPlayerCollision(player_x, player_y, 20, 16)
         collision_type = collision[0]
         collider_pos = collision[1]
@@ -1408,6 +1413,11 @@ class Player(Dynamic):
     def updatePosition(self, player_x, player_y, level, screen_max_height):  
         # First, check collisions in the current position (without moving)
         self.processCollisionsInCurrentPosition(player_x, player_y, level)
+        
+        # Checks if player is getting to a bonus room
+        if (player_x < 0 or player_x > level.getWidth() * 16) and (player_y > screen_max_height/4):
+            self.setCurrentState(STATE.ENDMAP)
+            return (-2, -2)
         
         # Checks if the player walked into a pit
         walked_into_pit = (not level.isPlayerCollidingWithSolid(player_x, player_y + 1))
@@ -1474,13 +1484,11 @@ class Player(Dynamic):
         else: ErrorInvalidValue()
     
     def setVelocityY(self, vel):
-        ''' TODO : CHECK FLOAT '''
         if isinstance(vel, float) or True:
             self.velocity_y = vel
         else: ErrorInvalidValue()
     
     def setVelocityX(self, vel):
-        ''' TODO : CHECK FLOAT '''
         if isinstance(vel, float) or True:
             self.velocity_x = vel
         else: ErrorInvalidValue()

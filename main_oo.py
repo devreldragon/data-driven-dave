@@ -174,6 +174,57 @@ def showInterpic(completed_levels, screen, GamePlayer, tileset, ui_tileset):
         
     return False
 
+def showWarpZone(completed_levels, screen, GamePlayer, tileset, ui_tileset):
+    clock = pygame.time.Clock()
+    
+    # init graphics
+    warp_level = Map("warp")
+    screen.setXPosition(0, warp_level.getWidth())    
+    screen.printMap(warp_level, tileset)
+    screen.clearBottomUi(ui_tileset)
+    
+    # init player
+    (player_absolute_x, player_absolute_y) = warp_level.initPlayerPositions(0, GamePlayer)
+    GamePlayer.resetPosAndState()
+    GamePlayer.setFallingState()
+    GamePlayer.setGfxId(0)
+    
+    # keep moving the player right, until it reaches the screen boundary
+    player_reached_bottom = (player_absolute_y >= screen.getUnscaledHeight())
+
+    while not player_reached_bottom:
+        # if player pressed escape, quit game
+        for event in pygame.event.get():
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                return True # return so we treat exiting externally
+        
+        player_absolute_y += 0.5
+        
+        # update screen
+        screen.printMap(warp_level, tileset)        
+        screen.printPlayer(GamePlayer, player_absolute_x, player_absolute_y, tileset)
+        screen.printOverlays(ui_tileset)
+        screen.printUi(ui_tileset, GamePlayer, completed_levels-1)
+
+        player_reached_bottom = (player_absolute_y >= screen.getUnscaledHeight())
+        
+        pygame.display.flip()
+        clock.tick(200)
+        
+    return False
+    
+    
+def getBonusMapping(current_level):
+    if current_level == 2: return 6
+    elif current_level == 5: return 2
+    elif current_level == 6: return 9
+    elif current_level == 7: return 10
+    elif current_level == 8: return 6
+    elif current_level == 9: return 7
+    elif current_level == 10: return 1
+    elif current_level == 1: return 11
+    else: return 1
+    
 def showScores(screen, tileset):
     pass
     
@@ -373,12 +424,23 @@ def main():
                 clock.tick(200)
 
             # Onto the next level
-            current_level_number += 1
-            current_spawner_id = 0
-            
+            GamePlayer.clearInventory()
+            if (player_position_x == -2):
+                current_level_number = getBonusMapping(current_level_number)
+                current_spawner_id = 1
+            elif (current_spawner_id == 1):
+                current_level_number = getBonusMapping(current_level_number)
+                current_spawner_id = 0
+            else:
+                current_level_number += 1
+                
             if current_level_number > NUM_OF_LEVELS and ended_level and not ended_game:
                 showCreditsScreen(game_screen, tileset)
                 ended_game = True
+            elif ended_level and current_spawner_id == 1:
+                option = showWarpZone(current_level_number, game_screen, GamePlayer, tileset, ui_tileset)
+                ended_game = option
+                game_open = not option
             elif ended_level and not ended_game:
                 option = showInterpic(current_level_number, game_screen, GamePlayer, tileset, ui_tileset)
                 ended_game = option
