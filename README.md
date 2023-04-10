@@ -7,7 +7,7 @@
 
 - To compile the program, you must have Python 3 installed.
 - Some packages (mainly `pygame`) may need to be installed using `pip` before starting the program.
-- You can run either of the main python scripts located at the root of the repository: `python main_oo.py` or `python main_fun.py`. This should start the game immediately.
+- You can run either of the main python scripts located at the root of the repository: `python main_oo.py` or `python main_fun.py`. This should start the game immediately. However, only main_fun.py has been instrumented to send data to  New Relic.
 
 ## Misc
 
