@@ -377,7 +377,6 @@ class Map(object):
             self.buildMapMatrix()
         else: ErrorInvalidConstructor()
 
-    @newrelic.agent.background_task()
     def buildMapMatrix(self):
         self.node_matrix = [[Tile() for i in range(self.width)] for j in range(self.height)]
 
@@ -408,7 +407,6 @@ class Map(object):
             return self.node_matrix[y][x]
         else: ErrorInvalidValue()
 
-    @newrelic.agent.background_task()
     def getPlayerSpawnerPosition(self, spawner_id):
         for y, line in enumerate(self.node_matrix):
             for x, col in enumerate(line):
@@ -416,7 +414,6 @@ class Map(object):
                     return (x, y)
         ErrorSpawnerNotFound()
                     
-    @newrelic.agent.background_task()
     def getCollisionType(self, x, y):
         #out of the map
         if not self.validateCoordinates(x, y):
@@ -465,7 +462,6 @@ class Map(object):
         
         return (COLLISION.NONE, (-1, -1))
 
-    @newrelic.agent.background_task()
     def isPlayerCollidingWithSolid(self, player_x, player_y, player_width=20, player_height=16):
         return (self.checkPlayerCollision(player_x, player_y, player_width, player_height, True)[0] == COLLISION.SOLID)
 
@@ -549,6 +545,7 @@ class Map(object):
         
         return (player_position_x, player_position_y)
         
+    @newrelic.agent.background_task()
     def tileFromText(self, text_tile):
         #if the tile has an index, store it
         try:
