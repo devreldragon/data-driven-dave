@@ -261,6 +261,10 @@ def main():
                             game_open = False
                             ended_level = True
                             ended_game = True
+                            # Record custom New Relic event [RLF]
+                            event_type = "GameComplete" 
+                            params = {'current_level': current_level_number, 'player_score': GamePlayer.score} 
+                            newrelic.agent.record_custom_event(event_type, params, application=application)
                         # use something from the inventory
                         elif event.key in inv_keys:
                             if GamePlayer.inventoryInput(inv_keys.index(event.key)) and not friendly_shot:
@@ -312,6 +316,10 @@ def main():
                         else:
                             ended_level = True
                             ended_game = True
+                            # Record custom New Relic event [RLF]
+                            event_type = "GameComplete" 
+                            params = {'current_level': current_level_number, 'player_score': GamePlayer.score} 
+                            newrelic.agent.record_custom_event(event_type, params, application=application)
                     
                 # if the player is close enough to one of the screen boundaries, move the screen.
                 player_close_to_left_boundary = (player_position_x <= game_screen.getXPositionInPixelsUnscaled() + BOUNDARY_DISTANCE_TRIGGER)
@@ -368,6 +376,11 @@ def main():
                 pygame.event.pump() 
                 clock.tick(200)
 
+            # Record custom New Relic event [RLF]
+            event_type = "LevelUp" 
+            params = {'current_level': current_level_number, 'player_score': GamePlayer.score} 
+            newrelic.agent.record_custom_event(event_type, params, application=application)
+
             # Onto the next level
             GamePlayer.clearInventory()
             if (player_position_x == -2):
@@ -382,6 +395,11 @@ def main():
             if current_level_number > NUM_OF_LEVELS and ended_level and not ended_game:
                 showCreditsScreen(game_screen, tileset)
                 ended_game = True
+                # Record custom New Relic event [RLF]
+                event_type = "GameComplete" 
+                current_level_number -= 1
+                params = {'current_level': current_level_number, 'player_score': GamePlayer.score} 
+                newrelic.agent.record_custom_event(event_type, params, application=application)
             elif ended_level and current_spawner_id == 1:
                 option = showWarpZone(current_level_number, game_screen, GamePlayer, tileset, ui_tileset)
                 ended_game = option
