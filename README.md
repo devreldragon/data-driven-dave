@@ -20,6 +20,12 @@ The goal of the project was to study and practice the three types of programming
 - You can run either of the main python scripts located at the root of the repository: `python main_oo.py` or `python main_fun.py`. This should start the game immediately.
 - Only main_fun.py has been instrumented to send data to New Relic.
 
+## ![New Relic logo](https://newrelic.com/static-assets/images/icons/avatar-newrelic.png) New Relic DevOpsDays Challenge
+
+1. Clone this repository, and complete the New Relic instrumentation prerequisites.
+2. Play the game, and stop by the New Relic booth to show off your game stats dashboard.
+3. Get the high score, and you win!
+
 ## Misc
 
 - The project is almost a identical replica - the only thing that wasn't implemented was the enemies, due to the project's deadline.
