@@ -13,7 +13,7 @@ The goal of the project was to study and practice the three types of programming
 - New Relic instrumentation
   - To send your game data to New Relic you must have an account. You can create a [free account](https://newrelic.com/signup) (no credit card required).
   - Update the newrelic.ini file by replacing INSERT_YOUR_INGEST_LICENSE_KEY_HERE with your account's [ingest license key](https://docs.newrelic.com/docs/apis/intro-apis/new-relic-api-keys/).
-  - To see your game stats on a New Relic dashboard edit the game_stats.json file by replacing YOUR_ACCOUNT_ID with your 7-digit [account ID](https://docs.newrelic.com/docs/accounts/accounts-billing/account-structure/account-id/).
+  - To see your game stats on a New Relic dashboard edit the game_stats.json file by replacing YOUR_ACCOUNT_ID with your 7-digit [account ID](https://docs.newrelic.com/docs/accounts/accounts-billing/account-structure/account-id/). Then, copy the modified JSON and [import it](https://docs.newrelic.com/docs/query-your-data/explore-query-data/dashboards/introduction-dashboards/#dashboards-import) into your New Relic account.
 
 ## Running the program
 
