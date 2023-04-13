@@ -7,7 +7,7 @@ The goal of the project was to study and practice the three types of programming
 ## Prerequisites
 
 - To compile the program, you must have Python 3 installed.
-- Additionally, you may need to install the following packages using `pip` before starting the program:
+- You will need to install the following packages using `pip` before starting the program. You may wish to install these packages in a [virtual environment](https://packaging.python.org/en/latest/guides/installing-using-pip-and-virtual-environments/).
   - pygame (e.g. `pip install pygame`)
   - newrelic (e.g. `pip install newrelic`)
 - New Relic instrumentation
