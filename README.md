@@ -5,26 +5,25 @@ What if - and hear us out - you could play around with a monitoring solution AND
 
 That's what this example is all about. Install a game, set it up in New Relic, and then play the game to see your stats. 
 
-Dangerous Dave was a classic 1980's side-scroller style game that many of us spent far too many hours playing when we should have been working, doing homework, or being otherwise productive. Now we've turned the tables, making Dave help us with our actual work.
+Dangerous Dave was a classic 1980's side-scroller style game that many spent hours playing when we should have been doing productive work. Now we've turned the tables, making Dave help with our actual work.
 
 The point of this project is two-fold: 
 
- 1. To give folx a fun way to kick the tires on New Relic monitoring; 
+ 1. To give folks a fun way to kick the tires on New Relic monitoring; 
  2. and to show how easy it is to instrument a custom application, capture and collect non-standard metrics, and display them in a meaningful way.
 
 We hope you enjoy!
 
 ## Prerequisites
 
-- (somewhat obviously) You'll need a New Relic account. The good news is that you can create a [free account here](https://newrelic.com/signup) (no credit card required).
+- You'll need a New Relic account. The good news is that you can create a [free account here](https://newrelic.com/signup) (no credit card required).
 - To compile the program, you must have Python 3 installed.
 - You will need to install the following packages using `pip` before starting the program. You may wish to install these packages in a [virtual environment](https://packaging.python.org/en/latest/guides/installing-using-pip-and-virtual-environments/).
   - pygame (e.g. `pip install pygame`)
   - newrelic (e.g. `pip install newrelic`)
 - New Relic instrumentation
   - Update the newrelic.ini file by replacing INSERT_YOUR_INGEST_LICENSE_KEY_HERE with your account's [ingest license key](https://docs.newrelic.com/docs/apis/intro-apis/new-relic-api-keys/).
-  - To see your game stats on a New Relic dashboard edit the game_stats.json file by replacing YOUR_ACCOUNT_ID with your 7-digit [account ID](https://docs.newrelic.com/docs/accounts/accounts-billing/account-structure/account-id/). 
-    - There's more than one location you'll need to edit. Check the file around lines 45, 74, 101, and 130. 
+  - To see your game stats on a New Relic dashboard edit the game_stats.json file by doing a global search and replace to substitute "YOUR_ACCOUNT_ID" with your 7-digit [account ID](https://docs.newrelic.com/docs/accounts/accounts-billing/account-structure/account-id/). 
   - Then, copy the modified JSON and [import the dashboard](https://docs.newrelic.com/docs/query-your-data/explore-query-data/dashboards/introduction-dashboards/#dashboards-import) into your New Relic account.
 
 ## Running the program
@@ -47,6 +46,5 @@ Win in 3 simple steps:
 # Dangerous Dave Replica
 *(this is the description you can find over on https://github.com/mwolfart/dangerous-dave) We remain deeply endebted to them for their effort to bring this classic game to life on the python platform! - Rachel and Leon)*
 
-This project is a replica of the 1988 DOS game Dangerous Dave, made by John Romero. The project was built in Python along with a team of three students (Arthur Medeiros, Guilherme Cattani and me), as a course assignment.
-
-The goal of the project was to study and practice the three types of programming paradigms: imperative, object-oriented and functional. To achieve this, we picked Python as a language since it can perform all three types of tasks in a fairly good way.
+ - This project is a replica of the 1988 DOS game Dangerous Dave, made by John Romero. The project was built in Python along with a team of three students (Arthur Medeiros, Guilherme Cattani and me), as a course assignment.
+ - The goal of the project was to study and practice the three types of programming paradigms: imperative, object-oriented and functional. To achieve this, we picked Python as a language since it can perform all three types of tasks in a fairly good way.
