@@ -1,5 +1,5 @@
 ![New Relic logo](https://newrelic.com/static-assets/images/logo/nr-logo-50vh.png)
-## Introduction
+# Introduction
 If you don't already know why you need a monitoring and observability solution, it can be challenging to find an example that is illustrative, compelling, and engaging. There are literally thousands of "monitor this fake take-out food website" examples and - while they certainly show a valid real-world example of something you might want to monitor - they are usually a real yawner.
 
 What if - and hear us out - you could play around with a monitoring solution AND PLAY A VIDEO GAME at the same time?!? WE KNOW, RIGHT?!?
@@ -37,7 +37,7 @@ We hope you enjoy!
 - The project is almost a identical replica - the only thing that wasn't implemented was the enemies, due to the project's deadline.
 - Yes, we plan on making updates in the future.
 
-# ![New Relic logo icon](https://newrelic.com/static-assets/images/icons/avatar-newrelic.png) New Relic DevOpsDays Challenge
+## ![New Relic logo icon](https://newrelic.com/static-assets/images/icons/avatar-newrelic.png) New Relic DevOpsDays Challenge
 
 Win in 3 simple steps:
 1. Clone this repository, and complete the New Relic instrumentation prerequisites.
