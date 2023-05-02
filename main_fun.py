@@ -391,6 +391,8 @@ def main():
                 current_spawner_id = 0
             else:
                 current_level_number += 1
+
+            GamePlayer.setCurrentLevelNumber(current_level_number)
                 
             if current_level_number > NUM_OF_LEVELS and ended_level and not ended_game:
                 showCreditsScreen(game_screen, tileset)

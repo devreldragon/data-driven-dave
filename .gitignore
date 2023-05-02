@@ -7,3 +7,4 @@ backup_copies/
 # OS generated files
 .idea/
 *.pyc
+env/

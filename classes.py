@@ -1180,6 +1180,8 @@ class Player(Dynamic):
     
     MAX_LIVES = 5
 
+    currentLevelNumber = 1
+
     '''
     Constructors
     '''
@@ -1203,6 +1205,8 @@ class Player(Dynamic):
     '''
     Other methods
     '''
+    def setCurrentLevelNumber(self, currentLevelNumber):
+        self.currentLevelNumber = currentLevelNumber
 
     def getGraphic(self, tileset):
         return Tile.getGraphic(self, tileset)
@@ -1382,13 +1386,19 @@ class Player(Dynamic):
 
         item = level.getNode(x, y)
         
+        itemIsEquipment = False
         #if the item is an equipment, add it to the inventory
         if isinstance(item, Equipment):
+            itemIsEquipment = True
             self.inventory[item.getId()] = 1
             
         #increment score
         self.score += item.getScore()
         
+        event_type = "DaveCollectedItem" 
+        params = {'item.id': item.getId(), 'item.score': item.getScore(), 'item.isEquipment': itemIsEquipment, 'levelNumber': self.currentLevelNumber, 'item.gfx_id': self.gfx_id} 
+        newrelic.agent.record_custom_event(event_type, params, application=newrelic.agent.application())
+
         #if the player got to a certain score, give one life to him
         if self.score % 5000 == 0:
             self.giveLife()
@@ -1536,7 +1546,7 @@ class Player(Dynamic):
         if isinstance(lives, int) and lives >= 0 and lives <= self.MAX_LIVES:
             self.lives = lives
         else: ErrorInvalidValue()
-        
+    
     def getVelocityY(self):
         return self.velocity_y        
 
