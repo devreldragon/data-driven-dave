@@ -1395,7 +1395,7 @@ class Player(Dynamic):
         #increment score
         self.score += item.getScore()
         
-        event_type = "DaveCollectedItem" 
+        event_type = "CollectedItem" 
         params = {'item.id': item.getId(), 'item.score': item.getScore(), 'item.isEquipment': itemIsEquipment, 'levelNumber': self.currentLevelNumber, 'item.gfx_id': self.gfx_id} 
         newrelic.agent.record_custom_event(event_type, params, application=newrelic.agent.application())
 
