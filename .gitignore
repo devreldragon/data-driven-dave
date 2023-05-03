@@ -1,10 +1,7 @@
 # Virtual Environment
 dd_venv/
-
-# RLF test and backup files
-backup_copies/
+env/
 
 # OS generated files
 .idea/
 *.pyc
-env/
