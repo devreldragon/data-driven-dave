@@ -318,7 +318,7 @@
                 "accountIds": [
                   YOUR_ACCOUNT_ID
                 ],
-                "query": "SELECT count(*) FROM CollectedItem FACET if(`item.id` = 'items', item.type, item.id) SINCE 30 minutes AGO"
+                "query": "SELECT count(*) FROM CollectedItem FACET if(`item.id` = 'items', item.type, item.id) SINCE 10 minutes AGO"
               }
             ],
             "platformOptions": {
