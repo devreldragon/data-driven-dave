@@ -20,8 +20,11 @@ We hope you enjoy!
 - You'll need a New Relic account. The good news is that you can create a [free account here](https://newrelic.com/signup) (no credit card required).
 - To compile the program, you must have Python 3 installed.
 - You will need to install the following packages using `pip` before starting the program. You may wish to install these packages in a [virtual environment](https://packaging.python.org/en/latest/guides/installing-using-pip-and-virtual-environments/).
-  - pygame (e.g. `pip install pygame`)
-  - newrelic (e.g. `pip install newrelic`)
+  - pygame (e.g. `pip3 install pygame`)
+  - newrelic (e.g. `pip3 install newrelic`)
+> run this command to install all the required packages 
+  
+  ```pip3 install -r requirements.txt```
 - New Relic instrumentation
   - Update the newrelic.ini file by replacing INSERT_YOUR_INGEST_LICENSE_KEY_HERE with your account's [ingest license key](https://docs.newrelic.com/docs/apis/intro-apis/new-relic-api-keys/).
   - To see your game stats on a New Relic dashboard edit the game_stats.json file by doing a global search and replace to substitute "YOUR_ACCOUNT_ID" with your 7-digit [account ID](https://docs.newrelic.com/docs/accounts/accounts-billing/account-structure/account-id/). 
