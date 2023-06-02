@@ -33,7 +33,7 @@ We hope you enjoy!
 ## Running the program
 
 - You can run either of the main python scripts located at the root of the repository: `python3 main_oo.py` or `python3 main_fun.py`. This should start the game immediately.
-- Only main_fun.py has been instrumented to send data to New Relic.
+- **Note:** Only `main_fun.py` has been instrumented to send data to New Relic.
 
 ## Misc
 
