@@ -1,5 +1,6 @@
 import newrelic.agent
 import math
+import logging
 
 newrelic.agent.initialize('newrelic.ini') #This is required! [RLF]
 
@@ -197,6 +198,15 @@ def main():
     tileset, ui_tileset = load_all_tiles()
     game_open = True
     
+    ##Logging test [RLF]
+    logging.basicConfig(level=logging.INFO)
+    logging.info('This is a sample info message')
+    logging.warning('This is a sample warning message')
+    logging.error('This is a sample error message')
+
+    ##Game start log message [RLF]
+    logging.info('Game started')
+
     while game_open:
         ##Show title screen
         option = showTitleScreen(game_screen, tileset, ui_tileset)
@@ -261,10 +271,15 @@ def main():
                             game_open = False
                             ended_level = True
                             ended_game = True
+
+                            # Write game stats to log [RLF]
+                            logging.info('Game ended with score %s', GamePlayer.score)
+
                             # Record custom New Relic event [RLF]
                             event_type = "GameComplete" 
                             params = {'current_level': current_level_number, 'player_score': GamePlayer.score} 
                             newrelic.agent.record_custom_event(event_type, params, application=application)
+
                         # use something from the inventory
                         elif event.key in inv_keys:
                             if GamePlayer.inventoryInput(inv_keys.index(event.key)) and not friendly_shot:
@@ -316,6 +331,10 @@ def main():
                         else:
                             ended_level = True
                             ended_game = True
+
+                            # Write game stats to log [RLF]
+                            logging.info('Game ended with score %s', GamePlayer.score)
+
                             # Record custom New Relic event [RLF]
                             event_type = "GameComplete" 
                             params = {'current_level': current_level_number, 'player_score': GamePlayer.score} 
@@ -397,11 +416,16 @@ def main():
             if current_level_number > NUM_OF_LEVELS and ended_level and not ended_game:
                 showCreditsScreen(game_screen, tileset)
                 ended_game = True
+
+                # Write game stats to log [RLF]
+                logging.info('Game ended with score %s', GamePlayer.score)
+
                 # Record custom New Relic event [RLF]
                 event_type = "GameComplete" 
                 current_level_number -= 1
                 params = {'current_level': current_level_number, 'player_score': GamePlayer.score} 
                 newrelic.agent.record_custom_event(event_type, params, application=application)
+
             elif ended_level and current_spawner_id == 1:
                 option = showWarpZone(current_level_number, game_screen, GamePlayer, tileset, ui_tileset)
                 ended_game = option
