@@ -46,7 +46,8 @@ We hope you enjoy!
 Win in 3 simple steps:
 1. Clone this repository, and complete the New Relic instrumentation prerequisites.
 2. Play the game, and stop by the **New Relic** booth to show off your game stats dashboard. (you will be rewarded for this effort)
-3. If you have the high score, you win the grand prize!
+3. We will pick a random winner at the booth
+<!-- 3. If you have the high score, you win the grand prize! -->
 
 # Dangerous Dave Replica
 *(this is the original description you can find over on https://github.com/mwolfart/dangerous-dave) We remain deeply endebted to them for their effort to bring this classic game to life on the python platform! - Rachel and Leon)*
