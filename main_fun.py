@@ -157,17 +157,12 @@ def showWarpZone(completed_levels, screen, GamePlayer, tileset, ui_tileset):
     return False
     
     
+BONUS_MAPPING = {2: 6, 5: 2, 6: 9, 7: 10, 8: 6, 9: 7, 10: 1, 1: 11}
+
+
 @newrelic.agent.background_task()
 def getBonusMapping(current_level):
-    if current_level == 2: return 6
-    elif current_level == 5: return 2
-    elif current_level == 6: return 9
-    elif current_level == 7: return 10
-    elif current_level == 8: return 6
-    elif current_level == 9: return 7
-    elif current_level == 10: return 1
-    elif current_level == 1: return 11
-    else: return 1
+    return BONUS_MAPPING.get(current_level, 1)
     
 @newrelic.agent.background_task()
 def showScores(screen, tileset):
