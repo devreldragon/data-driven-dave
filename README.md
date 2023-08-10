@@ -37,9 +37,20 @@ We hope you enjoy!
 - **Note:** Only `main_fun.py` has been instrumented to send data to New Relic.
 
 ## Quick start (using Nix)
+
+Install [Nix](https://nixos.org/download).
+
+```
 export NEW_RELIC_ACCOUNT=<ACCOUNT_ID>
 export NEW_RELIC_LICENSE_KEY=<LICENSE_KEY>
 nix run github:devreldragon/data-driven-dave
+```
+
+If you need to turn on experimental features:
+```
+export NIX_CONFIG='extra-experimental-features = nix-command flakes'
+nix run github:devreldragon/data-driven-dave
+```
 
 ## Misc
 
