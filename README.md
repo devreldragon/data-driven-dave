@@ -36,6 +36,11 @@ We hope you enjoy!
 - You can run either of the main python scripts located at the root of the repository: `python3 main_oo.py` or `python3 main_fun.py`. This should start the game immediately.
 - **Note:** Only `main_fun.py` has been instrumented to send data to New Relic.
 
+## Quick start (using Nix)
+export NEW_RELIC_ACCOUNT=<ACCOUNT_ID>
+export NEW_RELIC_LICENSE_KEY=<LICENSE_KEY>
+nix run github:devreldragon/data-driven-dave
+
 ## Misc
 
 - The project is almost a identical replica - the only thing that wasn't implemented was the enemies, due to the project's deadline.

@@ -13,9 +13,10 @@
           callPackage func {}) set;
       in newpkgs
     )
-    {inherit (inputs.nixpkgs.legacyPackages) x86_64-linux;};
+    {inherit (inputs.nixpkgs.legacyPackages) x86_64-linux x86_64-darwin aarch64-linux aarch64-darwin;};
   in {
-    packages = proc {
+    packages = proc rec {
+      default = dave;
       dave = import ./pkgs/dave;
       newrelic = import ./pkgs/newrelic;
     };
