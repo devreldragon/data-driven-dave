@@ -159,17 +159,19 @@ It's important to recognize the small victories in life. You just cloned a repo,
 
 Now, if you start playing the Data Driven Dave game, you'll see this dashboard light up with stats, numbers, and more. 
 
-
-
-
-
-
-
-
-
 ## Troubleshooting
+Most of the issues we've seen come down to the following:
 
-pip install
-pip3 install
-python3-pip install
-python3 -m pip install
+### python or pip not installing
+If you can't run `pip install`, try the following variations and see if the error messages give you any deeper understanding of what's not working:
+ - pip3 install
+ - python3-pip install
+ - python3 -m pip install
+
+### Can't create/save the dashboard when importing
+This is almost certainly because you missed updating one of the "YOUR_ACCOUNT_ID" markers in game_stats.json. 
+
+### Stats not updating on the dashboard
+Note that some stats update in realtime, while others aren't collected until gameplay finishes (hitting esc or using up all your lives and going back to the intro screen). Broadly speaking, collected items, along with machine information, is collected and updated constantly, while game stats (level achieved, number of games played, high score) are only updated once gameplay finishes.
+
+
