@@ -86,11 +86,11 @@ Let's start by getting your account ID and your ingest API key.
  - To skip installing the infrastructure agent, click the (verrrry tiny) "don't have access to host" link.
  - In the upper right corner of this screen, find the part that says "Manual Install", and then the "Copy to Clipboard" option next to your license key.
  	- Copy your license key and save it somewhere.
-![Copy API key option in New Relic](https://github.com/devreldragon/data-driven-dave/instructions/API_Key.png) 	
+![Copy API key option in New Relic](API_Key.png) 	
 
  - Click the Python tile
  - In the upper right corner of THIS screen you'll see your ID. Copy *that* down and save it somewhere.
-![Copy API key option in New Relic](https://github.com/devreldragon/data-driven-dave/instructions/Account_ID.png)
+![Copy API key option in New Relic](Account_ID.png)
 
 ***NOTE: STAY ON THIS SCREEN IN one.newrelic.com, BUT PROCEED WITH THE STEPS BELOW***
 
