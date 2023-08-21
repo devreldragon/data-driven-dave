@@ -1,8 +1,4 @@
-The instructions need to be clearer about which API key they need, and also where to find their ID (with pictures)
-
-Installing pip and pygame was a problem for some folks
-
-# Details installation instructions
+# Detailed installation instructions
 Here are the excruciatingly step-by-step instructions for installing Data Driven Dave. These instructions are largely \*nix specific (which usually includes MacOS but I've inlcuded some MacOS specific steps. However, as always YMMV).
 
 First, the github repo is https://github.com/devreldragon/data-driven-dave
