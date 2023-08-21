@@ -27,14 +27,29 @@ We hope you enjoy!
     
     ```pip3 install -r requirements.txt```
 - New Relic instrumentation
-  - Update the newrelic.ini file by replacing INSERT_YOUR_INGEST_LICENSE_KEY_HERE with your account's [ingest license key](https://docs.newrelic.com/docs/apis/intro-apis/new-relic-api-keys/).
-  - To see your game stats on a New Relic dashboard edit the game_stats.json file by doing a global search and replace to substitute "YOUR_ACCOUNT_ID" with your 7-digit [account ID](https://docs.newrelic.com/docs/accounts/accounts-billing/account-structure/account-id/). 
-  - Then, copy the modified JSON and [import the dashboard](https://docs.newrelic.com/docs/query-your-data/explore-query-data/dashboards/introduction-dashboards/#dashboards-import) into your New Relic account. If this will be the first dashboard in your account, the **Import dashboard** button will not appear on the screen. You will first need to [Create a new dashboard](https://docs.newrelic.com/docs/query-your-data/explore-query-data/dashboards/introduction-dashboards/#dashboards-create-new).
+  - Update the newrelic.ini file by replacing INSERT_YOUR_INGEST_LICENSE_KEY_HERE with your account's [ingest license key](https://docs.newrelic.com/docs/apis/intro-apis/new-relic-api-keys/). Refer to our [detailed instructions](instructions/detailed_install.md) for step by step info, pictures, etc.
+  - Edit the game_stats.json file by replacing "YOUR_ACCOUNT_ID" with your 7-digit [account ID](https://docs.newrelic.com/docs/accounts/accounts-billing/account-structure/account-id/). **THERE ARE EIGHT (8) PLACES TO MAKE THIS CHANGE, NOT JUST ONE**. Refer to our [detailed instructions](instructions/detailed_install.md) for step by step info, pictures, etc. 
+  - Copy the modified JSON and [import the dashboard](https://docs.newrelic.com/docs/query-your-data/explore-query-data/dashboards/introduction-dashboards/#dashboards-import) into your New Relic account. 
+      - If this will be the first dashboard in your account, the **Import dashboard** button will not appear on the screen. You will first need to [Create a new dashboard](https://docs.newrelic.com/docs/query-your-data/explore-query-data/dashboards/introduction-dashboards/#dashboards-create-new).
+
 
 ## Running the program
 
 - You can run either of the main python scripts located at the root of the repository: `python3 main_oo.py` or `python3 main_fun.py`. This should start the game immediately.
 - **Note:** Only `main_fun.py` has been instrumented to send data to New Relic.
+
+## Playing the game
+
+Here are some hints to play the game:
+ - To start the game play, hit the spacebar.
+ - To end a game in the middle, hit esc.
+ - To be able to get through the door on each level, you need to collect the gold chalice / trophy.
+ - Some statistics (like the Items Collected) will show on the New Relic dashboard immediately. Others (like the # of games played or top score) won't update until you completely 
+ - Movement:
+   - left/right: walk/fly/jump left or right
+   - up: jump
+ - Detailed gameplay walkthroughs can be found on [John Romero's page](https://rome.ro/dangerous-dave) and [GameSpot](https://gamefaqs.gamespot.com/pc/581164-dangerous-dave/faqs/10991)
+
 
 ## Misc
 
