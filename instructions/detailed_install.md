@@ -7,8 +7,6 @@ First, the github repo is https://github.com/devreldragon/data-driven-dave
 ### First check Python: 
 Open a terminal window and type:
 `python --version`
-or
-`python3 -m pip --version`
 
 ### Next check Pip: 
 In that terman, type:
