@@ -11,8 +11,11 @@ Open a terminal window and type:
 ### Next check Pip: 
 In that terman, type:
 `pip --version`
-or
-`python3 --version`
+
+or possibly
+
+`python3 -m pip --version`
+
 
 NOTE: pip might be installed but not in your path. 
 
