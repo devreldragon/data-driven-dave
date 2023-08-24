@@ -4,27 +4,28 @@ Here are the excruciatingly step-by-step instructions for installing Data Driven
 First, the github repo is https://github.com/devreldragon/data-driven-dave
 
 ## STEP 1: Ensuring python and pip are installed. 
+### First check Python: 
 Open a terminal window and type:
-`% python --version`
+`python --version`
 or
-`% python3 --version`
+`python3 -m pip --version`
 
-If neither of those return anything, then follow these instructions:
-https://www.dataquest.io/blog/installing-python-on-mac/#installing-python-mac
+### Next check Pip: 
+In that terman, type:
+`pip --version`
+or
+`python3 --version`
 
-NEXT, install pip. At the command line, run:
-`curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py`
+NOTE: pip might be installed but not in your path. 
 
-and then run
+If either python3 or pip isn't present, install it using instructions appropriate to your operating system. 
 
-`python3 get-pip.py`
+## STEP 2: (optional but a good idea: Install the python virtual environment (venv)
+This step is optional, but ensures your python modules and versions aren't stomping all over each other.
 
-## STEP 2 (optional but a good idea: Install the python virtual environment (venv)
-This ensures your python versions aren't stomping all over each other
+`sudo pip install virtualenv`
 
-`pip install virtualenv`
-
-## STEP 3: Install git. 
+## STEP 3: Install git.
 
 It should already be installed, so first test whether it's present by typing:
 `git --version`
@@ -47,7 +48,7 @@ Clone the repo:
 
 ## STEP 5: Create the virtual environment and install the modules you'll need:
 First, we'll initialize virtualenv in this directory (so be in the terminal, in the data-driven-dave repo directory, and type):
-`virtualenv venv`
+`python3 -m venv venv`
 
 Now activate virtualenv:
 `source venv/bin/activate`
@@ -135,8 +136,10 @@ Congratulations! You now have an application called "Data Driven Dave"! Now we j
 ## Step 8: Import your dashboard into New Relic. 
 This creates the data driven dave dashboard connected to your machine/game. 
 
+PLEASE NOTE: you have to manually create a blank dashboard BEFORE the "import dashboard" option will appear. This is an issue with our current platform where the "import dashboard" option isn't available until AFTER you have one dashboard in your inventory.
+
 ### Create a blank dashboard
-First, you have to create a blank dashboard because #reasons
+First, you have to create a blank dashboard because of an existing issue in the New Relic platform (we're fixing it. We promise.)
  - On the left-hand menu, click "Dashboards"
  - Click "Create your first dashboard"
  - give it a name
