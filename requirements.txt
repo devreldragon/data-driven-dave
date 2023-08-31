@@ -1,2 +1,2 @@
-pygame>=2.4.0
-newrelic>=8.8.0
+pygame >= 2.4.0
+newrelic >= 8.8.0
