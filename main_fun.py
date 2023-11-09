@@ -7,11 +7,9 @@ from functional import *
 import logging
 import random
 
-
 '''
 Interpic
 '''
-
 
 @newrelic.agent.background_task()
 def showTitleScreen(screen, tileset, ui_tiles):

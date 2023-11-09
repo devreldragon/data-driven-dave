@@ -1494,7 +1494,10 @@ class Player(Dynamic):
             # log the error
             logging.error('An exception occurred: '+str(err))
             # record the error in APM
-            newrelic.agent.notice_error(application=newrelic.agent.application())
+
+            newrelic.agent.notice_error(
+                attributes={'transactionUiName': 'collectItem'},
+                application=newrelic.agent.application())
 
         # record the collected item as a custom event
         event_type = "CollectedItem"
