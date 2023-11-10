@@ -5,3 +5,5 @@ env/
 # OS generated files
 .idea/
 *.pyc
+tiles/.DS_Store
+.DS_Store

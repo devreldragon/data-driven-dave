@@ -5,6 +5,8 @@ from math import floor
 from enum import Enum
 from random import randint
 import pygame
+import random
+import logging
 
 '''
 Constants and enumerations
@@ -1482,10 +1484,31 @@ class Player(Dynamic):
 
         # increment score
         self.score += item.getScore()
+        
+        # intentionally fail the application with a division by zero error
+        score = self.score
+        rnd = random.randint(0, 10)
+        try:
+            score = score / rnd
+        except ZeroDivisionError as err:
+            # log the error
+            logging.error('An exception occurred: '+str(err))
+            # record the error in APM
 
+            newrelic.agent.notice_error(
+                attributes={'transactionUiName': 'collectItem'},
+                application=newrelic.agent.application())
+
+        # record the collected item as a custom event
         event_type = "CollectedItem"
-        params = {'item.id': item.getId(), 'item.score': item.getScore(), 'item.type': item.getType(),
-                  'item.isEquipment': itemIsEquipment, 'levelNumber': self.currentLevelNumber, 'item.gfx_id': self.gfx_id}
+        params = {
+            'item.id': item.getId(),
+            'item.score': self.score,
+            'item.type': item.getType(),
+            'item.isEquipment': itemIsEquipment,
+            'levelNumber': self.currentLevelNumber,
+            'item.gfx_id': self.gfx_id
+        }
         newrelic.agent.record_custom_event(
             event_type, params, application=newrelic.agent.application())
 
