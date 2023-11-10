@@ -100,8 +100,7 @@ Let's start by getting your account ID and your ingest API key.
  - Open the file newrelic.ini
  - Find the line that reads "license_key = INSERT_YOUR_INGEST_LICENSE_KEY_HERE"
    - (it should be around line 33)
- - Edit it so it uses your API key from the previous step. i.e.: 
- `license_key = 55cbeee3a92d75d652df3dbb80ca319dFFFFNRAL`
+ - Edit it so it uses your API key from the previous step.
  
  Save the file and continue.
 
