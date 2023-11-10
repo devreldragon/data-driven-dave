@@ -6,7 +6,7 @@ First, the github repo is https://github.com/devreldragon/data-driven-dave
 ## STEP 1: Ensuring python and pip are installed. 
 ### First check Python: 
 Open a terminal window and type:
-`python --version`
+`python3 --version`
 
 ### Next check Pip: 
 In that terman, type:
