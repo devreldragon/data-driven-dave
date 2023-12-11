@@ -1,4 +1,4 @@
 pygame >= 2.4.0
-newrelic >= 9.1.1
+newrelic >= 9.3.0
 nltk==3.6.3
 langchain==0.0.311
