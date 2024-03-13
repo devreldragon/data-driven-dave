@@ -44,7 +44,7 @@
                 "accountIds": [
                   YOUR_ACCOUNT_ID
                 ],
-                "query": "SELECT count(*) AS 'Games' FROM GameComplete WHERE appName = 'Data Driven Dave' SINCE 1 month ago"
+                "query": "SELECT count(*) AS 'Games' FROM GameComplete WHERE appName = 'Data Driven Dave' since 10 minutes ago"
               }
             ],
             "platformOptions": {
@@ -73,7 +73,7 @@
                 "accountIds": [
                   YOUR_ACCOUNT_ID
                 ],
-                "query": "SELECT max(player_score) FROM GameComplete WHERE appName = 'Data Driven Dave' SINCE 1 month ago"
+                "query": "SELECT max(player_score) FROM GameComplete WHERE appName = 'Data Driven Dave' since 10 minutes ago"
               }
             ],
             "platformOptions": {
@@ -100,7 +100,7 @@
                 "accountIds": [
                   YOUR_ACCOUNT_ID
                 ],
-                "query": "SELECT max(current_level) AS 'Level' FROM LevelUp WHERE appName = 'Data Driven Dave' SINCE 1 month AGO"
+                "query": "SELECT max(current_level) AS 'Level' FROM LevelUp WHERE appName = 'Data Driven Dave' since 10 minutes AGO"
               }
             ],
             "platformOptions": {
@@ -129,7 +129,7 @@
                 "accountIds": [
                   YOUR_ACCOUNT_ID
                 ],
-                "query": "SELECT max(player_score) AS 'Top Score' FROM LevelUp WHERE appName = 'Data Driven Dave' FACET current_level AS 'Level' SINCE 1 month AGO"
+                "query": "SELECT max(player_score) AS 'Top Score' FROM LevelUp WHERE appName = 'Data Driven Dave' FACET current_level AS 'Level' since 10 minutes AGO"
               }
             ],
             "platformOptions": {
@@ -164,7 +164,7 @@
                 "accountIds": [
                   YOUR_ACCOUNT_ID
                 ],
-                "query": "SELECT count(*) AS '# Collected', sum(`item.score`) AS 'Total Value' FROM CollectedItem FACET if(`item.id` = 'items', item.type, item.id) AS 'Item Collected' SINCE 1 month AGO"
+                "query": "SELECT count(*) AS '# Collected', sum(`item.score`) AS 'Total Value' FROM CollectedItem FACET if(`item.id` = 'items', item.type, item.id) AS 'Item Collected' since 10 minutes AGO"
               }
             ],
             "platformOptions": {
@@ -225,7 +225,7 @@
                 "accountIds": [
                   YOUR_ACCOUNT_ID
                 ],
-                "query": "SELECT count(*) AS '# Collected' FROM CollectedItem FACET if(`item.id` = 'items', item.type, item.id) AS 'Item Collected' SINCE 1 hour AGO"
+                "query": "SELECT count(*) AS '# Collected' FROM CollectedItem FACET if(`item.id` = 'items', item.type, item.id) AS 'Item Collected' since 10 minutes AGO"
               }
             ],
             "platformOptions": {
@@ -289,7 +289,7 @@
                 "accountIds": [
                   YOUR_ACCOUNT_ID
                 ],
-                "query": "SELECT count(*) FROM CollectedItem FACET if(`item.id` = 'items', item.type, item.id) AS 'Item Collected' SINCE 1 hour AGO TIMESERIES "
+                "query": "SELECT count(*) FROM CollectedItem FACET if(`item.id` = 'items', item.type, item.id) AS 'Item Collected' since 10 minutes AGO TIMESERIES "
               }
             ],
             "platformOptions": {
